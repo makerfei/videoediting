@@ -19,6 +19,7 @@
 
     * { margin: 0; padding: 0; box-sizing: border-box; }
     body {
+      user-select: none;
       font-family: 'Segoe UI', 'PingFang SC', sans-serif;
       background: var(--bg-color);
       color: var(--text-color);
@@ -434,7 +435,9 @@
     playhead: document.getElementById('playhead'),
     playheadHandle: document.getElementById('playhead-handle'),
     scrollContainer: document.getElementById('scroll-container'),
-    previewVideo: document.getElementById('preview-video'),
+    // previewVideo: document.getElementById('preview-video'),
+
+    
     previewPlaceholder: document.getElementById('preview-placeholder'),
     playBtn: document.getElementById('play-btn'),
     timeDisplay: document.getElementById('time-display'),
@@ -467,6 +470,10 @@
       });
     });
     state.maxTime = Math.ceil(max + 5); // 留5秒余地
+
+
+
+
   }
 
   function renderRuler() {
@@ -567,6 +574,7 @@
     DOM.playhead.style.left = left + 'px';
   }
 
+  // 更新显示时间
   function updateTimeDisplay() {
     const t = state.currentTime;
     const total = state.maxTime;
@@ -583,31 +591,36 @@
   }
 
   // ==================== 视频预览 ====================
+
+  // 视频内容更新
   function updateVideoPreview() {
+    console.log("视频内容更新")
     const video = DOM.previewVideo;
     const placeholder = DOM.previewPlaceholder;
 
     // 检查当前时间点是否有视频片段
     const activeClip = getActiveClipAtTime(state.currentTime);
-
+    
+    // 
     if (activeClip && activeClip.videoSrc) {
-      video.style.display = 'block';
-      placeholder.style.display = 'none';
-      video.src = activeClip.videoSrc;
-      video.currentTime = state.currentTime - activeClip.start;
+      // video.style.display = 'block';
+      // placeholder.style.display = 'none';
+      // video.src = activeClip.videoSrc;
+      // video.currentTime = state.currentTime - activeClip.start;
+      console.log("当前时间"+state.currentTime)
     } else if (activeClip && activeClip.type === 'video') {
       // 有视频片段但没有设置视频源
-      video.style.display = 'block';
-      placeholder.style.display = 'none';
-      if (!video.src || video.src === window.location.href) {
-        // 使用示例视频
-        video.src = 'https://www.w3schools.com/html/mov_bbb.mp4';
-      }
-      video.currentTime = Math.min(state.currentTime - activeClip.start, video.duration || 0);
+      // video.style.display = 'block';
+      // placeholder.style.display = 'none';
+      // if (!video.src || video.src === window.location.href) {
+      //   // 使用示例视频
+      //   video.src = 'https://www.w3schools.com/html/mov_bbb.mp4';
+      // }
+      // video.currentTime = Math.min(state.currentTime - activeClip.start, video.duration || 0);
     } else {
-      video.style.display = 'none';
-      placeholder.style.display = 'flex';
-      video.pause();
+      // video.style.display = 'none';
+      // placeholder.style.display = 'flex';
+      // video.pause();
     }
   }
 
@@ -624,6 +637,7 @@
 
   // ==================== 播放控制 ====================
   function togglePlay() {
+    console.log("播放按钮点击")
     state.isPlaying = !state.isPlaying;
     updatePlayButtonUI();
 
@@ -635,29 +649,34 @@
   }
 
   function updatePlayButtonUI() {
+    console.log("更新按钮样式")
     const btn = DOM.playBtn;
     btn.classList.toggle('playing', state.isPlaying);
     btn.classList.toggle('paused', !state.isPlaying);
   }
 
   function startPlayback() {
-    const video = DOM.previewVideo;
-    if (video.style.display !== 'none' && video.src) {
-      video.play().catch(() => {});
-    }
+    console.log("进行播放")
+    // const video = DOM.previewVideo;
+    // if (video.style.display !== 'none' && video.src) {
+    //   video.play().catch(() => {});
+    // }
     animatePlayhead();
   }
 
   function stopPlayback() {
-    const video = DOM.previewVideo;
-    video.pause();
+    console.log("停止播放")
+    // const video = DOM.previewVideo;
+    // video.pause();
     if (state.animationFrameId) {
       cancelAnimationFrame(state.animationFrameId);
       state.animationFrameId = null;
     }
   }
 
+  // 自动播放中
   function animatePlayhead() {
+    console.log("animatePlayhead.  动画播放中")
     if (!state.isPlaying) return;
 
     state.currentTime += 0.016; // ~60fps
@@ -676,23 +695,28 @@
     updateTimeDisplay();
     updateVideoPreview();
 
+
+    // 
     // 同步视频时间
-    const video = DOM.previewVideo;
-    const activeClip = getActiveClipAtTime(state.currentTime);
-    if (activeClip && video.style.display !== 'none') {
-      const clipTime = state.currentTime - activeClip.start;
-      if (Math.abs(video.currentTime - clipTime) > 0.1) {
-        video.currentTime = clipTime;
-      }
-    }
+    // const video = DOM.previewVideo;
+    // const activeClip = getActiveClipAtTime(state.currentTime);
+    // if (activeClip && video.style.display !== 'none') {
+    //   const clipTime = state.currentTime - activeClip.start;
+    //   if (Math.abs(video.currentTime - clipTime) > 0.1) {
+    //     video.currentTime = clipTime;
+    //   }
+    // }
 
     // 自动滚动跟随播放头
     autoScrollToPlayhead();
-
+    // requestAnimationFrame(animatePlayhead); 是浏览器 API 调用，表示“在下一次屏幕重绘前执行 animatePlayhead 函数”，通常用于驱动流畅动画（如播放头移动）
     state.animationFrameId = requestAnimationFrame(animatePlayhead);
   }
 
+  // 下面的滑动区域保持在视野内
   function autoScrollToPlayhead() {
+    console.log("autoScrollToPlayhead 下面的滑动区域保持在视野内")
+    
     const container = DOM.scrollContainer;
     const playheadLeft = state.currentTime * state.scale;
     const viewLeft = container.scrollLeft;
@@ -706,6 +730,7 @@
   }
 
   function seekTo(time) {
+    console.log("seekTo  视频部分 页面更新")
     state.currentTime = Math.max(0, Math.min(time, state.maxTime));
     updatePlayheadPosition();
     updateTimeDisplay();
@@ -715,6 +740,8 @@
   // ==================== 时间轴点击跳转 ====================
   function handleTimelineClick(e) {
     // 点击标尺或轨道空白区域跳转
+    
+    console.log("时间箭头点击触发 点击标尺或轨道空白区域跳转")
     if (e.target.closest('.clip')) return; // 不处理片段点击
     if (e.target.closest('.playhead-handle')) return;
 
@@ -733,8 +760,9 @@
       updatePlayButtonUI();
       stopPlayback();
     }
-
+    //播放头拖拽运动
     function onMove(ev) {
+      console.log("播放头拖拽运动")
       if (!state.playheadDrag) return;
       const rect = DOM.tracksContainer.getBoundingClientRect();
       const x = ev.clientX - rect.left + DOM.scrollContainer.scrollLeft;
@@ -746,6 +774,7 @@
     }
 
     function onUp() {
+      console.log("播放头拖鼠标抬起")
       state.playheadDrag = false;
       document.removeEventListener('mousemove', onMove);
       document.removeEventListener('mouseup', onUp);
@@ -768,6 +797,7 @@
 
   // ==================== 吸附逻辑 ====================
   function snapTime(time, currentClipId) {
+
     let closest = time;
     let minDiff = SNAP_THRESHOLD;
 
@@ -798,6 +828,7 @@
   function setupEventListeners() {
     // 时间轴点击跳转
     DOM.ruler.addEventListener('click', handleTimelineClick);
+
     DOM.tracksContainer.addEventListener('click', (e) => {
       if (!e.target.closest('.clip')) handleTimelineClick(e);
     });
@@ -807,6 +838,7 @@
 
     // 片段交互（事件委托）
     DOM.tracksContainer.addEventListener('mousedown', (e) => {
+      console.log("  tracksContainer mousedown")
       const clipEl = e.target.closest('.clip');
       if (!clipEl) return;
 
@@ -815,9 +847,11 @@
       const clip = findClip(clipId);
       if (!clip) return;
 
+      // 被选中的点亮
       selectClip(clipId, trackId);
-
+     
       if (e.target.classList.contains('handle')) {
+        console.log("进行拉长或缩短视频")
         const isLeft = e.target.classList.contains('left');
         state.dragState = {
           type: isLeft ? 'resize-l' : 'resize-r',
@@ -827,6 +861,7 @@
           originalDuration: clip.duration
         };
       } else {
+        console.log("判断为移动")
         state.dragState = {
           type: 'move',
           clipId,
@@ -834,10 +869,12 @@
           originalStart: clip.start
         };
       }
+
     });
 
     // 全局鼠标移动
     document.addEventListener('mousemove', (e) => {
+      // 鼠标运动判断
       if (!state.dragState) return;
       const { type, clipId, startX, originalStart, originalDuration } = state.dragState;
       const clip = findClip(clipId);
@@ -867,6 +904,7 @@
 
       updateClipDOM(clip);
       updateMaxTime();
+      updateTimeDisplay();
       renderRuler();
     });
 
@@ -916,45 +954,45 @@
         deleteSelectedClip();
       }
     });
-
+    // -----------------视频播放放反传代码设置
     // 视频时间更新时同步播放头
-    DOM.previewVideo.addEventListener('timeupdate', () => {
-      if (state.playheadDrag) return; // 拖拽播放头时不反向同步
-      if (!state.isPlaying) return;
-      const activeClip = getActiveClipAtTime(state.currentTime);
-      if (activeClip) {
-        const clipTime = DOM.previewVideo.currentTime;
-        const absTime = activeClip.start + clipTime;
-        if (Math.abs(state.currentTime - absTime) > 0.05) {
-          state.currentTime = absTime;
-          updatePlayheadPosition();
-          updateTimeDisplay();
-        }
-      }
-    });
+    // DOM.previewVideo.addEventListener('timeupdate', () => {
+    //   if (state.playheadDrag) return; // 拖拽播放头时不反向同步
+    //   if (!state.isPlaying) return;
+    //   const activeClip = getActiveClipAtTime(state.currentTime);
+    //   if (activeClip) {
+    //     const clipTime = DOM.previewVideo.currentTime;
+    //     const absTime = activeClip.start + clipTime;
+    //     if (Math.abs(state.currentTime - absTime) > 0.05) {
+    //       state.currentTime = absTime;
+    //       updatePlayheadPosition();
+    //       updateTimeDisplay();
+    //     }
+    //   }
+    // });
 
     // 拖放视频文件到预览区
     const previewSection = document.getElementById('preview-section');
     previewSection.addEventListener('dragover', (e) => { e.preventDefault(); });
     previewSection.addEventListener('drop', (e) => {
-      e.preventDefault();
-      const file = e.dataTransfer.files;
-      if (file && file.type.startsWith('video/')) {
-        loadVideoFile(file);
-      }
+      // e.preventDefault();
+      // const file = e.dataTransfer.files;
+      // if (file && file.type.startsWith('video/')) {
+      //   loadVideoFile(file);
+      // }
     });
     previewSection.addEventListener('click', (e) => {
       if (e.target === previewSection || e.target === DOM.previewPlaceholder || e.target.closest('.preview-placeholder')) {
-        const input = document.createElement('input');
-        input.type = 'file';
-        input.accept = 'video/*';
-        input.onchange = () => { if (input.files) loadVideoFile(input.files); };
-        input.click();
+        // const input = document.createElement('input');
+        // input.type = 'file';
+        // input.accept = 'video/*';
+        // input.onchange = () => { if (input.files) loadVideoFile(input.files); };
+        // input.click();
       }
     });
   }
 
-  // ==================== 视频文件加载 ====================
+  // ==================== 视频文件加载  已无用   ====================
   function loadVideoFile(file) {
     const url = URL.createObjectURL(file);
     DOM.previewVideo.src = url;
@@ -989,6 +1027,7 @@
     DOM.contextMenu.style.display = 'none';
   }
 
+  // 复制操作
   function duplicateSelectedClip() {
     if (!state.selectedClipId) return;
     const clip = findClip(state.selectedClipId);
@@ -1009,6 +1048,7 @@
     showToast('片段已复制');
   }
 
+  // 删除操作
   function deleteSelectedClip() {
     if (!state.selectedClipId) return;
     state.tracks.forEach(t => {
@@ -1026,6 +1066,8 @@
 
   // ==================== 轨道与片段管理 ====================
   function addTrack(type) {
+
+    console.log("轨道与片段管理")
     const id = 't' + Date.now();
     state.tracks.push({
       id,
@@ -1040,6 +1082,7 @@
   }
 
   function addClipToSelected() {
+    console.log("添加片段")
     const targetTrack = state.selectedTrackId
       ? findTrack(state.selectedTrackId)
       : state.tracks[state.tracks.length - 1];
@@ -1055,7 +1098,7 @@
 
     const lastClip = [...targetTrack.clips].sort((a, b) => (a.start + a.duration) - (b.start + b.duration)).pop();
     if (lastClip) {
-      newClip.start = lastClip.start + lastClip.duration + 0.5;
+      newClip.start = lastClip.start + lastClip.duration //+ 0.5;
     }
 
     targetTrack.clips.push(newClip);
