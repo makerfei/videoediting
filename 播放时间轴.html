@@ -1,0 +1,722 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>专业级 HTML 视频剪辑时间线</title>
+  <style>
+    :root {
+      --bg-color: #1e1e1e;
+      --track-bg: #2d2d2d;
+      --ruler-bg: #252525;
+      --text-color: #ccc;
+      --accent-color: #3b82f6;
+      --clip-video: #ef4444;
+      --clip-audio: #10b981;
+      --clip-subtitle: #f59e0b;
+      --border-color: #444;
+    }
+
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+      user-select: none;
+    }
+
+    body {
+      font-family: 'Segoe UI', sans-serif;
+      background: var(--bg-color);
+      color: var(--text-color);
+      overflow: hidden;
+      height: 100vh;
+      display: flex;
+      flex-direction: column;
+    }
+
+    /* 顶部工具栏 */
+    .toolbar {
+      height: 50px;
+      background: #333;
+      display: flex;
+      align-items: center;
+      padding: 0 20px;
+      gap: 10px;
+      border-bottom: 1px solid var(--border-color);
+    }
+
+    .btn {
+      background: #444;
+      color: white;
+      border: none;
+      padding: 6px 12px;
+      border-radius: 4px;
+      cursor: pointer;
+      font-size: 14px;
+      transition: background 0.2s;
+    }
+
+    .btn:hover {
+      background: #555;
+    }
+
+    .btn-primary {
+      background: var(--accent-color);
+    }
+
+    .btn-primary:hover {
+      background: #2563eb;
+    }
+
+    /* 时间线主容器 */
+    .timeline-wrapper {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+      position: relative;
+    }
+
+    /* 滚动区域 */
+    .scroll-container {
+      flex: 1;
+      overflow: auto;
+      position: relative;
+      background: var(--bg-color);
+    }
+
+    /* 时间刻度尺 */
+    .ruler {
+      height: 30px;
+      background: var(--ruler-bg);
+      position: sticky;
+      top: 0;
+      z-index: 10;
+      display: flex;
+      border-bottom: 1px solid var(--border-color);
+      min-width: 100%;
+    }
+
+    .tick {
+      height: 100%;
+      border-right: 1px solid #444;
+      font-size: 10px;
+      color: #888;
+      display: flex;
+      align-items: flex-end;
+      padding-left: 4px;
+      padding-bottom: 2px;
+      position: relative;
+    }
+
+    .tick::after {
+      content: '';
+      position: absolute;
+      right: 0;
+      bottom: 0;
+      height: 5px;
+      width: 1px;
+      background: #666;
+    }
+
+    /* 轨道容器 */
+    .tracks-container {
+      min-width: 100%;
+      padding-bottom: 50px;
+      /* 底部留白 */
+    }
+
+    /* 单个轨道 */
+    .track {
+      height: 60px;
+      background: var(--track-bg);
+      border-bottom: 1px solid var(--border-color);
+      position: relative;
+      display: flex;
+      align-items: center;
+    }
+
+    .track-label {
+      position: absolute;
+      left: 10px;
+      font-size: 12px;
+      color: #666;
+      z-index: 1;
+      pointer-events: none;
+    }
+
+    /* 视频片段 */
+    .clip {
+      position: absolute;
+      height: 40px;
+      border-radius: 4px;
+      color: white;
+      font-size: 12px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      overflow: hidden;
+      cursor: grab;
+      box-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
+      border: 1px solid rgba(255, 255, 255, 0.1);
+    }
+
+    .clip:active {
+      cursor: grabbing;
+      opacity: 0.9;
+    }
+
+    .clip.selected {
+      border: 2px solid white;
+      z-index: 5;
+    }
+
+    /* 片段类型颜色 */
+    .clip[data-type="video"] {
+      background: linear-gradient(135deg, var(--clip-video), #c0392b);
+    }
+
+    .clip[data-type="audio"] {
+      background: linear-gradient(135deg, var(--clip-audio), #059669);
+    }
+
+    .clip[data-type="subtitle"] {
+      background: linear-gradient(135deg, var(--clip-subtitle), #d97706);
+    }
+
+    /* 裁剪手柄 */
+    .handle {
+      position: absolute;
+      top: 0;
+      bottom: 0;
+      width: 8px;
+      cursor: ew-resize;
+      background: rgba(255, 255, 255, 0.2);
+      z-index: 2;
+    }
+
+    .handle:hover {
+      background: rgba(255, 255, 255, 0.5);
+    }
+
+    .handle.left {
+      left: 0;
+      border-radius: 4px 0 0 4px;
+    }
+
+    .handle.right {
+      right: 0;
+      border-radius: 0 4px 4px 0;
+    }
+
+    /* 右键菜单 */
+    .context-menu {
+      position: fixed;
+      background: #333;
+      border: 1px solid #555;
+      border-radius: 4px;
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.5);
+      z-index: 100;
+      display: none;
+      min-width: 120px;
+    }
+
+    .menu-item {
+      padding: 8px 12px;
+      cursor: pointer;
+      font-size: 13px;
+      color: #ddd;
+    }
+
+    .menu-item:hover {
+      background: var(--accent-color);
+      color: white;
+    }
+
+    .menu-divider {
+      height: 1px;
+      background: #444;
+      margin: 4px 0;
+    }
+
+    /* 播放头 (可选扩展) */
+    .playhead {
+      position: absolute;
+      top: 0;
+      bottom: 0;
+      width: 2px;
+      background: red;
+      z-index: 20;
+      pointer-events: none;
+      left: 0;
+    }
+
+    .playhead::before {
+      content: '';
+      position: absolute;
+      top: -10px;
+      left: -5px;
+      border-left: 6px solid transparent;
+      border-right: 6px solid transparent;
+      border-top: 10px solid red;
+    }
+  </style>
+</head>
+
+<body>
+
+  <!-- 工具栏 -->
+  <div class="toolbar">
+    <button class="btn" onclick="addTrack('video')">+ 视频轨道</button>
+    <button class="btn" onclick="addTrack('audio')">+ 音频轨道</button>
+    <button class="btn" onclick="addClipToSelected()">+ 添加片段</button>
+    <div style="flex:1"></div>
+    <button class="btn" onclick="zoom(-0.2)">-</button>
+    <span id="zoom-level" style="font-size:12px; width: 40px; text-align:center;">100%</span>
+    <button class="btn" onclick="zoom(0.2)">+</button>
+    <button class="btn btn-primary" onclick="exportData()">导出 JSON</button>
+    <input type="file" id="import-file" style="display:none" onchange="importData(this)">
+    <button class="btn" onclick="document.getElementById('import-file').click()">导入</button>
+  </div>
+
+  <!-- 时间线区域 -->
+  <div class="timeline-wrapper">
+    <div class="scroll-container" id="scroll-container">
+      <div class="ruler" id="ruler"></div>
+      <div class="tracks-container" id="tracks-container">
+        <!-- 轨道将在这里动态生成 -->
+      </div>
+      <div class="playhead" id="playhead" style="left: 0px;"></div>
+    </div>
+  </div>
+
+  <!-- 右键菜单 -->
+  <div class="context-menu" id="context-menu">
+    <div class="menu-item" onclick="duplicateSelectedClip()">复制片段</div>
+    <div class="menu-item" onclick="deleteSelectedClip()">删除片段</div>
+    <div class="menu-divider"></div>
+    <div class="menu-item" onclick="closeContextMenu()">取消</div>
+  </div>
+
+  <script>
+    // --- 核心状态管理 ---
+    const state = {
+      scale: 100, // 像素/秒
+      tracks: [
+        {
+          id: 't1', type: 'video', name: '视频轨道 1', clips: [
+            { id: 'c1', start: 0, duration: 3, name: '开场视频' },
+            { id: 'c2', start: 4, duration: 2, name: '过渡片段' }
+          ]
+        },
+        {
+          id: 't2', type: 'audio', name: '音频轨道 1', clips: [
+            { id: 'c3', start: 0, duration: 6, name: '背景音乐' }
+          ]
+        }
+      ],
+      selectedClipId: null,
+      selectedTrackId: null,
+      dragState: null // { type: 'move'|'resize-l'|'resize-r', clipId, startX, originalStart, originalDuration }
+    };
+
+    const SNAP_THRESHOLD = 10 / state.scale; // 吸附阈值（秒）
+
+    // --- 初始化 ---
+    function init() {
+      renderRuler();
+      renderTracks();
+      setupEventListeners();
+    }
+
+    // --- 渲染逻辑 ---
+    function renderRuler() {
+      const ruler = document.getElementById('ruler');
+      ruler.innerHTML = '';
+      // 假设最大时间为 60秒，实际应根据内容动态计算
+      const maxTime = 60;
+      const totalWidth = maxTime * state.scale;
+      ruler.style.width = `${totalWidth}px`;
+
+      for (let i = 0; i <= maxTime; i++) {
+        const tick = document.createElement('div');
+        tick.className = 'tick';
+        tick.style.width = `${state.scale}px`;
+        tick.innerText = i + 's';
+        ruler.appendChild(tick);
+      }
+      document.getElementById('zoom-level').innerText = Math.round(state.scale) + '%';
+    }
+
+    function renderTracks() {
+      const container = document.getElementById('tracks-container');
+      container.innerHTML = '';
+
+      // 设置容器总宽度
+      const maxTime = 60;
+      container.style.width = `${maxTime * state.scale}px`;
+
+      state.tracks.forEach(track => {
+        const trackEl = document.createElement('div');
+        trackEl.className = 'track';
+        trackEl.dataset.id = track.id;
+
+        const label = document.createElement('div');
+        label.className = 'track-label';
+        label.innerText = `${track.name} (${track.type})`;
+        trackEl.appendChild(label);
+
+        track.clips.forEach(clip => {
+          const clipEl = createClipElement(clip, track.type);
+          trackEl.appendChild(clipEl);
+        });
+
+        container.appendChild(trackEl);
+      });
+    }
+
+    function createClipElement(clip, type) {
+      const el = document.createElement('div');
+      el.className = `clip ${state.selectedClipId === clip.id ? 'selected' : ''}`;
+      el.dataset.id = clip.id;
+      el.dataset.type = type;
+      el.style.left = `${clip.start * state.scale}px`;
+      el.style.width = `${clip.duration * state.scale}px`;
+      el.innerText = clip.name;
+
+      // 左侧手柄
+      const leftHandle = document.createElement('div');
+      leftHandle.className = 'handle left';
+      el.appendChild(leftHandle);
+
+      // 右侧手柄
+      const rightHandle = document.createElement('div');
+      rightHandle.className = 'handle right';
+      el.appendChild(rightHandle);
+
+      return el;
+    }
+
+    // --- 交互逻辑 ---
+    function setupEventListeners() {
+      const container = document.getElementById('scroll-container');
+
+      // 全局鼠标移动（处理拖拽）
+      document.addEventListener('mousemove', handleMouseMove);
+      document.addEventListener('mouseup', handleMouseUp);
+
+      // 点击空白处取消选择
+      container.addEventListener('mousedown', (e) => {
+        if (e.target === container || e.target.classList.contains('track') || e.target.classList.contains('tracks-container')) {
+          state.selectedClipId = null;
+          state.selectedTrackId = null;
+          renderTracks();
+          closeContextMenu();
+        }
+      });
+
+      // 右键菜单
+      document.addEventListener('contextmenu', (e) => {
+        if (e.target.closest('.clip')) {
+          e.preventDefault();
+          const clipId = e.target.closest('.clip').dataset.id;
+          selectClip(clipId);
+          showContextMenu(e.clientX, e.clientY);
+        }
+        else {
+          closeContextMenu();
+        }
+      });
+
+      // 滚轮缩放
+      container.addEventListener('wheel', (e) => {
+        if (e.ctrlKey) {
+          e.preventDefault();
+          zoom(e.deltaY > 0 ? -5 : 5);
+        }
+      });
+    }
+
+    // 片段事件委托
+    document.getElementById('tracks-container').addEventListener('mousedown', (e) => {
+      const clipEl = e.target.closest('.clip');
+      if (!clipEl) return;
+
+      const clipId = clipEl.dataset.id;
+      const trackId = clipEl.closest('.track').dataset.id;
+      const clip = findClip(clipId);
+
+      selectClip(clipId, trackId);
+
+      if (e.target.classList.contains('handle')) {
+        // 开始裁剪
+        const isLeft = e.target.classList.contains('left');
+        state.dragState = {
+          type: isLeft ? 'resize-l' : 'resize-r',
+          clipId,
+          startX: e.clientX,
+          originalStart: clip.start,
+          originalDuration: clip.duration
+        };
+      } else {
+        // 开始移动
+        state.dragState = {
+          type: 'move',
+          clipId,
+          startX: e.clientX,
+          originalStart: clip.start
+        }
+        // are prevented by CSS user-select
+      }
+    })
+
+
+
+
+    
+    function handleMouseMove(e) {
+      if (!state.dragState) return;
+
+      const { type, clipId, startX, originalStart, originalDuration } = state.dragState;
+      const clip = findClip(clipId);
+      const deltaX = e.clientX - startX;
+      const deltaTime = deltaX / state.scale;
+
+      let newStart = originalStart;
+      let newDuration = originalDuration;
+
+      if (type === 'move') {
+        newStart = originalStart + deltaTime;
+        // 边界检查
+        if (newStart < 0) newStart = 0;
+
+        // 吸附逻辑
+        newStart = snapTime(newStart, clipId);
+
+        clip.start = newStart;
+      }
+      else if (type === 'resize-l') {
+        newStart = originalStart + deltaTime;
+        newDuration = originalDuration - deltaTime;
+
+        // 限制最小长度
+        if (newDuration < 0.5) {
+          newDuration = 0.5;
+          newStart = originalStart + originalDuration - 0.5;
+        }
+        if (newStart < 0) {
+          newStart = 0;
+          newDuration = originalStart + originalDuration;
+        }
+
+        // 吸附逻辑 (仅吸附开始时间)
+        newStart = snapTime(newStart, clipId);
+        newDuration = (originalStart + originalDuration) - newStart;
+
+        clip.start = newStart;
+        clip.duration = newDuration;
+      }
+      else if (type === 'resize-r') {
+        newDuration = originalDuration + deltaTime;
+        if (newDuration < 0.5) newDuration = 0.5;
+
+        clip.duration = newDuration;
+      }
+
+      // 局部更新 DOM 以提高性能
+      updateClipDOM(clip);
+    }
+
+    function handleMouseUp() {
+      state.dragState = null;
+    }
+
+    // --- 辅助功能 ---
+
+    function snapTime(time, currentClipId) {
+      let closest = time;
+      let minDiff = SNAP_THRESHOLD;
+
+      // 1. 吸附到刻度线 (整数秒)
+      const roundedTime = Math.round(time);
+      if (Math.abs(time - roundedTime) < minDiff) {
+        closest = roundedTime;
+        minDiff = Math.abs(time - roundedTime);
+      }
+
+      // 2. 吸附到其他片段边缘
+      state.tracks.forEach(track => {
+        track.clips.forEach(c => {
+          if (c.id === currentClipId) return;
+
+          const edges = [c.start, c.start + c.duration];
+          edges.forEach(edge => {
+            if (Math.abs(time - edge) < minDiff) {
+              closest = edge;
+              minDiff = Math.abs(time - edge);
+            }
+          });
+        });
+      });
+
+      return closest;
+    }
+
+    function updateClipDOM(clip) {
+      const el = document.querySelector(`.clip[data-id="${clip.id}"]`);
+      if (el) {
+        el.style.left = `${clip.start * state.scale}px`;
+        el.style.width = `${clip.duration * state.scale}px`;
+      }
+    }
+
+    function findClip(id) {
+      for (const track of state.tracks) {
+        const clip = track.clips.find(c => c.id === id);
+        if (clip) return clip;
+      }
+      return null;
+    }
+
+    function findTrack(id) {
+      return state.tracks.find(t => t.id === id);
+    }
+
+    function selectClip(clipId, trackId = null) {
+      state.selectedClipId = clipId;
+      if (trackId) state.selectedTrackId = trackId;
+      renderTracks(); // 重新渲染以更新选中状态样式
+    }
+
+    // --- 工具栏功能 ---
+
+    function zoom(delta) {
+      const newScale = state.scale + delta;
+      if (newScale >= 10 && newScale <= 500) {
+        state.scale = newScale;
+        renderRuler();
+        renderTracks();
+      }
+    }
+
+    function addTrack(type) {
+      const id = 't' + Date.now();
+      state.tracks.push({
+        id,
+        type,
+        name: `${type === 'video' ? '视频' : '音频'}轨道 ${state.tracks.length + 1}`,
+        clips: []
+      });
+      renderTracks();
+      // 滚动到底部
+      const container = document.getElementById('scroll-container');
+      container.scrollTop = container.scrollHeight;
+    }
+
+    function addClipToSelected() {
+      // 默认添加到最后一个轨道，或者选中的轨道
+      const targetTrack = state.selectedTrackId
+        ? findTrack(state.selectedTrackId)
+        : state.tracks[state.tracks.length - 1];
+
+      if (!targetTrack) return;
+
+      const newClip = {
+        id: 'c' + Date.now(),
+        start: 0,
+        duration: 2,
+        name: '新片段'
+      };
+
+      // 简单避免重叠：找到轨道末尾
+      const lastClip = targetTrack.clips.sort((a, b) => (a.start + a.duration) - (b.start + b.duration)).pop();
+      if (lastClip) {
+        newClip.start = lastClip.start + lastClip.duration + 0.5;
+      }
+
+      targetTrack.clips.push(newClip);
+      renderTracks();
+    }
+
+    // --- 右键菜单 ---
+    function showContextMenu(x, y) {
+      const menu = document.getElementById('context-menu');
+      menu.style.display = 'block';
+      menu.style.left = x + 'px';
+      menu.style.top = y + 'px';
+    }
+
+    function closeContextMenu() {
+      document.getElementById('context-menu').style.display = 'none';
+    }
+
+    function duplicateSelectedClip() {
+      if (!state.selectedClipId) return;
+      const clip = findClip(state.selectedClipId);
+      const track = state.tracks.find(t => t.clips.includes(clip));
+
+      const newClip = {
+        ...clip,
+        id: 'c' + Date.now(),
+        start: clip.start + clip.duration, // 放在原片段后面
+        name: clip.name + ' (副本)'
+      };
+
+      track.clips.push(newClip);
+      renderTracks();
+      closeContextMenu();
+    }
+
+    function deleteSelectedClip() {
+      if (!state.selectedClipId) return;
+      state.tracks.forEach(track => {
+        track.clips = track.clips.filter(c => c.id !== state.selectedClipId);
+      });
+      state.selectedClipId = null;
+      renderTracks();
+      closeContextMenu();
+    }
+
+    // --- 数据导出/导入 ---
+    function exportData() {
+      const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(state.tracks, null, 2));
+      const downloadAnchorNode = document.createElement('a');
+      downloadAnchorNode.setAttribute("href", dataStr);
+      downloadAnchorNode.setAttribute("download", "timeline_data.json");
+      document.body.appendChild(downloadAnchorNode);
+      downloadAnchorNode.click();
+      downloadAnchorNode.remove();
+    }
+
+    function importData(input) {
+      const file = input.files;
+      if (!file) return;
+
+      const reader = new FileReader();
+      reader.onload = function (e) {
+        try {
+          const data = JSON.parse(e.target.result);
+          if (Array.isArray(data)) {
+            state.tracks = data;
+            state.selectedClipId = null;
+            renderRuler();
+            renderTracks();
+            alert('导入成功！');
+          } else {
+            alert('无效的数据格式');
+          }
+        } catch (err) {
+          alert('JSON 解析错误');
+        }
+      };
+      reader.readAsText(file);
+    }
+
+    // 启动
+    init();
+
+  </script>
+</body>
+
+</html>
