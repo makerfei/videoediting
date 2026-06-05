@@ -1,0 +1,1135 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>视频剪辑时间线 + 实时预览</title>
+  <style>
+    :root {
+      --bg-color: #1a1a2e;
+      --panel-bg: #16213e;
+      --track-bg: #1f2b3d;
+      --accent-color: #e94560;
+      --text-color: #eaeaea;
+      --border-color: #2a3a5c;
+      --clip-video: #e94560;
+      --clip-audio: #0f3460;
+      --playhead-color: #ff2d55;
+    }
+
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body {
+      font-family: 'Segoe UI', 'PingFang SC', sans-serif;
+      background: var(--bg-color);
+      color: var(--text-color);
+      overflow: hidden;
+      height: 100vh;
+      display: flex;
+      flex-direction: column;
+    }
+
+    /* ========== 顶部工具栏 ========== */
+    .toolbar {
+      height: 48px;
+      background: var(--panel-bg);
+      display: flex;
+      align-items: center;
+      padding: 0 16px;
+      gap: 8px;
+      border-bottom: 1px solid var(--border-color);
+      flex-shrink: 0;
+    }
+    .btn {
+      background: #2a3a5c;
+      color: white;
+      border: none;
+      padding: 7px 14px;
+      border-radius: 6px;
+      cursor: pointer;
+      font-size: 13px;
+      transition: all 0.15s;
+      white-space: nowrap;
+    }
+    .btn:hover { background: #3a4f7a; }
+    .btn-primary { background: var(--accent-color); }
+    .btn-primary:hover { background: #ff4d6a; }
+    .btn-icon {
+      width: 36px;
+      height: 36px;
+      font-size: 18px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 0;
+      border-radius: 50%;
+    }
+    .zoom-display {
+      font-size: 12px;
+      color: #aaa;
+      min-width: 45px;
+      text-align: center;
+    }
+    .time-display {
+      font-size: 14px;
+      font-weight: 600;
+      color: #fff;
+      font-variant-numeric: tabular-nums;
+      font-family: 'SF Mono', 'Consolas', monospace;
+      min-width: 70px;
+      text-align: center;
+    }
+
+    /* ========== 主布局 ========== */
+    .main-layout {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+    }
+
+    /* ========== 视频预览区 ========== */
+    .preview-section {
+      background: #000;
+      position: relative;
+      flex-shrink: 0;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      border-bottom: 2px solid var(--border-color);
+      min-height: 200px;
+      max-height: 50vh;
+      aspect-ratio: 16 / 9;
+      width: 100%;
+      overflow: hidden;
+    }
+    .preview-section video {
+      width: 100%;
+      height: 100%;
+      object-fit: contain;
+      background: #000;
+    }
+    .preview-placeholder {
+      color: #555;
+      font-size: 16px;
+      text-align: center;
+      pointer-events: none;
+    }
+    .preview-placeholder .icon {
+      font-size: 48px;
+      display: block;
+      margin-bottom: 8px;
+    }
+
+    /* ========== 播放控制栏 ========== */
+    .playback-bar {
+      height: 44px;
+      background: var(--panel-bg);
+      display: flex;
+      align-items: center;
+      padding: 0 16px;
+      gap: 10px;
+      border-bottom: 1px solid var(--border-color);
+      flex-shrink: 0;
+    }
+    .play-btn {
+      width: 36px;
+      height: 36px;
+      border-radius: 50%;
+      background: var(--accent-color);
+      border: none;
+      color: white;
+      font-size: 16px;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: transform 0.1s;
+    }
+    .play-btn:active { transform: scale(0.9); }
+    .play-btn.paused::after { content: '▶'; margin-left: 2px; }
+    .play-btn.playing::after { content: '⏸'; }
+
+    /* ========== 时间线区域 ========== */
+    .timeline-section {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+      min-height: 120px;
+    }
+    .scroll-container {
+      flex: 1;
+      overflow: auto;
+      position: relative;
+      background: var(--bg-color);
+    }
+    .ruler {
+      height: 28px;
+      background: #0d1b2a;
+      position: sticky;
+      top: 0;
+      z-index: 10;
+      display: flex;
+      border-bottom: 1px solid var(--border-color);
+    }
+    .tick {
+      height: 100%;
+      border-right: 1px solid #1a3355;
+      font-size: 10px;
+      color: #5a7a9a;
+      display: flex;
+      align-items: flex-end;
+      padding-left: 3px;
+      padding-bottom: 2px;
+    }
+    .tick.major {
+      border-right-color: #3a5a7a;
+      color: #8aaaCC;
+    }
+    .tracks-container {
+      position: relative;
+    }
+    .track {
+      height: 56px;
+      background: var(--track-bg);
+      border-bottom: 1px solid var(--border-color);
+      position: relative;
+      display: flex;
+      align-items: center;
+    }
+    .track-label {
+      position: absolute;
+      left: 10px;
+      font-size: 11px;
+      color: #4a6a8a;
+      z-index: 1;
+      pointer-events: none;
+      font-weight: 500;
+    }
+
+    /* ========== 视频片段 ========== */
+    .clip {
+      position: absolute;
+      height: 38px;
+      border-radius: 5px;
+      color: white;
+      font-size: 11px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      overflow: hidden;
+      cursor: grab;
+      box-shadow: 0 2px 6px rgba(0,0,0,0.4);
+      border: 1px solid rgba(255,255,255,0.08);
+      white-space: nowrap;
+      text-overflow: ellipsis;
+    }
+    .clip:active { cursor: grabbing; opacity: 0.85; }
+    .clip.selected {
+      border: 2px solid white;
+      z-index: 5;
+      box-shadow: 0 0 12px rgba(233,69,96,0.5);
+    }
+    .clip[data-type="video"] { background: linear-gradient(135deg, #e94560, #c0392b); }
+    .clip[data-type="audio"] { background: linear-gradient(135deg, #0f3460, #1a1a4e); }
+
+    /* 裁剪手柄 */
+    .handle {
+      position: absolute;
+      top: 0;
+      bottom: 0;
+      width: 7px;
+      cursor: ew-resize;
+      background: rgba(255,255,255,0.15);
+      z-index: 2;
+    }
+    .handle:hover { background: rgba(255,255,255,0.4); }
+    .handle.left { left: 0; border-radius: 5px 0 0 5px; }
+    .handle.right { right: 0; border-radius: 0 5px 5px 0; }
+
+    /* ========== 播放头 ========== */
+    .playhead {
+      position: absolute;
+      top: 0;
+      bottom: 0;
+      width: 2px;
+      background: var(--playhead-color);
+      z-index: 30;
+      pointer-events: none;
+      left: 0;
+      box-shadow: 0 0 6px rgba(255,45,85,0.6);
+    }
+    .playhead::before {
+      content: '';
+      position: absolute;
+      top: -8px;
+      left: -5px;
+      width: 12px;
+      height: 12px;
+      background: var(--playhead-color);
+      border-radius: 2px;
+      transform: rotate(45deg);
+    }
+
+    /* 播放头拖拽手柄 */
+    .playhead-handle {
+      position: absolute;
+      top: -16px;
+      left: -8px;
+      width: 18px;
+      height: 18px;
+      background: var(--playhead-color);
+      border-radius: 50%;
+      cursor: grab;
+      pointer-events: all;
+      z-index: 31;
+      box-shadow: 0 0 8px rgba(255,45,85,0.8);
+      transition: transform 0.1s;
+    }
+    .playhead-handle:active {
+      cursor: grabbing;
+      transform: scale(1.3);
+    }
+
+    /* ========== 右键菜单 ========== */
+    .context-menu {
+      position: fixed;
+      background: #1a2a40;
+      border: 1px solid #3a5a7a;
+      border-radius: 6px;
+      box-shadow: 0 6px 20px rgba(0,0,0,0.6);
+      z-index: 100;
+      display: none;
+      min-width: 130px;
+      overflow: hidden;
+    }
+    .menu-item {
+      padding: 9px 14px;
+      cursor: pointer;
+      font-size: 13px;
+      color: #ccc;
+    }
+    .menu-item:hover { background: var(--accent-color); color: white; }
+    .menu-divider { height: 1px; background: #2a4a6a; margin: 2px 0; }
+
+    /* ========== Toast ========== */
+    .toast {
+      position: fixed;
+      bottom: 30px;
+      left: 50%;
+      transform: translateX(-50%);
+      background: #333;
+      color: #fff;
+      padding: 10px 24px;
+      border-radius: 20px;
+      font-size: 13px;
+      z-index: 200;
+      pointer-events: none;
+      opacity: 0;
+      transition: opacity 0.3s;
+    }
+    .toast.show { opacity: 1; }
+  </style>
+</head>
+<body>
+
+  <!-- 顶部工具栏 -->
+  <div class="toolbar">
+    <button class="btn" onclick="addTrack('video')">📹 视频轨道</button>
+    <button class="btn" onclick="addTrack('audio')">🎵 音频轨道</button>
+    <button class="btn" onclick="addClipToSelected()">➕ 添加片段</button>
+    <div style="flex:1"></div>
+    <span class="time-display" id="time-display">00:00.0</span>
+    <button class="btn" onclick="zoomTimeline(-10)">🔍-</button>
+    <span class="zoom-display" id="zoom-level">100%</span>
+    <button class="btn" onclick="zoomTimeline(10)">🔍+</button>
+    <button class="btn btn-primary" onclick="exportData()">📥 导出</button>
+    <input type="file" id="import-file" style="display:none" onchange="importData(this)" accept=".json">
+    <button class="btn" onclick="document.getElementById('import-file').click()">📤 导入</button>
+  </div>
+
+  <!-- 主布局 -->
+  <div class="main-layout">
+
+    <!-- 视频预览区 -->
+    <div class="preview-section" id="preview-section">
+      
+::ml-video{src=""}
+
+      <div class="preview-placeholder" id="preview-placeholder">
+        <span class="icon">🎬</span>
+        请添加视频轨道与片段，或拖入视频文件
+      </div>
+    </div>
+
+    <!-- 播放控制栏 -->
+    <div class="playback-bar">
+      <button class="play-btn paused" id="play-btn" onclick="togglePlay()" title="播放/暂停 (空格键)"></button>
+      <span style="font-size:12px; color:#888;">空格键控制播放</span>
+      <div style="flex:1"></div>
+      <span style="font-size:12px; color:#666;">当前时间: </span>
+      <span class="time-display" id="current-time">00:00.0</span>
+      <span style="color:#444; margin:0 6px;">/</span>
+      <span class="time-display" id="total-time">00:00.0</span>
+    </div>
+
+    <!-- 时间线区域 -->
+    <div class="timeline-section">
+      <div class="scroll-container" id="scroll-container">
+        <div class="ruler" id="ruler"></div>
+        <div class="tracks-container" id="tracks-container">
+          <!-- 轨道在此动态渲染 -->
+        </div>
+        <div class="playhead" id="playhead" style="left: 0px;">
+          <div class="playhead-handle" id="playhead-handle"></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 右键菜单 -->
+  <div class="context-menu" id="context-menu">
+    <div class="menu-item" onclick="duplicateSelectedClip()">📋 复制片段</div>
+    <div class="menu-item" onclick="deleteSelectedClip()">🗑️ 删除片段</div>
+    <div class="menu-divider"></div>
+    <div class="menu-item" onclick="closeContextMenu()">关闭</div>
+  </div>
+
+  <!-- Toast -->
+  <div class="toast" id="toast"></div>
+
+
+<script>
+  // ==================== 状态管理 ====================
+  const state = {
+    scale: 100, // 像素/秒
+    currentTime: 0, // 当前播放时间（秒）
+    isPlaying: false,
+    maxTime: 30, // 时间轴总时长（秒），动态更新
+    tracks: [
+      {
+        id: 't1', type: 'video', name: '视频轨道 1',
+        clips: [
+          { id: 'c1', start: 0, duration: 5, name: '开场', videoSrc: null },
+          { id: 'c2', start: 6, duration: 4, name: '过渡', videoSrc: null }
+        ]
+      },
+      {
+        id: 't2', type: 'audio', name: '音频轨道 1',
+        clips: [
+          { id: 'c3', start: 0, duration: 10, name: '背景音乐', audioSrc: null }
+        ]
+      }
+    ],
+    selectedClipId: null,
+    selectedTrackId: null,
+    dragState: null, // { type, clipId, startX, originalStart, originalDuration }
+    playheadDrag: false,
+    animationFrameId: null
+  };
+
+  const DOM = {
+    ruler: document.getElementById('ruler'),
+    tracksContainer: document.getElementById('tracks-container'),
+    playhead: document.getElementById('playhead'),
+    playheadHandle: document.getElementById('playhead-handle'),
+    scrollContainer: document.getElementById('scroll-container'),
+    previewVideo: document.getElementById('preview-video'),
+    previewPlaceholder: document.getElementById('preview-placeholder'),
+    playBtn: document.getElementById('play-btn'),
+    timeDisplay: document.getElementById('time-display'),
+    currentTimeDisplay: document.getElementById('current-time'),
+    totalTimeDisplay: document.getElementById('total-time'),
+    zoomLevel: document.getElementById('zoom-level'),
+    contextMenu: document.getElementById('context-menu'),
+    toast: document.getElementById('toast')
+  };
+
+  const SNAP_THRESHOLD = 0.15; // 吸附阈值（秒）
+
+  // ==================== 初始化 ====================
+  function init() {
+    updateMaxTime();
+    renderRuler();
+    renderTracks();
+    updatePlayheadPosition();
+    setupEventListeners();
+    updateTimeDisplay();
+  }
+
+  // ==================== 时间轴渲染 ====================
+  function updateMaxTime() {
+    let max = 30; // 最小30秒
+    state.tracks.forEach(track => {
+      track.clips.forEach(clip => {
+        const end = clip.start + clip.duration;
+        if (end > max) max = end;
+      });
+    });
+    state.maxTime = Math.ceil(max + 5); // 留5秒余地
+  }
+
+  function renderRuler() {
+    DOM.ruler.innerHTML = '';
+    const totalWidth = state.maxTime * state.scale;
+    DOM.ruler.style.width = totalWidth + 'px';
+
+    for (let i = 0; i <= state.maxTime; i++) {
+      const tick = document.createElement('div');
+      tick.className = 'tick';
+      if (i % 5 === 0) tick.classList.add('major');
+      tick.style.width = state.scale + 'px';
+      tick.textContent = i + 's';
+      DOM.ruler.appendChild(tick);
+    }
+    DOM.zoomLevel.textContent = Math.round(state.scale) + '%';
+  }
+
+  function renderTracks() {
+    DOM.tracksContainer.innerHTML = '';
+    DOM.tracksContainer.style.width = (state.maxTime * state.scale) + 'px';
+
+    state.tracks.forEach(track => {
+      const trackEl = document.createElement('div');
+      trackEl.className = 'track';
+      trackEl.dataset.id = track.id;
+
+      const label = document.createElement('div');
+      label.className = 'track-label';
+      label.textContent = track.name;
+      trackEl.appendChild(label);
+
+      track.clips.forEach(clip => {
+        const clipEl = createClipElement(clip, track.type);
+        trackEl.appendChild(clipEl);
+      });
+
+      DOM.tracksContainer.appendChild(trackEl);
+    });
+
+    // 重新挂载播放头到 tracksContainer
+    if (DOM.playhead.parentNode !== DOM.tracksContainer) {
+      DOM.tracksContainer.appendChild(DOM.playhead);
+    }
+  }
+
+  function createClipElement(clip, type) {
+    const el = document.createElement('div');
+    el.className = 'clip' + (state.selectedClipId === clip.id ? ' selected' : '');
+    el.dataset.id = clip.id;
+    el.dataset.type = type;
+    el.style.left = (clip.start * state.scale) + 'px';
+    el.style.width = (clip.duration * state.scale) + 'px';
+    el.textContent = clip.name;
+
+    const leftHandle = document.createElement('div');
+    leftHandle.className = 'handle left';
+    el.appendChild(leftHandle);
+
+    const rightHandle = document.createElement('div');
+    rightHandle.className = 'handle right';
+    el.appendChild(rightHandle);
+
+    return el;
+  }
+
+  // ==================== 查找辅助 ====================
+  function findClip(id) {
+    for (const track of state.tracks) {
+      const clip = track.clips.find(c => c.id === id);
+      if (clip) return clip;
+    }
+    return null;
+  }
+
+  function findTrack(id) {
+    return state.tracks.find(t => t.id === id);
+  }
+
+  function selectClip(clipId, trackId = null) {
+    state.selectedClipId = clipId;
+    if (trackId) state.selectedTrackId = trackId;
+    renderTracks();
+    updatePlayheadPosition();
+  }
+
+  function updateClipDOM(clip) {
+    const el = document.querySelector(`.clip[data-id="${clip.id}"]`);
+    if (el) {
+      el.style.left = (clip.start * state.scale) + 'px';
+      el.style.width = (clip.duration * state.scale) + 'px';
+    }
+  }
+
+  // ==================== 播放头相关 ====================
+  function updatePlayheadPosition() {
+    const left = state.currentTime * state.scale;
+    DOM.playhead.style.left = left + 'px';
+  }
+
+  function updateTimeDisplay() {
+    const t = state.currentTime;
+    const total = state.maxTime;
+    DOM.timeDisplay.textContent = formatTime(t);
+    DOM.currentTimeDisplay.textContent = formatTime(t);
+    DOM.totalTimeDisplay.textContent = formatTime(total);
+  }
+
+  function formatTime(seconds) {
+    const mins = Math.floor(seconds / 60);
+    const secs = Math.floor(seconds % 60);
+    const tenths = Math.floor((seconds % 1) * 10);
+    return `${String(mins).padStart(2,'0')}:${String(secs).padStart(2,'0')}.${tenths}`;
+  }
+
+  // ==================== 视频预览 ====================
+  function updateVideoPreview() {
+    const video = DOM.previewVideo;
+    const placeholder = DOM.previewPlaceholder;
+
+    // 检查当前时间点是否有视频片段
+    const activeClip = getActiveClipAtTime(state.currentTime);
+
+    if (activeClip && activeClip.videoSrc) {
+      video.style.display = 'block';
+      placeholder.style.display = 'none';
+      video.src = activeClip.videoSrc;
+      video.currentTime = state.currentTime - activeClip.start;
+    } else if (activeClip && activeClip.type === 'video') {
+      // 有视频片段但没有设置视频源
+      video.style.display = 'block';
+      placeholder.style.display = 'none';
+      if (!video.src || video.src === window.location.href) {
+        // 使用示例视频
+        video.src = 'https://www.w3schools.com/html/mov_bbb.mp4';
+      }
+      video.currentTime = Math.min(state.currentTime - activeClip.start, video.duration || 0);
+    } else {
+      video.style.display = 'none';
+      placeholder.style.display = 'flex';
+      video.pause();
+    }
+  }
+
+  function getActiveClipAtTime(time) {
+    for (const track of state.tracks) {
+      for (const clip of track.clips) {
+        if (time >= clip.start && time < clip.start + clip.duration) {
+          return { ...clip, type: track.type };
+        }
+      }
+    }
+    return null;
+  }
+
+  // ==================== 播放控制 ====================
+  function togglePlay() {
+    state.isPlaying = !state.isPlaying;
+    updatePlayButtonUI();
+
+    if (state.isPlaying) {
+      startPlayback();
+    } else {
+      stopPlayback();
+    }
+  }
+
+  function updatePlayButtonUI() {
+    const btn = DOM.playBtn;
+    btn.classList.toggle('playing', state.isPlaying);
+    btn.classList.toggle('paused', !state.isPlaying);
+  }
+
+  function startPlayback() {
+    const video = DOM.previewVideo;
+    if (video.style.display !== 'none' && video.src) {
+      video.play().catch(() => {});
+    }
+    animatePlayhead();
+  }
+
+  function stopPlayback() {
+    const video = DOM.previewVideo;
+    video.pause();
+    if (state.animationFrameId) {
+      cancelAnimationFrame(state.animationFrameId);
+      state.animationFrameId = null;
+    }
+  }
+
+  function animatePlayhead() {
+    if (!state.isPlaying) return;
+
+    state.currentTime += 0.016; // ~60fps
+    if (state.currentTime >= state.maxTime) {
+      state.currentTime = state.maxTime;
+      state.isPlaying = false;
+      updatePlayButtonUI();
+      stopPlayback();
+      updatePlayheadPosition();
+      updateTimeDisplay();
+      updateVideoPreview();
+      return;
+    }
+
+    updatePlayheadPosition();
+    updateTimeDisplay();
+    updateVideoPreview();
+
+    // 同步视频时间
+    const video = DOM.previewVideo;
+    const activeClip = getActiveClipAtTime(state.currentTime);
+    if (activeClip && video.style.display !== 'none') {
+      const clipTime = state.currentTime - activeClip.start;
+      if (Math.abs(video.currentTime - clipTime) > 0.1) {
+        video.currentTime = clipTime;
+      }
+    }
+
+    // 自动滚动跟随播放头
+    autoScrollToPlayhead();
+
+    state.animationFrameId = requestAnimationFrame(animatePlayhead);
+  }
+
+  function autoScrollToPlayhead() {
+    const container = DOM.scrollContainer;
+    const playheadLeft = state.currentTime * state.scale;
+    const viewLeft = container.scrollLeft;
+    const viewRight = viewLeft + container.clientWidth;
+
+    if (playheadLeft > viewRight - 100) {
+      container.scrollLeft = playheadLeft - container.clientWidth + 100;
+    } else if (playheadLeft < viewLeft + 50) {
+      container.scrollLeft = playheadLeft - 50;
+    }
+  }
+
+  function seekTo(time) {
+    state.currentTime = Math.max(0, Math.min(time, state.maxTime));
+    updatePlayheadPosition();
+    updateTimeDisplay();
+    updateVideoPreview();
+  }
+
+  // ==================== 时间轴点击跳转 ====================
+  function handleTimelineClick(e) {
+    // 点击标尺或轨道空白区域跳转
+    if (e.target.closest('.clip')) return; // 不处理片段点击
+    if (e.target.closest('.playhead-handle')) return;
+
+    const rect = DOM.tracksContainer.getBoundingClientRect();
+    const x = e.clientX - rect.left + DOM.scrollContainer.scrollLeft;
+    const time = x / state.scale;
+    seekTo(time);
+  }
+
+  // ==================== 播放头拖拽 ====================
+  function handlePlayheadDragStart(e) {
+    e.stopPropagation();
+    state.playheadDrag = true;
+    if (state.isPlaying) {
+      state.isPlaying = false;
+      updatePlayButtonUI();
+      stopPlayback();
+    }
+
+    function onMove(ev) {
+      if (!state.playheadDrag) return;
+      const rect = DOM.tracksContainer.getBoundingClientRect();
+      const x = ev.clientX - rect.left + DOM.scrollContainer.scrollLeft;
+      const time = Math.max(0, Math.min(x / state.scale, state.maxTime));
+      state.currentTime = time;
+      updatePlayheadPosition();
+      updateTimeDisplay();
+      updateVideoPreview();
+    }
+
+    function onUp() {
+      state.playheadDrag = false;
+      document.removeEventListener('mousemove', onMove);
+      document.removeEventListener('mouseup', onUp);
+    }
+
+    document.addEventListener('mousemove', onMove);
+    document.addEventListener('mouseup', onUp);
+  }
+
+  // ==================== 缩放 ====================
+  function zoomTimeline(delta) {
+    const newScale = state.scale + delta;
+    if (newScale >= 20 && newScale <= 400) {
+      state.scale = newScale;
+      renderRuler();
+      renderTracks();
+      updatePlayheadPosition();
+    }
+  }
+
+  // ==================== 吸附逻辑 ====================
+  function snapTime(time, currentClipId) {
+    let closest = time;
+    let minDiff = SNAP_THRESHOLD;
+
+    // 吸附到整数秒
+    const rounded = Math.round(time);
+    if (Math.abs(time - rounded) < minDiff) {
+      closest = rounded;
+      minDiff = Math.abs(time - rounded);
+    }
+
+    // 吸附到其他片段边缘
+    state.tracks.forEach(track => {
+      track.clips.forEach(c => {
+        if (c.id === currentClipId) return;
+        [c.start, c.start + c.duration].forEach(edge => {
+          if (Math.abs(time - edge) < minDiff) {
+            closest = edge;
+            minDiff = Math.abs(time - edge);
+          }
+        });
+      });
+    });
+
+    return closest;
+  }
+
+  // ==================== 事件监听绑定 ====================
+  function setupEventListeners() {
+    // 时间轴点击跳转
+    DOM.ruler.addEventListener('click', handleTimelineClick);
+    DOM.tracksContainer.addEventListener('click', (e) => {
+      if (!e.target.closest('.clip')) handleTimelineClick(e);
+    });
+
+    // 播放头手柄拖拽
+    DOM.playheadHandle.addEventListener('mousedown', handlePlayheadDragStart);
+
+    // 片段交互（事件委托）
+    DOM.tracksContainer.addEventListener('mousedown', (e) => {
+      const clipEl = e.target.closest('.clip');
+      if (!clipEl) return;
+
+      const clipId = clipEl.dataset.id;
+      const trackId = clipEl.closest('.track').dataset.id;
+      const clip = findClip(clipId);
+      if (!clip) return;
+
+      selectClip(clipId, trackId);
+
+      if (e.target.classList.contains('handle')) {
+        const isLeft = e.target.classList.contains('left');
+        state.dragState = {
+          type: isLeft ? 'resize-l' : 'resize-r',
+          clipId,
+          startX: e.clientX,
+          originalStart: clip.start,
+          originalDuration: clip.duration
+        };
+      } else {
+        state.dragState = {
+          type: 'move',
+          clipId,
+          startX: e.clientX,
+          originalStart: clip.start
+        };
+      }
+    });
+
+    // 全局鼠标移动
+    document.addEventListener('mousemove', (e) => {
+      if (!state.dragState) return;
+      const { type, clipId, startX, originalStart, originalDuration } = state.dragState;
+      const clip = findClip(clipId);
+      if (!clip) return;
+
+      const deltaX = e.clientX - startX;
+      const deltaTime = deltaX / state.scale;
+
+      if (type === 'move') {
+        let newStart = originalStart + deltaTime;
+        if (newStart < 0) newStart = 0;
+        newStart = snapTime(newStart, clipId);
+        clip.start = newStart;
+      } else if (type === 'resize-l') {
+        let newStart = originalStart + deltaTime;
+        let newDuration = originalDuration - deltaTime;
+        if (newDuration < 0.3) { newDuration = 0.3; newStart = originalStart + originalDuration - 0.3; }
+        if (newStart < 0) { newStart = 0; newDuration = originalStart + originalDuration; }
+        newStart = snapTime(newStart, clipId);
+        clip.start = newStart;
+        clip.duration = (originalStart + originalDuration) - newStart;
+      } else if (type === 'resize-r') {
+        let newDuration = originalDuration + deltaTime;
+        if (newDuration < 0.3) newDuration = 0.3;
+        clip.duration = newDuration;
+      }
+
+      updateClipDOM(clip);
+      updateMaxTime();
+      renderRuler();
+    });
+
+    // 全局鼠标释放
+    document.addEventListener('mouseup', () => {
+      if (state.dragState) {
+        state.dragState = null;
+        updateMaxTime();
+        renderRuler();
+        renderTracks();
+        updatePlayheadPosition();
+      }
+    });
+
+    // 右键菜单
+    document.addEventListener('contextmenu', (e) => {
+      const clipEl = e.target.closest('.clip');
+      if (clipEl) {
+        e.preventDefault();
+        selectClip(clipEl.dataset.id);
+        showContextMenu(e.clientX, e.clientY);
+      } else {
+        closeContextMenu();
+      }
+    });
+
+    // 点击其他地方关闭菜单
+    document.addEventListener('click', (e) => {
+      if (!e.target.closest('.context-menu')) closeContextMenu();
+    });
+
+    // 滚轮缩放 (Ctrl+滚轮)
+    DOM.scrollContainer.addEventListener('wheel', (e) => {
+      if (e.ctrlKey) {
+        e.preventDefault();
+        zoomTimeline(e.deltaY > 0 ? -5 : 5);
+      }
+    });
+
+    // 空格键播放/暂停
+    document.addEventListener('keydown', (e) => {
+      if (e.code === 'Space' && e.target === document.body) {
+        e.preventDefault();
+        togglePlay();
+      }
+      if (e.code === 'Delete' && state.selectedClipId) {
+        deleteSelectedClip();
+      }
+    });
+
+    // 视频时间更新时同步播放头
+    DOM.previewVideo.addEventListener('timeupdate', () => {
+      if (state.playheadDrag) return; // 拖拽播放头时不反向同步
+      if (!state.isPlaying) return;
+      const activeClip = getActiveClipAtTime(state.currentTime);
+      if (activeClip) {
+        const clipTime = DOM.previewVideo.currentTime;
+        const absTime = activeClip.start + clipTime;
+        if (Math.abs(state.currentTime - absTime) > 0.05) {
+          state.currentTime = absTime;
+          updatePlayheadPosition();
+          updateTimeDisplay();
+        }
+      }
+    });
+
+    // 拖放视频文件到预览区
+    const previewSection = document.getElementById('preview-section');
+    previewSection.addEventListener('dragover', (e) => { e.preventDefault(); });
+    previewSection.addEventListener('drop', (e) => {
+      e.preventDefault();
+      const file = e.dataTransfer.files;
+      if (file && file.type.startsWith('video/')) {
+        loadVideoFile(file);
+      }
+    });
+    previewSection.addEventListener('click', (e) => {
+      if (e.target === previewSection || e.target === DOM.previewPlaceholder || e.target.closest('.preview-placeholder')) {
+        const input = document.createElement('input');
+        input.type = 'file';
+        input.accept = 'video/*';
+        input.onchange = () => { if (input.files) loadVideoFile(input.files); };
+        input.click();
+      }
+    });
+  }
+
+  // ==================== 视频文件加载 ====================
+  function loadVideoFile(file) {
+    const url = URL.createObjectURL(file);
+    DOM.previewVideo.src = url;
+    DOM.previewVideo.style.display = 'block';
+    DOM.previewPlaceholder.style.display = 'none';
+    DOM.previewVideo.play().catch(() => {});
+
+    // 将视频关联到选中的片段或第一个视频片段
+    const videoClips = [];
+    state.tracks.forEach(t => {
+      if (t.type === 'video') t.clips.forEach(c => videoClips.push(c));
+    });
+
+    if (state.selectedClipId) {
+      const clip = findClip(state.selectedClipId);
+      if (clip) clip.videoSrc = url;
+    } else if (videoClips.length > 0) {
+      videoClips.videoSrc = url;
+    }
+
+    showToast('视频已加载 ✅ 点击预览区可替换视频');
+  }
+
+  // ==================== 右键菜单 ====================
+  function showContextMenu(x, y) {
+    DOM.contextMenu.style.display = 'block';
+    DOM.contextMenu.style.left = x + 'px';
+    DOM.contextMenu.style.top = y + 'px';
+  }
+
+  function closeContextMenu() {
+    DOM.contextMenu.style.display = 'none';
+  }
+
+  function duplicateSelectedClip() {
+    if (!state.selectedClipId) return;
+    const clip = findClip(state.selectedClipId);
+    const track = state.tracks.find(t => t.clips.includes(clip));
+    if (!track) return;
+    const newClip = {
+      ...JSON.parse(JSON.stringify(clip)),
+      id: 'c' + Date.now(),
+      start: clip.start + clip.duration + 0.5,
+      name: clip.name + ' (副本)'
+    };
+    track.clips.push(newClip);
+    updateMaxTime();
+    renderRuler();
+    renderTracks();
+    updatePlayheadPosition();
+    closeContextMenu();
+    showToast('片段已复制');
+  }
+
+  function deleteSelectedClip() {
+    if (!state.selectedClipId) return;
+    state.tracks.forEach(t => {
+      t.clips = t.clips.filter(c => c.id !== state.selectedClipId);
+    });
+    state.selectedClipId = null;
+    state.selectedTrackId = null;
+    updateMaxTime();
+    renderRuler();
+    renderTracks();
+    updatePlayheadPosition();
+    closeContextMenu();
+    showToast('片段已删除');
+  }
+
+  // ==================== 轨道与片段管理 ====================
+  function addTrack(type) {
+    const id = 't' + Date.now();
+    state.tracks.push({
+      id,
+      type,
+      name: (type === 'video' ? '📹 视频轨道 ' : '🎵 音频轨道 ') + (state.tracks.length + 1),
+      clips: []
+    });
+    renderTracks();
+    updatePlayheadPosition();
+    DOM.scrollContainer.scrollTop = DOM.scrollContainer.scrollHeight;
+    showToast(`${type === 'video' ? '视频' : '音频'}轨道已添加`);
+  }
+
+  function addClipToSelected() {
+    const targetTrack = state.selectedTrackId
+      ? findTrack(state.selectedTrackId)
+      : state.tracks[state.tracks.length - 1];
+    if (!targetTrack) return;
+
+    const newClip = {
+      id: 'c' + Date.now(),
+      start: 0,
+      duration: 3,
+      name: '新片段',
+      videoSrc: null
+    };
+
+    const lastClip = [...targetTrack.clips].sort((a, b) => (a.start + a.duration) - (b.start + b.duration)).pop();
+    if (lastClip) {
+      newClip.start = lastClip.start + lastClip.duration + 0.5;
+    }
+
+    targetTrack.clips.push(newClip);
+    updateMaxTime();
+    renderRuler();
+    renderTracks();
+    updatePlayheadPosition();
+    showToast('片段已添加，点击预览区加载视频');
+  }
+
+  // ==================== 数据导出/导入 ====================
+  function exportData() {
+    const data = {
+      scale: state.scale,
+      currentTime: state.currentTime,
+      maxTime: state.maxTime,
+      tracks: state.tracks
+    };
+    const json = JSON.stringify(data, null, 2);
+    const blob = new Blob([json], { type: 'application/json' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = 'timeline_project.json';
+    a.click();
+    URL.revokeObjectURL(url);
+    showToast('项目已导出');
+  }
+
+  function importData(input) {
+    const file = input.files;
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = (e) => {
+      try {
+        const data = JSON.parse(e.target.result);
+        state.scale = data.scale || 100;
+        state.currentTime = data.currentTime || 0;
+        state.tracks = data.tracks || [];
+        state.selectedClipId = null;
+        state.selectedTrackId = null;
+        if (state.isPlaying) { state.isPlaying = false; updatePlayButtonUI(); stopPlayback(); }
+        updateMaxTime();
+        renderRuler();
+        renderTracks();
+        updatePlayheadPosition();
+        updateTimeDisplay();
+        updateVideoPreview();
+        showToast('项目已导入 ✅');
+      } catch (err) {
+        showToast('文件格式错误 ❌');
+      }
+    };
+    reader.readAsText(file);
+    input.value = '';
+  }
+
+  // ==================== Toast ====================
+  function showToast(msg) {
+    DOM.toast.textContent = msg;
+    DOM.toast.classList.add('show');
+    clearTimeout(DOM.toast._timeout);
+    DOM.toast._timeout = setTimeout(() => DOM.toast.classList.remove('show'), 1800);
+  }
+
+  // ==================== 启动 ====================
+  init();
+  console.log('🚀 视频剪辑时间线 + 实时预览已就绪');
+  console.log('  - 空格键：播放/暂停');
+  console.log('  - Ctrl+滚轮：缩放时间轴');
+  console.log('  - 点击标尺/轨道空白：跳转');
+  console.log('  - 拖拽红色播放头：定位');
+  console.log('  - 点击预览区：加载视频文件');
+  console.log('  - 右键片段：复制/删除');
+</script>
+</body>
+</html>
