@@ -162,7 +162,7 @@ function changeSelectedClipOrTrack(Arrow) { //ArrowUp ArrowDown
 
     // 交换轨道位置
     if (state.selectedTrackId && !state.selectedClipId) {
-        let chang = Arrow == "ArrowUp" ? -1 : "ArrowDown" ? 1 : 0;
+        let chang = Arrow == "ArrowUp"||Arrow == "KeyW"? -1 : "ArrowDown" ? 1 : 0;
         changindex = chang + selectindex
         if (state.tracks[changindex]) {
             [state.tracks[changindex], state.tracks[selectindex]] = [state.tracks[selectindex], state.tracks[changindex]]
@@ -174,13 +174,13 @@ function changeSelectedClipOrTrack(Arrow) { //ArrowUp ArrowDown
 
     
         let changeitemindex = -1
-        if (Arrow == "ArrowUp") {
+        if (Arrow == "ArrowUp"||Arrow == "KeyW") {
             if (state.tracks[selectindex].type == "audio" && nearTrack.upaudio != -1) {
                 changeitemindex = nearTrack.upaudio
             } else if (nearTrack.upimg != -1) {
                 changeitemindex = nearTrack.upimg
             }
-        } else if (Arrow == "ArrowDown") {
+        } else if (Arrow == "ArrowDown"||Arrow == "KeyS") {
             if (state.tracks[selectindex].type == "audio" && nearTrack.downaudio != -1) {
                 changeitemindex = nearTrack.downaudio
             } else if (nearTrack.downimg != -1) {

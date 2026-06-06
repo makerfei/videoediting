@@ -144,7 +144,7 @@ function setupEventListeners() {
             deleteSelectedClipOrTrack();
         }
 
-        if ((e.code === 'ArrowUp' || e.code === 'ArrowDown') && state.selectedTrackId) {
+        if ((e.code === 'ArrowUp' || e.code === 'ArrowDown'||e.code === 'KeyW'||e.code === 'KeyS') && state.selectedTrackId) {
             changeSelectedClipOrTrack(e.code);
         }
 
