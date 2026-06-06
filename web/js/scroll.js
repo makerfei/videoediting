@@ -27,7 +27,7 @@ function seekTo(time) {
 // ==================== 缩放 ====================
 function zoomTimeline(delta) {
     const newScale = state.scale + delta;
-    if (newScale >= 20 && newScale <= 400) {
+    if (newScale >= 10 && newScale <= 300) {
         state.scale = newScale;
         renderRuler();
         renderTracks();

@@ -1,12 +1,14 @@
 function renderTracks() {
     DOM.tracksContainer.innerHTML = '';
     DOM.tracksContainer.style.width = (state.maxTime * state.scale) + 'px';
-
-    state.tracks.forEach(track => {
+    state.tracks.forEach((track,i) => {
         const trackEl = document.createElement('div');
-        trackEl.className = 'track';
+        if(state.selectedTrackId == track.id) {
+            trackEl.className = 'track selected'
+        }else{
+             trackEl.className = 'track'
+        }
         trackEl.dataset.id = track.id;
-
         const label = document.createElement('div');
         label.className = 'track-label';
         label.textContent = track.name;

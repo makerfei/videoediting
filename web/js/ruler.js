@@ -1,4 +1,4 @@
-// ==================== 时间轴渲染 ====================
+
 function updateMaxTime() {
     let max = 30; // 最小30秒
     state.tracks.forEach(track => {
@@ -20,7 +20,7 @@ function renderRuler() {
         tick.className = 'tick';
         if (i % 5 === 0) tick.classList.add('major');
         tick.style.width = state.scale + 'px';
-        tick.textContent = i + 's';
+        tick.textContent = i //+ 's';
         DOM.ruler.appendChild(tick);
     }
     DOM.zoomLevel.textContent = Math.round(state.scale) + '%';

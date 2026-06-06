@@ -8,6 +8,9 @@
     --clip-video: #e94560;
     --clip-audio: #0f3460;
     --playhead-color: #ff2d55;
+    --error: #ef4444;
+    --success: #3b7061;
+    --select:#31b287;
 }
 
 * {
@@ -229,6 +232,26 @@ body {
     display: flex;
     align-items: center;
 }
+
+/* Clip Dragging States */
+.track.drag-allowed {
+    box-shadow: inset 0 0 0 2px var(--success);
+}
+
+.track.drag-forbidden {
+    box-shadow: inset 0 0 0 2px var(--error);
+    cursor: no-drop;
+}
+.track.selected {
+    background: rgba(96, 215, 104, 0.15);
+}
+.track.dragging-track {
+    opacity: 0.8;
+    z-index: 50;
+}
+
+
+
 
 .track-label {
     position: absolute;

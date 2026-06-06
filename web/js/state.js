@@ -23,6 +23,7 @@ const state = {
     selectedTrackId: null,
     dragState: null, // { type, clipId, startX, originalStart, originalDuration }
     playheadDrag: false,
-    animationFrameId: null
+    animationFrameId: null,
+    trackDrag: null,//{  startIndex: index, element: draggedRow, startY: e.clientY, currentY: e.clientY }
 };
 
