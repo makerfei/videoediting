@@ -42,7 +42,7 @@ function addTrack(type) {
     state.tracks.push({
         id,
         type,
-        name: (type === 'video' ? '📹 视频轨道 ' : '🎵 音频轨道 ') + (state.tracks.length + 1),
+        name: (type === 'video' ? '📹 图像轨道 ' : '🎵 音频轨道 ') + (state.tracks.length + 1),
         clips: []
     });
     renderTracks();

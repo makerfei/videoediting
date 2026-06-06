@@ -8,6 +8,12 @@ function createClipElement(clip, type) {
     el.style.width = (clip.duration * state.scale) + 'px';
     el.textContent = clip.name;
 
+    if (clip.type == "image") {
+        el.style.backgroundImage = `url('${clip.src}')`
+    }
+
+
+
     const leftHandle = document.createElement('div');
     leftHandle.className = 'handle left';
     el.appendChild(leftHandle);
@@ -162,7 +168,7 @@ function changeSelectedClipOrTrack(Arrow) { //ArrowUp ArrowDown
 
     // 交换轨道位置
     if (state.selectedTrackId && !state.selectedClipId) {
-        let chang = Arrow == "ArrowUp"||Arrow == "KeyW"? -1 : "ArrowDown" ? 1 : 0;
+        let chang = (Arrow == "ArrowUp" || Arrow == "KeyW") ? -1 : (Arrow == "ArrowDown" || Arrow == "KeyS") ? 1 : 0;
         changindex = chang + selectindex
         if (state.tracks[changindex]) {
             [state.tracks[changindex], state.tracks[selectindex]] = [state.tracks[selectindex], state.tracks[changindex]]
@@ -172,40 +178,42 @@ function changeSelectedClipOrTrack(Arrow) { //ArrowUp ArrowDown
 
     } else { //换片段片段
 
-    
+
         let changeitemindex = -1
-        if (Arrow == "ArrowUp"||Arrow == "KeyW") {
+        if (Arrow == "ArrowUp" || Arrow == "KeyW") {
             if (state.tracks[selectindex].type == "audio" && nearTrack.upaudio != -1) {
                 changeitemindex = nearTrack.upaudio
-            } else if (nearTrack.upimg != -1) {
+            }
+            if (state.tracks[selectindex].type != "audio" && nearTrack.upimg != -1) {
                 changeitemindex = nearTrack.upimg
             }
-        } else if (Arrow == "ArrowDown"||Arrow == "KeyS") {
+        } else if (Arrow == "ArrowDown" || Arrow == "KeyS") {
             if (state.tracks[selectindex].type == "audio" && nearTrack.downaudio != -1) {
                 changeitemindex = nearTrack.downaudio
-            } else if (nearTrack.downimg != -1) {
+            }
+            if (state.tracks[selectindex].type != "audio" && nearTrack.downimg != -1) {
                 changeitemindex = nearTrack.downimg
             }
         }
 
         if (changeitemindex != -1) {
-           let changeitemid   = state.tracks[changeitemindex].id
-           let changeitem = null
-             // 找出并删除 和修改
+            let changeitemid = state.tracks[changeitemindex].id
+            let changeitem = null
+            // 找出并删除 和修改
             state.tracks.forEach(t => {
-                t.clips.forEach(item =>{
-                    if(item.id==state.selectedClipId){
-                        changeitem = {...item} 
+                t.clips.forEach(item => {
+                    if (item.id == state.selectedClipId) {
+                        changeitem = { ...item }
                     }
                 })
             });
 
-           changeitem&& state.tracks[changeitemindex].clips.push(changeitem)
+            changeitem && state.tracks[changeitemindex].clips.push(changeitem)
 
             // 找出并删除 和修改
             state.tracks.forEach(t => {
                 t.clips = t.clips.filter(c => {
-                    return c.id !== state.selectedClipId ||t.id!==state.selectedTrackId
+                    return c.id !== state.selectedClipId || t.id !== state.selectedTrackId
                 })
             });
 

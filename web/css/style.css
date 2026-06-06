@@ -294,10 +294,12 @@ body {
 
 .clip[data-type="video"] {
     background: linear-gradient(135deg, #e94560, #c0392b);
+    background-size: contain;
 }
 
 .clip[data-type="audio"] {
     background: linear-gradient(135deg, #0f3460, #1a1a4e);
+    text-align: start;
 }
 
 /* 裁剪手柄 */
@@ -307,12 +309,12 @@ body {
     bottom: 0;
     width: 7px;
     cursor: ew-resize;
-    background: rgba(255, 255, 255, 0.15);
+    background: rgba(255, 255, 255, 0.4);
     z-index: 2;
 }
 
 .handle:hover {
-    background: rgba(255, 255, 255, 0.4);
+    background: rgba(255, 255, 255, 0.8);
 }
 
 .handle.left {

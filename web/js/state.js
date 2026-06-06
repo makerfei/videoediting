@@ -6,16 +6,17 @@ const state = {
     maxTime: 30, // 时间轴总时长（秒），动态更新
     tracks: [
         {
-            id: 't1', type: 'video', name: '视频轨道 1',
+            id: 't1', type: 'video', name: '图像轨道 1',
             clips: [
-                { id: 'c1', start: 0, duration: 5, name: '开场', videoSrc: null },
+                { id: 'c1',type:"image" ,start: 0, duration: 5, name: '开场', src: "q.png" },
+                  { id: '21',type:"image" ,start: 12, duration: 5, name: '开场', src: "1.gif" },
                 { id: 'c2', start: 6, duration: 4, name: '过渡', videoSrc: null }
             ]
         },
         {
             id: 't2', type: 'audio', name: '音频轨道 1',
             clips: [
-                { id: 'c3', start: 0, duration: 10, name: '背景音乐', audioSrc: null }
+                { id: 'c3', start: 0, duration: 10, name: '12221dfdfd放豆腐的方法德国的v分丰富的vv根本不够丰富v的v', audioSrc: null }
             ]
         }
     ],
