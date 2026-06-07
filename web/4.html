@@ -1,0 +1,213 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <title>Konva 中间插入关键帧演示</title>
+    <script src="https://unpkg.com/konva@9.2.0/konva.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/gsap.min.js"></script>
+    <style>
+        body { font-family: sans-serif; background: #f0f2f5; display: flex; flex-direction: column; align-items: center; padding: 20px; }
+        .container { background: white; padding: 20px; border-radius: 12px; box-shadow: 0 4px 12px rgba(0,0,0,0.1); width: 800px; }
+        #stage-wrapper { border: 2px solid #e5e7eb; background: #fff; margin-bottom: 15px; position: relative; }
+        
+        /* 简单的控制栏 */
+        .controls { display: flex; gap: 10px; margin-bottom: 15px; justify-content: center; }
+        button { padding: 10px 20px; border: none; border-radius: 6px; cursor: pointer; font-weight: bold; font-size: 14px; transition: 0.2s; }
+        .btn-demo { background: #4f46e5; color: white; }
+        .btn-demo:hover { background: #4338ca; }
+        .btn-reset { background: #e5e7eb; color: #374151; }
+        
+        /* 时间轴样式 */
+        .timeline { position: relative; height: 40px; background: #f3f4f6; border-radius: 6px; margin-top: 10px; overflow: hidden; }
+        .track { height: 4px; background: #d1d5db; position: absolute; top: 18px; width: 100%; }
+        .playhead { position: absolute; top: 0; bottom: 0; width: 2px; background: #ef4444; left: 0%; z-index: 10; transition: left 0.1s linear; }
+        .dot { position: absolute; top: 13px; width: 10px; height: 10px; background: #f59e0b; border-radius: 50%; transform: translateX(-50%); border: 2px solid white; box-shadow: 0 1px 2px rgba(0,0,0,0.2); }
+        
+        .log-box { margin-top: 15px; padding: 10px; background: #1f2937; color: #10b981; font-family: monospace; font-size: 13px; border-radius: 6px; height: 100px; overflow-y: auto; }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <h2 style="text-align:center; margin-top:0;">🔴 中间插入关键帧演示</h2>
+    
+    <div id="stage-wrapper"></div>
+
+    <div class="controls">
+        <button class="btn-demo" onclick="runDemo()">🎥 运行自动演示 (插入中间帧)</button>
+        <button class="btn-reset" onclick="resetStage()">🔄 重置舞台</button>
+        <button onclick="togglePlay()" id="playBtn" disabled>▶️ 手动播放</button>
+    </div>
+
+    <div class="timeline" id="timeline">
+        <div class="track"></div>
+        <div class="playhead" id="playhead"></div>
+        <div id="dots"></div>
+    </div>
+
+    <div class="log-box" id="log">等待操作...</div>
+</div>
+
+<script>
+    // --- 初始化 ---
+    const width = 760;
+    const height = 300;
+    const stage = new Konva.Stage({ container: 'stage-wrapper', width, height });
+    const layer = new Konva.Layer();
+    stage.add(layer);
+
+    let rect;
+    let keyframes = [];
+    let masterTimeline = null;
+
+    // --- 核心逻辑：重建时间轴 ---
+    function rebuildTimeline() {
+        if (masterTimeline) masterTimeline.kill();
+        if (keyframes.length === 0) return;
+
+        masterTimeline = gsap.timeline({
+            paused: true,
+            onUpdate: () => {
+                const progress = masterTimeline.progress() * 100;
+                document.getElementById('playhead').style.left = `${progress}%`;
+            }
+        });
+
+        // 排序关键帧
+        keyframes.sort((a, b) => a.time - b.time);
+
+        for (let i = 0; i < keyframes.length; i++) {
+            const curr = keyframes[i];
+            const prev = i > 0 ? keyframes[i-1] : null;
+            const startTime = prev ? prev.time : 0;
+            const duration = prev ? (curr.time - prev.time) : 0;
+
+            if (i === 0) {
+                rect.setAttrs(curr.data);
+            } else {
+                masterTimeline.to(rect, {
+                    ...curr.data,
+                    duration: duration,
+                    ease: "power1.inOut"
+                }, startTime);
+            }
+        }
+        renderDots();
+        document.getElementById('playBtn').disabled = false;
+    }
+
+    // --- 辅助：渲染关键帧点 ---
+    function renderDots() {
+        const container = document.getElementById('dots');
+        container.innerHTML = '';
+        if (!masterTimeline) return;
+        const total = masterTimeline.duration();
+        keyframes.forEach(kf => {
+            const dot = document.createElement('div');
+            dot.className = 'dot';
+            dot.style.left = `${(kf.time / total) * 100}%`;
+            container.appendChild(dot);
+        });
+    }
+
+    // --- 演示脚本 ---
+    async function runDemo() {
+        resetStage();
+        const log = document.getElementById('log');
+        
+        // 1. 创建形状
+        rect = new Konva.Rect({
+            x: 50, y: 100, width: 60, height: 60,
+            fill: '#ef4444', cornerRadius: 8, draggable: true,
+            draggable: true, name: "232",
+            cornerRadius: 8, opacity: 0, scaleX: 0, scaleY: 0
+        });
+        layer.add(rect);
+
+       
+        log.innerText = "步骤 1: 创建红色方块";
+        await wait(1000);
+
+        // 2. 记录起始帧 (0s)
+        recordFrame(0);
+        log.innerText += "\n步骤 2: 记录第 0 秒关键帧 (左侧)";
+        await wait(1000);
+
+        // 3. 移动到最后，记录结束帧 (3s)
+        rect.position({ x: 650, y: 100 }); // 移动到右侧
+        recordFrame(3);
+        rebuildTimeline();
+        log.innerText += "\n步骤 3: 记录第 3 秒关键帧 (右侧)\n当前路径: 直线 --->";
+        
+        // 播放一次展示直线
+        document.getElementById('playBtn').innerText = "▶️ 播放直线运动";
+        togglePlay();
+        await wait(3500);
+
+        // 4. 【核心操作】中间插入
+        log.innerText += "\n\n⚡ 开始插入中间关键帧...";
+        await wait(1000);
+        
+        // 将时间轴指针移到 1.5s
+        syncToTime(1.5);
+        log.innerText += "\n步骤 4: 指针移至 1.5 秒处";
+        await wait(1000);
+
+        // 移动方块到下方
+        rect.position({ x: 350, y: 220 }); 
+        layer.batchDraw();
+        log.innerText += "\n步骤 5: 拖拽方块至屏幕下方";
+        await wait(1000);
+
+        // 记录关键帧
+        recordFrame(1.5);
+        rebuildTimeline();
+        log.innerText += "\n步骤 6: 点击【记录】插入关键帧\n新路径: V 字形折线";
+        
+        document.getElementById('playBtn').innerText = "▶️ 播放 V 字形运动";
+        // 自动播放展示效果
+        setTimeout(togglePlay, 500);
+    }
+
+    // --- 功能函数 ---
+    function recordFrame(time) {
+        // 移除该时间点已有的帧（如果有）
+        keyframes = keyframes.filter(k => Math.abs(k.time - time) > 0.1);
+        keyframes.push({
+            time: time,
+            data: { x: rect.x(), y: rect.y(), rotation: rect.rotation(), scaleX: 1, scaleY: 1, opacity: 1 }
+        });
+    }
+
+    function syncToTime(time) {
+        if (!masterTimeline) return;
+        masterTimeline.pause();
+        masterTimeline.time(time);
+        document.getElementById('playhead').style.left = `${(time / masterTimeline.duration()) * 100}%`;
+        layer.batchDraw();
+    }
+
+    function togglePlay() {
+        if (!masterTimeline) return;
+        if (masterTimeline.paused()) {
+            masterTimeline.restart();
+        } else {
+            masterTimeline.pause();
+        }
+    }
+
+    function resetStage() {
+        layer.destroyChildren();
+        keyframes = [];
+        if (masterTimeline) masterTimeline.kill();
+        document.getElementById('dots').innerHTML = '';
+        document.getElementById('playhead').style.left = '0%';
+        document.getElementById('log').innerText = '舞台已重置';
+        document.getElementById('playBtn').disabled = true;
+        document.getElementById('playBtn').innerText = '▶️ 手动播放';
+    }
+
+    function wait(ms) { return new Promise(r => setTimeout(r, ms)); }
+</script>
+</body>
+</html>

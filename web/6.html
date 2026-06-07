@@ -1,0 +1,88 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+    <meta charset="UTF-8">
+    <title>Konva多对象关键帧</title>
+    <script src="https://unpkg.com/konva@9.2.0/konva.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/gsap.min.js"></script>
+    <style>
+        body { margin: 0; display: flex; justify-content: center; align-items: center; height: 100vh; background: #f0f0f0; }
+        #container { border: 2px solid #333; background: white; }
+        button { position: absolute; top: 20px; padding: 10px 20px; cursor: pointer; z-index: 10; }
+    </style>
+</head>
+<body>
+    <button onclick="playAll()">▶️ 播放多对象动画</button>
+    <div id="container"></div>
+
+<script>
+    // 1. 初始化舞台
+    const stage = new Konva.Stage({ container: 'container', width: 600, height: 400 });
+    const layer = new Konva.Layer();
+    stage.add(layer);
+
+    // 2. 创建两个不同的对象
+    // 对象 A: 红色矩形
+    const rectA = new Konva.Rect({ x: 50, y: 50, width: 80, height: 80, fill: 'red' });
+    // 对象 B: 蓝色圆形
+    const circleB = new Konva.Circle({ x: 50, y: 300, radius: 40, fill: 'blue' });
+    
+    layer.add(rectA);
+    layer.add(circleB);
+
+    // 3. 定义每个对象的关键帧数据
+    const dataA = [
+        { time: 0, attrs: { x: 50, y: 50, rotation: 0 } },
+        { time: 2, attrs: { x: 400, y: 50, rotation: 180 } }, // 向右移动并旋转
+        { time: 4, attrs: { x: 400, y: 300, rotation: 360 } } // 向下移动
+    ];
+
+    const dataB = [
+        { time: 0, attrs: { x: 50, y: 300, scaleX: 1 } },
+        { time: 2, attrs: { x: 200, y: 300, scaleX: 1.5 } }, // 向右移动并变宽
+        { time: 4, attrs: { x: 500, y: 300, scaleX: 1 } }    // 继续向右并恢复
+    ];
+
+    let masterTimeline = null;
+
+    // 4. 核心函数：生成多对象动画
+    function playAll() {
+        if (masterTimeline) masterTimeline.kill();
+        masterTimeline = gsap.timeline();
+
+        // --- 处理对象 A ---
+        for (let i = 0; i < dataA.length; i++) {
+            const curr = dataA[i];
+            if (i === 0) {
+                rectA.setAttrs(curr.attrs); // 设置初始状态
+            } else {
+                const prev = dataA[i-1];
+                masterTimeline.to(rectA, {
+                    ...curr.attrs,
+                    duration: curr.time - prev.time,
+                    ease: "power1.out"
+                }, prev.time); // 注意：这里指定了开始时间 prev.time
+            }
+        }
+
+        // --- 处理对象 B ---
+        // GSAP 的奇妙之处：你可以继续往同一个 timeline 里加其他物体的动画
+        for (let i = 0; i < dataB.length; i++) {
+            const curr = dataB[i];
+            if (i === 0) {
+                circleB.setAttrs(curr.attrs);
+            } else {
+                const prev = dataB[i-1];
+                masterTimeline.to(circleB, {
+                    ...curr.attrs,
+                    duration: curr.time - prev.time,
+                    ease: "bounce.out" // 给圆形换个弹跳效果
+                }, prev.time);
+            }
+        }
+    }
+
+    playAll();
+</script>
+</body>
+</html>

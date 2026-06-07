@@ -1,0 +1,142 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+
+<head>
+    <meta charset="UTF-8">
+    <title>Konva 原生动画流程</title>
+    <script src="https://unpkg.com/konva@9.2.0/konva.min.js"></script>
+    <style>
+        body {
+            margin: 0;
+            overflow: hidden;
+            background: #f0f2f5;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+        }
+
+        #container {
+            border: 2px solid #ccc;
+            background: white;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+        }
+    </style>
+</head>
+
+<body>
+    <div id="container"></div>
+
+    <script>
+        // 1. 初始化舞台 (Stage) 和 图层 (Layer)
+        const stage = new Konva.Stage({
+            container: 'container',
+            width: window.innerWidth,
+            height: window.innerHeight
+        });
+
+        // 1. 创建 Transformer 实例
+        const tr = new Konva.Transformer({
+            // 配置允许的操作
+            enabledAnchors: [
+                'top-left', 'top-center', 'top-right',
+                'middle-left', 'middle-right',
+                'bottom-left', 'bottom-center', 'bottom-right'
+            ],
+            rotateEnabled: true,      // 允许旋转
+            resizeEnabled: true,      // 允许缩放
+            keepRatio: false,         // false: 自由拉伸; true: 保持宽高比
+            boundBoxFunc: (oldBox, newBox) => {
+                // 限制最小尺寸，防止缩放到看不见
+                if (newBox.width < 5 || newBox.height < 5) {
+                    return oldBox;
+                }
+                return newBox;
+            }
+        });
+        const layer = new Konva.Layer();
+        layer.add(tr);
+
+
+        stage.add(layer);
+
+        // 2. 创建物体 (Shape)
+        const rect = new Konva.Rect({
+            x: 50,
+            y: 50,
+            width: 100,
+            height: 100,
+            fill: '#4f46e5',
+            cornerRadius: 10,
+            draggable: true, // 开启拖拽
+            name: 'myRect'
+
+        });
+
+        // 3. 绑定选中事件
+        // 当点击矩形时，让 Transformer "套住" 它
+        rect.on('click', () => {
+            tr.nodes([rect]); // 将矩形设为 Transformer 的目标
+            layer.batchDraw();
+        });
+
+        // 点击空白处取消选中
+        stage.on('click', (e) => {
+            if (e.target === stage) {
+                tr.nodes([]); // 清空选中
+                layer.batchDraw();
+            }
+        });
+        layer.add(rect);
+
+
+        // 3. 定义动画状态 (State)
+        let velocityX = 2; // X轴速度
+        let velocityY = 2; // Y轴速度
+        let isAnimating = true;
+
+        // 4. 核心：动画循环函数 (The Loop)
+        function animate() {
+            if (!isAnimating) return;
+
+            // A. 更新数据 (Update Data)
+            let newX = rect.x() + velocityX;
+            let newY = rect.y() + velocityY;
+
+            // B. 边界检测 (Collision Detection) - 碰到边缘反弹
+            if (newX + rect.width() > stage.width() || newX < 0) {
+                velocityX = -velocityX; // 反向
+                rect.fill('#ef4444');   // 变色反馈
+            } else {
+                rect.fill('#4f46e5');
+            }
+
+            if (newY + rect.height() > stage.height() || newY < 0) {
+                velocityY = -velocityY;
+            }
+
+            // C. 应用新位置 (Apply Changes)
+            rect.position({ x: newX, y: newY });
+
+            // D. 旋转一下增加动感
+            rect.rotate(0.5);
+
+            // E. 重绘图层 (Render) - 这一步最关键！
+            layer.batchDraw();
+
+            // F. 请求下一帧 (Next Frame)
+            requestAnimationFrame(animate);
+        }
+
+        // 5. 启动动画
+        animate();
+
+        // 交互：点击暂停/继续
+        stage.on('click', () => {
+            isAnimating = !isAnimating;
+            if (isAnimating) animate();
+        });
+    </script>
+</body>
+
+</html>

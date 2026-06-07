@@ -1,0 +1,381 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Konva 动画编辑器 + 自定义旋转中心</title>
+    <script src="https://unpkg.com/konva@9.2.0/konva.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/gsap.min.js"></script>
+    <style>
+        :root { --primary: #4f46e5; --bg: #f3f4f6; --panel: #fff; }
+        body { font-family: sans-serif; background: var(--bg); display: flex; justify-content: center; padding: 20px; margin: 0; }
+        .container { width: 900px; background: var(--panel); padding: 20px; border-radius: 12px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); }
+        #stage-wrapper { border: 1px solid #ddd; background: #fafafa; margin-bottom: 15px; cursor: crosshair; }
+        
+        .controls { display: flex; gap: 10px; margin-bottom: 15px; flex-wrap: wrap; }
+        button { padding: 8px 16px; border: none; border-radius: 6px; cursor: pointer; font-weight: bold; transition: 0.2s; }
+        .btn-add { background: #e0e7ff; color: #3730a3; }
+        .btn-pivot { background: #d1fae5; color: #065f46; }
+        .btn-record { background: #fef3c7; color: #92400e; border: 1px solid #fcd34d; }
+        .btn-play { background: var(--primary); color: white; }
+        .btn-clear { background: #fee2e2; color: #991b1b; }
+        .btn-export { background: #ede9fe; color: #5b21b6; }
+
+        .timeline-box { background: #f8fafc; padding: 15px; border-radius: 8px; border: 1px solid #e2e8f0; }
+        .track-container { position: relative; height: 30px; margin-bottom: 10px; }
+        .track-bg { width: 100%; height: 6px; background: #cbd5e1; border-radius: 3px; position: absolute; top: 12px; cursor: pointer; }
+        .track-fill { height: 100%; background: var(--primary); border-radius: 3px; width: 0%; pointer-events: none; }
+        .playhead { position: absolute; top: 0; bottom: 0; width: 2px; background: #ef4444; pointer-events: none; transition: left 0.1s linear; z-index: 10; }
+        .playhead::after { content: ''; position: absolute; top: -5px; left: -4px; border-left: 5px solid transparent; border-right: 5px solid transparent; border-top: 8px solid #ef4444; }
+        .keyframe-dot { position: absolute; top: 8px; width: 10px; height: 10px; background: #f59e0b; border: 2px solid #fff; border-radius: 50%; transform: translateX(-50%); cursor: pointer; z-index: 5; box-shadow: 0 1px 2px rgba(0,0,0,0.2); }
+        .keyframe-dot:hover { transform: translateX(-50%) scale(1.2); }
+
+        .info-bar { display: flex; justify-content: space-between; font-size: 0.9rem; color: #64748b; }
+        .current-time-display { font-weight: bold; color: var(--primary); }
+        .pivot-info { margin-top: 10px; font-size: 0.9rem; color: #475569; }
+        .highlight { color: #dc2626; font-weight: bold; }
+    </style>
+</head>
+<body>
+<div class="container">
+    <h2 style="margin-top:0">🎬 Konva 动画编辑器（支持自定义旋转中心）</h2>
+    
+    <div id="stage-wrapper"></div>
+
+    <div class="controls">
+        <button class="btn-add" onclick="addShape()">➕ 添加形状</button>
+        <div style="width:1px;background:#ddd;"></div>
+        <button class="btn-pivot" onclick="setPivot('center')">📍 旋转中心：中心</button>
+        <button class="btn-pivot" onclick="setPivot('top-left')">↖️ 旋转中心：左上</button>
+        <button class="btn-pivot" onclick="setPivot('bottom-right')">↘️ 旋转中心：右下</button>
+        <div style="width:1px;background:#ddd;"></div>
+        <button class="btn-record" onclick="handleRecord()">📍 在此时刻记录</button>
+        <button class="btn-play" onclick="togglePlay()">▶️ 播放</button>
+        <button class="btn-clear" onclick="clearAll()">🗑️ 清空</button>
+        <button class="btn-export" onclick="exportVideo()">📹 导出视频</button>
+    </div>
+
+    <div class="pivot-info">
+        当前选中物体：<span id="selectedName" class="highlight">未选中</span><br>
+        旋转中心偏移(offset)：<span id="offsetInfo" class="highlight">未选中</span>
+    </div>
+
+    <div class="timeline-box" style="margin-top:15px;">
+        <div class="track-container" id="trackContainer">
+            <div class="track-bg" id="trackBg"></div>
+            <div class="track-fill" id="trackFill"></div>
+            <div class="playhead" id="playhead" style="left: 0%"></div>
+            <div id="dotsContainer"></div>
+        </div>
+        <div class="info-bar">
+            <span>当前指针时间: <span id="currentTimeDisplay" class="current-time-display">0.0s</span></span>
+            <span id="totalDuration">总时长: 0.0s</span>
+        </div>
+        <div style="font-size: 0.8rem; color: #94a3b8; margin-top: 5px;">
+            💡 提示：选中形状后点击上方旋转中心按钮修改，拖拽旋转即可看到效果，offset不随关键帧变化，是物体固有属性
+        </div>
+    </div>
+</div>
+
+<script>
+    // --- 1. 初始化 ---
+    const width = 860;
+    const height = 400;
+    const stage = new Konva.Stage({ container: 'stage-wrapper', width, height });
+    const layer = new Konva.Layer();
+    stage.add(layer);
+    
+    const tr = new Konva.Transformer();
+    layer.add(tr);
+
+    let shapes = [];
+    let selectedShape = null;
+    let keyframes = [];
+    let masterTimeline = null;
+    let isPlaying = false;
+
+    // --- 2. 添加形状（默认设置中心旋转） ---
+    function addShape() {
+        const id = 'shape_' + Date.now();
+        const rect = new Konva.Rect({
+            x: 150, y: 150, width: 100, height: 60,
+            fill: getRandomColor(), draggable: true, name: id,
+            cornerRadius: 8, opacity: 0, scaleX: 0, scaleY: 0,
+            // 默认中心旋转
+            offsetX: 50, offsetY: 30
+        });
+        
+        rect.on('click', () => { selectShape(rect); });
+        rect.on('dragstart', () => { selectShape(rect); });
+        layer.add(rect);
+        shapes.push(rect);
+        
+        gsap.to(rect, { opacity: 1, scaleX: 1, scaleY: 1, duration: 0.3 });
+        selectShape(rect);
+        layer.batchDraw();
+    }
+
+    // --- 3. 核心：设置旋转中心offset（静态属性） ---
+    function setPivot(type) {
+        if (!selectedShape) {
+            alert("请先点击选中一个形状！");
+            return;
+        }
+
+        // 获取物体尺寸，兼容不同形状
+        const w = selectedShape.width() || (selectedShape.radius() * 2) || selectedShape.width();
+        const h = selectedShape.height() || (selectedShape.radius() * 2) || selectedShape.height();
+
+        const oldOffsetX = selectedShape.offsetX();
+        const oldOffsetY = selectedShape.offsetY();
+        
+        let newOffsetX, newOffsetY;
+        switch(type) {
+            case 'center':
+                newOffsetX = w / 2;
+                newOffsetY = h / 2;
+                break;
+            case 'top-left':
+                newOffsetX = 0;
+                newOffsetY = 0;
+                break;
+            case 'bottom-right':
+                newOffsetX = w;
+                newOffsetY = h;
+                break;
+        }
+
+        // 补偿位置：保证修改offset后物体视觉位置不变，避免跳动
+        const deltaX = newOffsetX - oldOffsetX;
+        const deltaY = newOffsetY - oldOffsetY;
+        selectedShape.setAttrs({
+            offsetX: newOffsetX,
+            offsetY: newOffsetY,
+            x: selectedShape.x() + deltaX,
+            y: selectedShape.y() + deltaY
+        });
+
+        // 刷新transformer和UI
+        tr.nodes([selectedShape]);
+        layer.batchDraw();
+        updatePivotInfo();
+    }
+
+    // --- 4. 选中与UI更新 ---
+    function selectShape(shape) {
+        selectedShape = shape;
+        tr.nodes([shape]);
+        layer.batchDraw();
+        updatePivotInfo();
+    }
+
+    function updatePivotInfo() {
+        const nameEl = document.getElementById('selectedName');
+        const offsetEl = document.getElementById('offsetInfo');
+        if (!selectedShape) {
+            nameEl.innerText = '未选中';
+            offsetEl.innerText = '未选中';
+            return;
+        }
+        nameEl.innerText = selectedShape.name();
+        offsetEl.innerText = `X: ${selectedShape.offsetX().toFixed(1)}, Y: ${selectedShape.offsetY().toFixed(1)}`;
+    }
+
+    // 点击空白取消选中
+    stage.on('click', (e) => {
+        if (e.target === stage) {
+            tr.nodes([]);
+            selectedShape = null;
+            updatePivotInfo();
+            layer.batchDraw();
+        }
+    });
+
+    // --- 5. 关键帧记录与时间轴（offset不加入关键帧） ---
+    function handleRecord() {
+        if (shapes.length === 0) return alert("请先添加形状");
+        const currentTime = getCurrentTimeFromUI();
+
+        // 只记录动画属性：位置/旋转/缩放/透明度，不记录offset
+        const snapshot = shapes.map(s => ({
+            name: s.name(),
+            x: s.x(), y: s.y(),
+            rotation: s.rotation(),
+            scaleX: s.scaleX(), scaleY: s.scaleY(),
+            opacity: s.opacity()
+        }));
+
+        // 查找已有关键帧，存在则更新，不存在则插入
+        const existingIndex = keyframes.findIndex(kf => Math.abs(kf.time - currentTime) < 0.1);
+        if (existingIndex !== -1) {
+            keyframes[existingIndex].data = snapshot;
+        } else {
+            keyframes.push({ time: currentTime, data: snapshot });
+            keyframes.sort((a, b) => a.time - b.time);
+        }
+
+        rebuildTimeline();
+        syncVisualsToTime(currentTime);
+        renderDots();
+    }
+
+    function rebuildTimeline() {
+        if (masterTimeline) masterTimeline.kill();
+        if (keyframes.length === 0) return;
+
+        masterTimeline = gsap.timeline({
+            paused: true,
+            onUpdate: () => updateUIProgress(masterTimeline.time())
+        });
+
+        for (let i = 0; i < keyframes.length; i++) {
+            const curr = keyframes[i];
+            const prev = i > 0 ? keyframes[i-1] : null;
+            const startTime = prev ? prev.time : 0;
+            const duration = prev ? (curr.time - prev.time) : 0;
+
+            curr.data.forEach(objState => {
+                const shape = shapes.find(s => s.name() === objState.name);
+                if (!shape) return;
+                if (i === 0) {
+                    shape.setAttrs(objState);
+                } else {
+                    masterTimeline.to(shape, {
+                        ...objState,
+                        duration: duration,
+                        ease: "power1.inOut"
+                    }, startTime);
+                }
+            });
+
+            // 处理消失物体淡出
+            if (i > 0 && prev) {
+                prev.data.forEach(prevObj => {
+                    if (!curr.data.find(c => c.name === prevObj.name)) {
+                        const shape = shapes.find(s => s.name() === prevObj.name);
+                        if (shape) {
+                            masterTimeline.to(shape, { opacity: 0, scaleX: 0, scaleY: 0, duration: duration }, startTime);
+                        }
+                    }
+                });
+            }
+        }
+        document.getElementById('totalDuration').innerText = `总时长: ${masterTimeline.duration().toFixed(1)}s`;
+    }
+
+    // --- 6. 时间轴UI交互 ---
+    function getCurrentTimeFromUI() {
+        const totalDur = masterTimeline ? masterTimeline.duration() : 10;
+        const playheadLeft = parseFloat(document.getElementById('playhead').style.left) || 0;
+        const percent = playheadLeft / document.getElementById('trackBg').offsetWidth;
+        return Math.max(0, percent * (totalDur || 10));
+    }
+
+    document.getElementById('trackBg').addEventListener('click', (e) => {
+        if (!masterTimeline) return;
+        const rect = e.target.getBoundingClientRect();
+        const percent = (e.clientX - rect.left) / rect.width;
+        const targetTime = percent * masterTimeline.duration();
+        syncVisualsToTime(targetTime);
+    });
+
+    function syncVisualsToTime(time) {
+        if (!masterTimeline) return;
+        masterTimeline.pause();
+        masterTimeline.time(time);
+        updateUIProgress(time);
+        layer.batchDraw();
+    }
+
+    function updateUIProgress(time) {
+        if (!masterTimeline) return;
+        const total = masterTimeline.duration();
+        const percent = total === 0 ? 0 : (time / total) * 100;
+        document.getElementById('playhead').style.left = `${percent}%`;
+        document.getElementById('trackFill').style.width = `${percent}%`;
+        document.getElementById('currentTimeDisplay').innerText = time.toFixed(1) + 's';
+    }
+
+    function renderDots() {
+        const container = document.getElementById('dotsContainer');
+        container.innerHTML = '';
+        if (!masterTimeline) return;
+        const total = masterTimeline.duration();
+        keyframes.forEach(kf => {
+            const percent = (kf.time / total) * 100;
+            const dot = document.createElement('div');
+            dot.className = 'keyframe-dot';
+            dot.style.left = `${percent}%`;
+            dot.title = `关键帧: ${kf.time.toFixed(1)}s`;
+            dot.addEventListener('click', (e) => {
+                e.stopPropagation();
+                syncVisualsToTime(kf.time);
+            });
+            container.appendChild(dot);
+        });
+    }
+
+    function togglePlay() {
+        if (!masterTimeline) return;
+        const btn = document.querySelector('.btn-play');
+        if (masterTimeline.paused()) {
+            if (masterTimeline.time() >= masterTimeline.duration() - 0.1) masterTimeline.restart();
+            else masterTimeline.play();
+            btn.innerText = "⏸️ 暂停";
+        } else {
+            masterTimeline.pause();
+            btn.innerText = "▶️ 播放";
+        }
+    }
+
+    function clearAll() {
+        if(confirm("确定清空所有内容吗？")) {
+            keyframes = [];
+            if (masterTimeline) masterTimeline.kill();
+            shapes.forEach(s => s.destroy());
+            shapes = [];
+            selectedShape = null;
+            document.getElementById('dotsContainer').innerHTML = '';
+            document.getElementById('playhead').style.left = '0%';
+            document.getElementById('trackFill').style.width = '0%';
+            document.getElementById('currentTimeDisplay').innerText = '0.0s';
+            updatePivotInfo();
+            layer.batchDraw();
+        }
+    }
+
+    // --- 7. 导出视频 ---
+    async function exportVideo() {
+        if (!masterTimeline || keyframes.length === 0) {
+            alert("请先创建动画再导出！");
+            return;
+        }
+
+        const canvas = stage.container().querySelector('canvas');
+        const stream = canvas.captureStream(30);
+        const mediaRecorder = new MediaRecorder(stream, { mimeType: 'video/webm' });
+        const chunks = [];
+
+        mediaRecorder.ondataavailable = (e) => chunks.push(e.data);
+        mediaRecorder.onstop = () => {
+            const blob = new Blob(chunks, { type: 'video/webm' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = 'konva-animation.webm';
+            a.click();
+            URL.revokeObjectURL(url);
+        };
+
+        const duration = masterTimeline.duration() * 1000;
+        masterTimeline.restart();
+        mediaRecorder.start();
+        setTimeout(() => mediaRecorder.stop(), duration + 200);
+    }
+
+    function getRandomColor() {
+        return '#' + Math.floor(Math.random()*16777215).toString(16);
+    }
+</script>
+</body>
+</html>
