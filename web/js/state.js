@@ -8,9 +8,8 @@ const state = {
         {
             id: 't1', type: 'video', name: '图像轨道 1',
             clips: [
-                { id: 'c1',type:"image" ,start: 0, duration: 5, name: '开场', src: "q.png" },
-                  { id: '21',type:"image" ,start: 12, duration: 5, name: '开场', src: "1.gif" },
-                { id: 'c2', start: 6, duration: 4, name: '过渡', videoSrc: null }
+                { id: 'c1',type:"image" ,start: 0, duration: 1, name: '开场', src: "save.png" },
+                { id: '21',type:"image" ,start: 1, duration: 2, name: '开场', src: "1.gif" }
             ]
         },
         {

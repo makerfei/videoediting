@@ -7,6 +7,8 @@
   <title>视频剪辑时间线 + 实时预览</title>
   <link href="css/style.css" rel="stylesheet" type="text/css">
   </link>
+  <script src="https://unpkg.com/konva@9/konva.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/gsap.min.js"></script>
 </head>
 
 <body>
@@ -28,10 +30,27 @@
   <div class="main-layout">
     <!-- 视频预览区 -->
     <div class="preview-section" id="preview-section">
-      ::ml-video{src=""}
-      <div class="preview-placeholder" id="preview-placeholder">
-        <span class="icon">🎬</span>
-        请添加视频轨道与片段，或拖入视频文件
+      <div class="imgselce">1</div>
+      <div class="preview-placeholder">
+        <div id="preview-placeholder"></div>
+      </div>
+      <div class="altcon">
+        <!-- 时间轴 -->
+        <div class="rebuildTimeline">
+          <div>
+            <div><span class="btn-modern">插帧</span></div>
+            <div class="timelist">
+              <div><span>起始</span><span>设置</span></div>
+              <div><span>0802</span><span>删除</span></div>
+              <div><span>结束</span><span>设置</span></div>
+            </div>
+          </div>
+
+        </div>
+        <div class="showtimedata">
+          <pre id="json-preview">
+          </pre>
+        </div>
       </div>
     </div>
 
@@ -89,11 +108,13 @@
   <script src="js/scroll.js"></script>
   <script src="js/tool.js"></script>
   <script src="js/listeners.js"></script>
-
+  <script src="js/itemKeyframe.js"></script>
+  <script src="js/gsap.js"></script>
+  <script src="js/konva.js"></script>
 
   <script>
 
-   
+
 
     // ==================== 初始化 ====================
     function init() {

@@ -10,7 +10,7 @@
     --playhead-color: #ff2d55;
     --error: #ef4444;
     --success: #3b7061;
-    --select:#31b287;
+    --select: #31b287;
 }
 
 * {
@@ -108,34 +108,40 @@ body {
     position: relative;
     flex-shrink: 0;
     display: flex;
-    align-items: center;
+    align-items: flex-start;
     justify-content: center;
     border-bottom: 2px solid var(--border-color);
-    min-height: 200px;
-    max-height: 50vh;
+
+    height: 324px;
     aspect-ratio: 16 / 9;
     width: 100%;
     overflow: hidden;
 }
 
-.preview-section video {
-    width: 100%;
-    height: 100%;
-    object-fit: contain;
-    background: #000;
-}
+
 
 .preview-placeholder {
     color: #555;
     font-size: 16px;
     text-align: center;
-    pointer-events: none;
+    pointer-events: all;
+    background-color: #ffffff;
+    width: 576px;
+    height: 324px;
+    overflow: hidden;
+
+
 }
 
-.preview-placeholder .icon {
-    font-size: 48px;
-    display: block;
-    margin-bottom: 8px;
+#preview-placeholder {
+    transform: scale(0.3);
+    transform-origin: top;
+    width: 1920px;
+    height: 1080px;
+    position: absolute;
+    top: 0;
+    left: 0;
+
 }
 
 /* ========== 播放控制栏 ========== */
@@ -242,9 +248,11 @@ body {
     box-shadow: inset 0 0 0 2px var(--error);
     cursor: no-drop;
 }
+
 .track.selected {
     background: rgba(96, 215, 104, 0.15);
 }
+
 .track.dragging-track {
     opacity: 0.8;
     z-index: 50;
@@ -423,4 +431,106 @@ body {
 
 .toast.show {
     opacity: 1;
+}
+
+
+.imgselce {
+    flex: 1;
+}
+
+/* 右边属性查看蓝 */
+.altcon {
+    flex: 1;
+    display: flex;
+    flex-direction: row;
+    justify-content: space-around;
+    align-items: flex-start;
+
+
+}
+
+.rebuildTimeline {
+    width: 200px;
+    background-color: #9a5353;
+    height: 324px;
+    padding: 10px;
+}
+
+.timelist{
+    padding: 20px 0;
+}
+.timelist>div{
+    border: 1px solid #0b0c0d;
+    margin: 3px 0;
+    font-size: 12px;
+    padding: 5px;
+    background-color: #c5afaf;
+    color: #6d1919;
+    display: flex;
+    display: flex;
+    flex-direction: row;
+    align-content: center;
+    justify-content: space-between;
+}
+.timelist>div>span{
+    cursor: pointer;
+}
+
+
+
+
+.showtimedata {
+    flex: 1;
+    background-color: #16213e;
+    height: 324px;
+    padding: 10px;
+    overflow: scroll;
+    padding: 10px;
+}
+
+
+.btn-modern {
+    /* 基础布局 */
+    display: inline-block;
+    padding: 5px 12px;
+    font-size: 12px;
+    font-weight: 600;
+    text-align: center;
+    text-decoration: none;
+    cursor: pointer;
+    border: none;
+    border-radius: 8px;
+    /* 圆角 */
+
+    /* 颜色与背景 */
+    background-color: #48c46b;
+    /* 主色调 */
+    color: #ffffff;
+
+    /* 过渡动画 */
+    transition: all 0.3s ease;
+    box-shadow: 0 4px 6px rgba(0, 123, 255, 0.2);
+}
+
+/* 悬停状态 */
+.btn-modern:hover {
+    background-color: #0056b3;
+    transform: translateY(-2px);
+    /* 轻微上浮 */
+    box-shadow: 0 6px 8px rgba(0, 123, 255, 0.3);
+}
+
+/* 点击状态 */
+.btn-modern:active {
+    transform: translateY(0);
+    box-shadow: 0 2px 4px rgba(0, 123, 255, 0.2);
+}
+
+/* 禁用状态 */
+.btn-modern:disabled {
+    background-color: #cccccc;
+    color: #666666;
+    cursor: not-allowed;
+    box-shadow: none;
+    transform: none;
 }

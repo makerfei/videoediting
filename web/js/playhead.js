@@ -65,6 +65,7 @@ function handlePlayheadDragStart(e) {
         state.playheadDrag = false;
         document.removeEventListener('mousemove', onMove);
         document.removeEventListener('mouseup', onUp);
+        seekTo(state.currentTime);
     }
 
     document.addEventListener('mousemove', onMove);

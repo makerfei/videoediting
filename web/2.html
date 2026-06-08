@@ -128,7 +128,6 @@
         let selectedNode = null;
 
         // --- 3. 交互逻辑 ---
-
         // 点击舞台空白处取消选中
         stage.on('click tap', (e) => {
             if (e.target === stage) {
@@ -139,7 +138,6 @@
                 highlightLayerCard(null);
             }
         });
-
         // 添加矩形
         function addRect() {
             const rect = new Konva.Rect({

@@ -2,8 +2,6 @@
 function togglePlay() {
     console.log("播放按钮点击")
     state.isPlaying = !state.isPlaying;
-    updatePlayButtonUI();
-
     if (state.isPlaying) {
         startPlayback();
     } else {
@@ -21,17 +19,20 @@ function updatePlayButtonUI() {
 
 function startPlayback() {
     console.log("进行播放")
-    // const video = DOM.previewVideo;
-    // if (video.style.display !== 'none' && video.src) {
-    //   video.play().catch(() => {});
-    // }
+    state.isPlaying = true
+    updatePlayButtonUI();
+    myStage.startPlayback(state.currentTime)
     animatePlayhead();
 }
 
 function stopPlayback() {
     console.log("停止播放")
+    state.isPlaying = false
+    updatePlayButtonUI();
+
     // const video = DOM.previewVideo;
     // video.pause();
+    myStage.stopPlayback(state.currentTime)
     if (state.animationFrameId) {
         cancelAnimationFrame(state.animationFrameId);
         state.animationFrameId = null;
@@ -41,9 +42,7 @@ function stopPlayback() {
 
 // 自动播放中
 function animatePlayhead() {
-    console.log("animatePlayhead.  动画播放中")
     if (!state.isPlaying) return;
-
     state.currentTime += 0.016; // ~60fps
     if (state.currentTime >= state.maxTime) {
         state.currentTime = state.maxTime;
@@ -55,7 +54,6 @@ function animatePlayhead() {
         updateVideoPreview();
         return;
     }
-
     updatePlayheadPosition();
     updateTimeDisplay();
     updateVideoPreview();

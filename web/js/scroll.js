@@ -1,6 +1,6 @@
 // 下面的滑动区域保持在视野内
 function autoScrollToPlayhead() {
-    console.log("autoScrollToPlayhead 下面的滑动区域保持在视野内")
+    // console.log("autoScrollToPlayhead 下面的滑动区域保持在视野内")
 
     const container = DOM.scrollContainer;
     const playheadLeft = state.currentTime * state.scale;
@@ -16,8 +16,8 @@ function autoScrollToPlayhead() {
 
 
 function seekTo(time) {
-    console.log("seekTo  视频部分 页面更新")
     state.currentTime = Math.max(0, Math.min(time, state.maxTime));
+    myStage.syncToTime(state.currentTime)
     updatePlayheadPosition();
     updateTimeDisplay();
     updateVideoPreview();

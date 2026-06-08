@@ -11,9 +11,7 @@ function createClipElement(clip, type) {
     if (clip.type == "image") {
         el.style.backgroundImage = `url('${clip.src}')`
     }
-
-
-
+    
     const leftHandle = document.createElement('div');
     leftHandle.className = 'handle left';
     el.appendChild(leftHandle);
