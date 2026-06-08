@@ -20,7 +20,7 @@ function seekTo(time) {
     myStage.syncToTime(state.currentTime)
     updatePlayheadPosition();
     updateTimeDisplay();
-    updateVideoPreview();
+    // updateVideoPreview();
 }
 
 

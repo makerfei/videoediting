@@ -26,6 +26,9 @@ function renderTracks() {
     if (DOM.playhead.parentNode !== DOM.tracksContainer) {
         DOM.tracksContainer.appendChild(DOM.playhead);
     }
+    updateVideoPreview()
+
+
 }
 // ==================== 查找辅助 ====================
 function findTrack(id) {

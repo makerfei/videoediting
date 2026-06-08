@@ -39,7 +39,7 @@
         <div class="rebuildTimeline">
           <div>
             <div><span class="btn-modern">插帧</span></div>
-            <div class="timelist">
+            <div class="timelist" id="keyframelist">
               <div><span>起始</span><span>设置</span></div>
               <div><span>0802</span><span>删除</span></div>
               <div><span>结束</span><span>设置</span></div>
@@ -90,7 +90,9 @@
   <!-- Toast -->
   <div class="toast" id="toast"></div>
   <!-- ==================== 状态管理 ==================== -->
+  
   <script src="js/state.js"></script>
+  <script src="js/konva.js"></script>
   <script src="js/dom.js"></script>
   <!-- // ==================== 时间轴渲染 ==================== -->
   <script src="js/ruler.js"></script>
@@ -109,8 +111,8 @@
   <script src="js/tool.js"></script>
   <script src="js/listeners.js"></script>
   <script src="js/itemKeyframe.js"></script>
-  <script src="js/gsap.js"></script>
-  <script src="js/konva.js"></script>
+  
+  
 
   <script>
 
@@ -124,6 +126,7 @@
       updatePlayheadPosition();
       setupEventListeners();
       updateTimeDisplay();
+      
     }
 
     // ==================== 启动 ====================

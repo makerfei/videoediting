@@ -8,7 +8,6 @@ class myStageClass {
         });
         this.reStart(instate)
     }
-
     reStart(instate) {
         const layers = this.stage.getChildren(); // 获取所有图层
         // 遍历并销毁每个图层
@@ -17,19 +16,22 @@ class myStageClass {
         });
         // 重要：重绘舞台以反映变化
         this.stage.draw();
-
+        this.keyframes = []; // 存储关键帧数据 按物体分类。  [{name:"clipid",trackid,keyframes:[x,y,z,k]}]
+        this.shape = {}// 存储所有形状引用 轨道和元素混用
         this.state = {
             ...instate,
             tracks: instate.tracks.filter(f => f.type !== "audio")
         }
-        this.shape = {}// 存储所有形状引用 轨道和元素混用
-        this.keyframes = []; // 存储关键帧数据 按物体分类。  [{name:"clipid",trackid,keyframes:[x,y,z,k]}]
+        console.log('-----', this.state)
         this.tr = null;
         this.selectedNode = null;
+        this.selectedclipId = null;
+        this.selectedtrackId = null
 
         this.createTr()
         this.createLayer()
         this.createNode()
+        // this.rebuildTimeline()
 
     }
 
@@ -51,7 +53,7 @@ class myStageClass {
         });
         // 1. 监听变换结束（缩放、旋转）
         this.tr.on('transformend', () => {
-
+            this.stage.draw();
             // getResult(konvaImg);
         });
     }
@@ -60,7 +62,7 @@ class myStageClass {
     createLayer() {
         this.state.tracks.forEach((e, i) => {
             const layer = new Konva.Layer();
-            layer.setZIndex(this.state.tracks.length - i - 1)
+            layer.setZIndex(i)
             this.shape[e.id] = layer
             layer.add(this.tr);
             this.stage.add(layer)
@@ -79,11 +81,13 @@ class myStageClass {
         })
     }
     imageOnload(track, clip, img) {
+
+        if (this.shape[clip.id]) return;
         const konvaImg = new Konva.Image({
-            x: 100,
-            y: 100,
-            width: img.width,
-            height: img.height,
+            x: clip.x > -1 ? clip.x : 100,
+            y: clip.y > -1 ? clip.y : 100,
+            width: clip.width ? clip.width : img.width,
+            height: clip.height ? clip.height : img.height,
             image: img,
             draggable: true,
         });
@@ -92,22 +96,22 @@ class myStageClass {
         this.shape[clip.id] = konvaImg
 
         this.addDefKeyframes(track, clip)
+
         konvaImg.on('click', (e) => {
             console.log('图片被点击了！');
             e.cancelBubble = true; // ✅ 关键：阻止冒泡
             this.tr.nodes([konvaImg]);
             this.shape[track.id].batchDraw();
             this.selectedNode = konvaImg;
+            this.selectedclipId = clip.id;
+            this.selectedtrackId = track.id;
+
             let keyframe = this.keyframes.find(s => s.clipid === clip.id)
             myitemKeyframe.show(keyframe)
-
-
-
-
         });
         // 2. 监听拖拽结束（移动位置）
         konvaImg.on('dragend', () => {
-            // getResult(konvaImg);
+            this.stage.draw();
         });
 
     };
@@ -121,40 +125,59 @@ class myStageClass {
     }
     // addDefKeyframes 添加默认的Keyframes
     addDefKeyframes(t, c) {
-        let keyframe = this.keyframes.find(s => s.name === c.id)
+        let keyframe = this.keyframes.find(s => s.clipid === c.id)
         if (!keyframe || !keyframe.key || keyframe.key.length < 2) {
             let rect = this.shape[c.id]
             this.keyframes.push({
                 clipid: c.id,
                 trackid: t.id,
                 key: [
-                    { "time": c.start, data: { x: rect.x(), y: rect.y(), rotation: rect.rotation(), scaleX: 1, scaleY: 1, opacity: 1 } },
-                    { "time": c.start + c.duration, data: { x: rect.x(), y: rect.y(), rotation: rect.rotation(), scaleX: 1, scaleY: 1, opacity: 1 } }
+                    { "time": c.start, data: { x: rect.x(), y: rect.y(), width: rect.width(), height: rect.height(), rotation: rect.rotation(), scaleX: rect.scaleX(), scaleY: rect.scaleY(), opacity: 1 } },
+                    { "time": c.start + c.duration, data: { x: rect.x(), y: rect.y(), width: rect.width(), height: rect.height(), rotation: rect.rotation(), scaleX: rect.scaleX(), scaleY: rect.scaleY(), opacity: 1 } }
                 ]
             })
-            // 加点就重新构建
-            this.rebuildTimeline()
+        } else {
+            keyframe.key[0]["time"] = c.start
+            keyframe.key[1]["time"] = c.start + c.duration
         }
+        // 加点就重新构建
+        this.rebuildTimeline()
+
     }
 
     //  --- 核心逻辑：重建时间轴 ---
     rebuildTimeline() {
+        const _this = this;
         if (this.masterTimeline) this.masterTimeline.kill();
         if (this.keyframes.length === 0) return;
         this.masterTimeline = gsap.timeline({
             paused: true,
             onComplete: () => {
+                console.log("rebuildTimeline线程完成")
                 state.currentTime = 0
                 this.masterTimeline.time(0)
+                this.contorlClipVisible(0)
                 stopPlayback()
             },
             onStart: () => {
+                // _this.masterTimeline.time(state.currentTime)
             },
-            onUpdate: () => {
+            onUpdate: function () {
+                console.log(_this.state.currentTime, "----", _this.masterTimeline.time())
 
+                if (_this.state.currentTime >= _this.masterTimeline.time()) {
+                    _this.syncToTime(state.currentTime)
+                    animatePlayhead(state.currentTime)
 
+                } else {
+                    _this.state.currentTime = _this.masterTimeline.time()
+                    animatePlayhead(_this.masterTimeline.time())
+                }
             }
         });
+
+
+
         for (let i = 0; i < this.keyframes.length; i++) {
             const currItem = this.keyframes[i];
             let clip = this.shape[currItem.clipid]
@@ -169,62 +192,76 @@ class myStageClass {
                 const duration = next ? (next.time - curr.time) : 0;
                 // 【其他帧】保持原有动画效果
                 if (duration > 0) {
-                    this.masterTimeline.to(clip, {
+                    this.masterTimeline.from(clip, {
                         ...curr.data,
                         duration: duration,
                         ease: "power1.inOut",
                         onStart: () => {
+                            console.log("onStart动画显示开始")
                             clip.visible(true); // 确保动画开始时元素是可见的
                             clip.opacity(1);    // 确保起始透明度正确（如果 curr.data 不包含 opacity 起始值）
                         },
                         onComplete: () => {
+                            console.log("onComplete动画结束后隐藏")
                             clip.visible(false); // 动画结束后隐藏
                         }
                     }, startTime); // 注意：to 动画通常从上一帧时间点开始
+                } else {
+                    // 如果时间差为0，也瞬间设置
+                    this.masterTimeline.set(clip, {
+                        ...curr.data
+                    }, startTime);
                 }
-                // else {
-                //     // 如果时间差为0，也瞬间设置
-                //     this.masterTimeline.set(clip, {
-                //         ...curr.data
-                //     }, startTime);
-                // }
 
             }
         }
-        this.contorlClipVisible()
+        this.contorlClipVisible(state.currentTime)
 
     }
     //  调整时间
     syncToTime(time) {
+        console.log("syncToTime", time)
         if (!this.masterTimeline) return;
         console.log("syncToTime", time)
         this.contorlClipVisible(time)
+        this.state.currentTime = time
+        state.currentTime = time
         this.masterTimeline.time(time);
+        this.stage.draw()
+
         // console.log("视频内部当前时间",time)
     }
-
-
-    contorlClipVisible(time=0) {
+    contorlClipVisible(time) {
+        if (time == null) {
+            console.log("contorlClipVisible 传入时间")
+        }
+        console.log("contorlClipVisible", time)
         for (let i = 0; i < this.keyframes.length; i++) {
             const currItem = this.keyframes[i];
             let clip = this.shape[currItem.clipid]
+            if (!clip) return
             const curr = currItem.key[0];
             const last = currItem.key[currItem.key.length - 1]
             // 计算开始时间：如果是第一帧，时间为0；否则为上一帧的时间
             const startTime = curr.time;
             const endTime = last.time
             // 计算持续时间：如果是第一帧，无需duration；否则为当前帧与上一帧的时间差
-            if (startTime <= time && endTime > time) {
-                clip.visible(true); // 确保动画开始时元素是可见的
-                clip.opacity(1);    // 确保起始透明度正确（如果 curr.data 不包含 opacity 起始值）
-            } else {
-                clip.visible(false);
+            try {
+                if (startTime <= time && endTime > time) {
+                    clip.visible(true); // 确保动画开始时元素是可见的
+                    clip.opacity(1);    // 确保起始透明度正确（如果 curr.data 不包含 opacity 起始值）
+                } else {
+                    clip.visible(false);
+                }
+            } catch (error) {
+                console.log("错误触发contorlClipVisible", error)
             }
         }
     }
 
     startPlayback(time) {
         if (!this.masterTimeline) return;
+        this.syncToTime(time)
         this.masterTimeline.resume();
         // this.masterTimeline.restart();
     }
@@ -232,10 +269,33 @@ class myStageClass {
         if (!this.masterTimeline) return;
         this.masterTimeline.pause();
     }
+
+    //------- 对关键帧的操作--------
+    getItemAllKeylist(clipid) {
+        let keyframes = this.keyframes.find(k => k.clipid == clipid)
+        return { keyframes }
+    }
+    setKeyframesPost(clipid, index) {
+        let keyframes = this.keyframes.find(k => k.clipid == clipid)
+        let rect = this.shape[clipid]
+        // ✅ 正确：获取相对于舞台的绝对坐标
+
+        keyframes.key[index].data = {
+            ...keyframes.key[index].data,
+            x: rect.x(),
+            y: rect.y(),
+            width: rect.width(),
+            height: rect.height(),
+            rotation: rect.rotation(),
+            scaleX: rect.scaleX(),
+            scaleY: rect.scaleY(),
+        }
+        this.rebuildTimeline()
+    }
 }
 
-myStage = new myStageClass(state)
 
+myStage = new myStageClass(state)
 
 
 

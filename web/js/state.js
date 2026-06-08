@@ -6,14 +6,14 @@ const state = {
     maxTime: 30, // 时间轴总时长（秒），动态更新
     tracks: [
         {
-            id: 't1', type: 'video', name: '图像轨道 1',
+            id: 'vtid', type: 'video', name: '图像轨道 1',
             clips: [
-                { id: 'c1',type:"image" ,start: 0, duration: 1, name: '开场', src: "save.png" },
-                { id: '21',type:"image" ,start: 1, duration: 2, name: '开场', src: "1.gif" }
+                { id: 'c1',type:"image" ,start: 0, duration: 1,x:0,y:0,width:1920,height:1080, name: '开场', src: "save.png" },
+                { id: 'c2',type:"image" ,start: 1, duration: 2, name: '开场', src: "1.gif" }
             ]
         },
         {
-            id: 't2', type: 'audio', name: '音频轨道 1',
+            id: 'atid', type: 'audio', name: '音频轨道 1',
             clips: [
                 { id: 'c3', start: 0, duration: 10, name: '12221dfdfd放豆腐的方法德国的v分丰富的vv根本不够丰富v的v', audioSrc: null }
             ]
@@ -25,5 +25,6 @@ const state = {
     playheadDrag: false,
     animationFrameId: null,
     trackDrag: null,//{  startIndex: index, element: draggedRow, startY: e.clientY, currentY: e.clientY }
+
 };
 

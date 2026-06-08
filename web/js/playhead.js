@@ -57,7 +57,7 @@ function handlePlayheadDragStart(e) {
         state.currentTime = time;
         updatePlayheadPosition();
         updateTimeDisplay();
-        updateVideoPreview();
+        // updateVideoPreview();
     }
 
     function onUp() {

@@ -554,22 +554,10 @@ class TimelineEditor {
     this.state.isPlaying = !this.state.isPlaying;
     const btn = document.getElementById('play-btn');
     btn.innerHTML = this.state.isPlaying ? '<i class="fa-solid fa-pause"></i>' : '<i class="fa-solid fa-play ml-0.5"></i>';
-    if (this.state.isPlaying) {
-      this.els.player.play().catch(()=>{});
-      requestAnimationFrame(this.playLoop.bind(this));
-    } else {
-      this.els.player.pause();
-    }
+   
   }
 
-  playLoop() {
-    if (!this.state.isPlaying) return;
-    this.state.currentTime += 0.033;
-    this.updatePlayhead();
-    this.updateTimeDisplay();
-    if (this.state.currentTime > 60) this.state.currentTime = 0;
-    requestAnimationFrame(this.playLoop.bind(this));
-  }
+ 
 
   updatePlayhead() {
     const left = this.state.currentTime * this.state.scale + 120;

@@ -3,7 +3,9 @@
 
 // 视频内容更新
 function updateVideoPreview() {
-    // myStage.syncToTime(state.currentTime)
+  console.log("updateVideoPreview",state)
+  
+    myStage.reStart(state)
 }
 
 

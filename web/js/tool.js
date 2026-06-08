@@ -64,7 +64,7 @@ function importData(input) {
             renderTracks();
             updatePlayheadPosition();
             updateTimeDisplay();
-            updateVideoPreview();
+            // updateVideoPreview();
             showToast('项目已导入 ✅');
         } catch (err) {
             showToast('文件格式错误 ❌');
