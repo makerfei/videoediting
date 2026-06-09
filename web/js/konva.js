@@ -152,6 +152,8 @@ class myStageClass {
             keyframe.key[0]["time"] = c.start
             keyframe.key[1]["time"] = c.start + c.duration
         }
+
+        this.keyframes.sort((a,b)=>a.key[0].time-b.key[0].time)
         // 加点就重新构建
         this.rebuildTimeline()
 

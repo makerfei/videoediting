@@ -3,9 +3,14 @@
 
 // 视频内容更新
 function updateVideoPreview() {
-  console.log("updateVideoPreview",state)
   
+  
+    state.tracks.forEach(t => {
+        t.clips.sort((a, b) => a.start - b.start);
+    });
+    console.log("updateVideoPreview",state)
     myStage.reStart(state)
+   
 }
 
 

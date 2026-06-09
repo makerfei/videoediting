@@ -16,8 +16,8 @@ class myStateClass {
                 {
                     id: 'vtid', type: 'video', name: '图像轨道 1',
                     clips: [
-                        { id: 'c1', type: "image", start: 0, duration: 1, x: 0, y: 0, width: 1920, height: 1080, name: '开场', src: "save.png" },
-                        { id: 'c2', type: "image", start: 1, duration: 2, name: '开场', src: "1.gif" }
+                        { id: 'c1', type: "image", start: 0, duration: 1, x: 0, y: 0, width: 1920, height: 1080, name: '111111', src: "save.png" },
+                        { id: 'c2', type: "image", start: 1, duration: 2, name: '22222222', src: "1.gif" }
                     ]
                 },
                 {
