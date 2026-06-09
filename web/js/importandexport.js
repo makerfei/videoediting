@@ -5,9 +5,13 @@ class importandexportClass {
     }
     exportData() {
         let outputdatajson = {
-            state: this.state,
+            path:`${this.state.name}.json`,
+            data:{
+                 state: this.state,
             keyframes: this.myStage.keyframes,
             insetkeyframes: this.myStage.insetkeyframes
+            }
+           
         }
 
         axios.post('/api/exportData', outputdatajson)

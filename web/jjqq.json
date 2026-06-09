@@ -1,0 +1,127 @@
+{
+    "state": {
+        "name": "jjqq",
+        "scale": 100,
+        "currentTime": 0,
+        "isPlaying": false,
+        "maxTime": 35,
+        "tracks": [
+            {
+                "id": "vtid",
+                "type": "video",
+                "name": "图像轨道 1",
+                "clips": [
+                    {
+                        "id": "c1",
+                        "type": "image",
+                        "start": 0,
+                        "duration": 1,
+                        "x": 0,
+                        "y": 0,
+                        "width": 1920,
+                        "height": 1080,
+                        "name": "开场",
+                        "src": "save.png"
+                    },
+                    {
+                        "id": "c2",
+                        "type": "image",
+                        "start": 1,
+                        "duration": 2,
+                        "name": "开场",
+                        "src": "1.gif"
+                    }
+                ]
+            },
+            {
+                "id": "atid",
+                "type": "audio",
+                "name": "音频轨道 1",
+                "clips": [
+                    {
+                        "id": "c3",
+                        "start": 0,
+                        "duration": 10,
+                        "name": "12221dfdfd放豆腐的方法德国的v分丰富的vv根本不够丰富v的v",
+                        "audioSrc": null
+                    }
+                ]
+            }
+        ],
+        "selectedClipId": null,
+        "selectedTrackId": null,
+        "dragState": null,
+        "playheadDrag": false,
+        "animationFrameId": null,
+        "trackDrag": null
+    },
+    "keyframes": [
+        {
+            "clipid": "c1",
+            "trackid": "vtid",
+            "isload": true,
+            "key": [
+                {
+                    "time": 0,
+                    "data": {
+                        "x": 0,
+                        "y": 0,
+                        "width": 1920,
+                        "height": 1080,
+                        "rotation": 0,
+                        "scaleX": 1,
+                        "scaleY": 1,
+                        "opacity": 1
+                    }
+                },
+                {
+                    "time": 1,
+                    "data": {
+                        "x": 0,
+                        "y": 0,
+                        "width": 1920,
+                        "height": 1080,
+                        "rotation": 0,
+                        "scaleX": 1,
+                        "scaleY": 1,
+                        "opacity": 1
+                    }
+                }
+            ]
+        },
+        {
+            "clipid": "c2",
+            "trackid": "vtid",
+            "isload": true,
+            "key": [
+                {
+                    "time": 1,
+                    "data": {
+                        "x": 100,
+                        "y": 100,
+                        "width": 256,
+                        "height": 256,
+                        "rotation": 0,
+                        "scaleX": 1,
+                        "scaleY": 1,
+                        "opacity": 1
+                    }
+                },
+                {
+                    "time": 3,
+                    "data": {
+                        "x": 100,
+                        "y": 100,
+                        "width": 256,
+                        "height": 256,
+                        "rotation": 0,
+                        "scaleX": 1,
+                        "scaleY": 1,
+                        "opacity": 1
+                    }
+                }
+            ]
+        }
+    ],
+    "insetkeyframes": []
+}

@@ -7,7 +7,7 @@ class myStateClass {
     }
     defData() {
         return {
-            name:"jjqq",
+            name:"videoJsonData/jjqq",
             scale: 100, // 像素/秒
             currentTime: 0, // 当前播放时间（秒）
             isPlaying: false,
