@@ -6,7 +6,7 @@ class myStageClass {
         this.keyframes = []; // 存储关键帧数据 按物体分类。  [{name:"clipid",islaod,trackid,keyframes:[x,y,z,k]}]
 
         this.insetkeyframes = []
-
+        this.imagelist=[]
         this.stage.on('click', (e) => {
             this.stageClick(e)
         });
@@ -104,7 +104,7 @@ class myStageClass {
         this.shape[clip.id] = konvaImg
 
         this.addDefKeyframes(track, clip)
-
+        this.imagelist.push(img)
         konvaImg.on('click', (e) => {
             console.log('图片被点击了！');
             e.cancelBubble = true; // ✅ 关键：阻止冒泡
@@ -114,9 +114,11 @@ class myStageClass {
             this.selectedclipId = clip.id;
             this.selectedtrackId = track.id;
 
+            
+
             let keyframe = this.keyframes.find(s => s.clipid === clip.id)
             let insetkeyframesItem = this.insetkeyframes.find(k => k.clipid == clip.id)
-            myitemKeyframe.show(keyframe,insetkeyframesItem)
+            myitemKeyframe.show(keyframe, insetkeyframesItem)
         });
         // 2. 监听拖拽结束（移动位置）
         konvaImg.on('dragend', () => {
@@ -153,7 +155,7 @@ class myStageClass {
             keyframe.key[1]["time"] = c.start + c.duration
         }
 
-        this.keyframes.sort((a,b)=>a.key[0].time-b.key[0].time)
+        this.keyframes.sort((a, b) => a.key[0].time - b.key[0].time)
         // 加点就重新构建
         this.rebuildTimeline()
 
@@ -167,6 +169,7 @@ class myStageClass {
 
 
         if (isloadkeyframes.length === 0) return;
+        let uu = false
         this.masterTimeline = gsap.timeline({
             paused: true,
             onComplete: () => {
@@ -181,7 +184,6 @@ class myStageClass {
             },
             onUpdate: function () {
                 console.log(_this.state.currentTime, "----", _this.masterTimeline.time())
-
                 if (_this.state.currentTime >= _this.masterTimeline.time()) {
                     _this.syncToTime(state.currentTime)
                     animatePlayhead(state.currentTime)
@@ -199,34 +201,34 @@ class myStageClass {
             const currItem = isloadkeyframes[i];
             let clip = this.shape[currItem.clipid]
             // 获取其插入的关键帧
-            let inSertkey = this.insetkeyframes.find(k=>k.clipid==currItem.clipid) 
-            let startTime =  currItem.key[0].time
-            let endTime =  currItem.key[currItem.key.length-1].time;
+            let inSertkey = this.insetkeyframes.find(k => k.clipid == currItem.clipid)
+            let startTime = currItem.key[0].time
+            let endTime = currItem.key[currItem.key.length - 1].time;
 
             let newCurrtimeKey = []
             newCurrtimeKey.push(currItem.key[0])
 
-            if(inSertkey){
-                inSertkey.key.forEach(k=>{
-                     if((startTime+k.time)<endTime){
+            if (inSertkey) {
+                inSertkey.key.forEach(k => {
+                    if ((startTime + k.time) < endTime) {
                         newCurrtimeKey.push({
                             ...k,
-                            time:startTime+k.time
+                            time: startTime + k.time
                         })
-                     }
+                    }
                 })
             }
             newCurrtimeKey.push(currItem.key[1])
 
-            
+
             for (let j = 0; j < newCurrtimeKey.length; j++) {
-                const curr =newCurrtimeKey[j];
-                const prev = j >0 ?newCurrtimeKey[j - 1] : null;
+                const curr = newCurrtimeKey[j];
+                const prev = j > 0 ? newCurrtimeKey[j - 1] : null;
 
                 // 计算开始时间：如果是第一帧，时间为0；否则为上一帧的时间
                 const startTime = curr.time;
                 // 计算持续时间：如果是第一帧，无需duration；否则为当前帧与上一帧的时间差
-                const duration = prev ? ( curr.time - prev.time): 0;
+                const duration = prev ? (curr.time - prev.time) : 0;
                 // 【其他帧】保持原有动画效果
                 if (j > 0) {
                     this.masterTimeline.to(clip, {
@@ -241,12 +243,27 @@ class myStageClass {
                         onComplete: () => {
                             console.log("onComplete动画结束后隐藏")
                             clip.visible(false); // 动画结束后隐藏
+                        },
+                        onUpdate:()=>{
+                            
+                            // 判断有他的音频 if()
+                            if( Math.floor(state.currentTime *2%2)){
+                                clip.image(_this.imagelist[0])
+                                clip.getLayer().batchDraw();
+                            }else{
+                                clip.image(_this.imagelist[1])
+                                clip.getLayer().batchDraw();
+                            }
+                            console.log(state.currentTime,"--------")
+                           
+
                         }
                     }, prev.startTime); // 注意：to 动画通常从上一帧时间点开始
                 } else {
                     // 如果时间差为0，也瞬间设置
                     this.masterTimeline.set(clip, {
-                        ...curr.data
+                        ...curr.data,
+
                     }, startTime);
                 }
 
@@ -357,7 +374,7 @@ class myStageClass {
                 clipid: this.selectedclipId,
                 key: [{ ...addItem }]
             })
-            
+
         }
         // 进行排序
         insetkeyframesItem = this.insetkeyframes.find(k => k.clipid == this.selectedclipId)
@@ -381,7 +398,7 @@ class myStageClass {
 
     }
 
-    
+
 
 
 }
