@@ -9,6 +9,7 @@
   </link>
   <script src="https://unpkg.com/konva@9/konva.min.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/gsap.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js"></script>
 </head>
 
 <body>
@@ -38,7 +39,7 @@
         <!-- 时间轴 -->
         <div class="rebuildTimeline">
           <div>
-            <div><span class="btn-modern">插帧</span></div>
+            <div><span id="addkeyFrame" class="btn-modern">插帧</span></div>
             <div class="timelist" id="keyframelist">
               <div><span>起始</span><span>设置</span></div>
               <div><span>0802</span><span>删除</span></div>
@@ -90,10 +91,11 @@
   <!-- Toast -->
   <div class="toast" id="toast"></div>
   <!-- ==================== 状态管理 ==================== -->
-  
+
   <script src="js/state.js"></script>
   <script src="js/konva.js"></script>
   <script src="js/dom.js"></script>
+  <script src="js/importandexport.js"></script>
   <!-- // ==================== 时间轴渲染 ==================== -->
   <script src="js/ruler.js"></script>
   <!-- 轨道 -->
@@ -111,22 +113,28 @@
   <script src="js/tool.js"></script>
   <script src="js/listeners.js"></script>
   <script src="js/itemKeyframe.js"></script>
-  
-  
+
+
 
   <script>
-
-
-
     // ==================== 初始化 ====================
     function init() {
+      myState = new myStateClass()
+      state = myState.get()
+      myStage = new myStageClass(state)
+
+
+
       updateMaxTime();
       renderRuler();
       renderTracks();
       updatePlayheadPosition();
       setupEventListeners();
       updateTimeDisplay();
-      
+
+
+
+
     }
 
     // ==================== 启动 ====================
@@ -138,6 +146,7 @@
     console.log('  - 拖拽红色播放头：定位');
     console.log('  - 点击预览区：加载视频文件');
     console.log('  - 右键片段：复制/删除');
+    console.log('  - w,s 上箭头 下箭头 ：图层移动');
   </script>
 </body>
 

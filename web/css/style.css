@@ -135,12 +135,10 @@ body {
 
 #preview-placeholder {
     transform: scale(0.3);
-    transform-origin: top;
+    transform-origin: top left;
     width: 1920px;
     height: 1080px;
-    position: absolute;
-    top: 0;
-    left: 0;
+    
 
 }
 

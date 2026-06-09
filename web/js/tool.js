@@ -27,24 +27,7 @@ function loadVideoFile(file) {
 
 
 
-// ==================== 数据导出/导入 ====================
-function exportData() {
-    const data = {
-        scale: state.scale,
-        currentTime: state.currentTime,
-        maxTime: state.maxTime,
-        tracks: state.tracks
-    };
-    const json = JSON.stringify(data, null, 2);
-    const blob = new Blob([json], { type: 'application/json' });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = 'timeline_project.json';
-    a.click();
-    URL.revokeObjectURL(url);
-    showToast('项目已导出');
-}
+
 
 function importData(input) {
     const file = input.files;

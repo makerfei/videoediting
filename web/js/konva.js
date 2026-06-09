@@ -3,10 +3,15 @@ class myStageClass {
     constructor(instate) {
         this.stage = new Konva.Stage({ container: 'preview-placeholder', width: 1920, height: 1080 });
         this.masterTimeline = null
+        this.keyframes = []; // 存储关键帧数据 按物体分类。  [{name:"clipid",islaod,trackid,keyframes:[x,y,z,k]}]
+
+        this.insetkeyframes = []
+
         this.stage.on('click', (e) => {
             this.stageClick(e)
         });
         this.reStart(instate)
+
     }
     reStart(instate) {
         const layers = this.stage.getChildren(); // 获取所有图层
@@ -16,7 +21,10 @@ class myStageClass {
         });
         // 重要：重绘舞台以反映变化
         this.stage.draw();
-        this.keyframes = []; // 存储关键帧数据 按物体分类。  [{name:"clipid",trackid,keyframes:[x,y,z,k]}]
+        this.keyframes.forEach(e => {
+            e = { ...e, isload: false }
+        })
+
         this.shape = {}// 存储所有形状引用 轨道和元素混用
         this.state = {
             ...instate,
@@ -107,7 +115,8 @@ class myStageClass {
             this.selectedtrackId = track.id;
 
             let keyframe = this.keyframes.find(s => s.clipid === clip.id)
-            myitemKeyframe.show(keyframe)
+            let insetkeyframesItem = this.insetkeyframes.find(k => k.clipid == clip.id)
+            myitemKeyframe.show(keyframe,insetkeyframesItem)
         });
         // 2. 监听拖拽结束（移动位置）
         konvaImg.on('dragend', () => {
@@ -131,12 +140,15 @@ class myStageClass {
             this.keyframes.push({
                 clipid: c.id,
                 trackid: t.id,
+                isload: true,
                 key: [
                     { "time": c.start, data: { x: rect.x(), y: rect.y(), width: rect.width(), height: rect.height(), rotation: rect.rotation(), scaleX: rect.scaleX(), scaleY: rect.scaleY(), opacity: 1 } },
                     { "time": c.start + c.duration, data: { x: rect.x(), y: rect.y(), width: rect.width(), height: rect.height(), rotation: rect.rotation(), scaleX: rect.scaleX(), scaleY: rect.scaleY(), opacity: 1 } }
                 ]
             })
         } else {
+            keyframe.isload = true
+            keyframe.trackid = t.id
             keyframe.key[0]["time"] = c.start
             keyframe.key[1]["time"] = c.start + c.duration
         }
@@ -149,7 +161,10 @@ class myStageClass {
     rebuildTimeline() {
         const _this = this;
         if (this.masterTimeline) this.masterTimeline.kill();
-        if (this.keyframes.length === 0) return;
+        let isloadkeyframes = this.keyframes.filter(k => k.isload)
+
+
+        if (isloadkeyframes.length === 0) return;
         this.masterTimeline = gsap.timeline({
             paused: true,
             onComplete: () => {
@@ -178,21 +193,41 @@ class myStageClass {
 
 
 
-        for (let i = 0; i < this.keyframes.length; i++) {
-            const currItem = this.keyframes[i];
+        for (let i = 0; i < isloadkeyframes.length; i++) {
+            const currItem = isloadkeyframes[i];
             let clip = this.shape[currItem.clipid]
+            // 获取其插入的关键帧
+            let inSertkey = this.insetkeyframes.find(k=>k.clipid==currItem.clipid) 
+            let startTime =  currItem.key[0].time
+            let endTime =  currItem.key[currItem.key.length-1].time;
 
-            for (let j = 0; j < currItem.key.length; j++) {
-                const curr = currItem.key[j];
-                const next = j < (currItem.key.length - 1) ? currItem.key[j + 1] : null;
+            let newCurrtimeKey = []
+            newCurrtimeKey.push(currItem.key[0])
+
+            if(inSertkey){
+                inSertkey.key.forEach(k=>{
+                     if((startTime+k.time)<endTime){
+                        newCurrtimeKey.push({
+                            ...k,
+                            time:startTime+k.time
+                        })
+                     }
+                })
+            }
+            newCurrtimeKey.push(currItem.key[1])
+
+            
+            for (let j = 0; j < newCurrtimeKey.length; j++) {
+                const curr =newCurrtimeKey[j];
+                const prev = j >0 ?newCurrtimeKey[j - 1] : null;
 
                 // 计算开始时间：如果是第一帧，时间为0；否则为上一帧的时间
                 const startTime = curr.time;
                 // 计算持续时间：如果是第一帧，无需duration；否则为当前帧与上一帧的时间差
-                const duration = next ? (next.time - curr.time) : 0;
+                const duration = prev ? ( curr.time - prev.time): 0;
                 // 【其他帧】保持原有动画效果
-                if (duration > 0) {
-                    this.masterTimeline.from(clip, {
+                if (j > 0) {
+                    this.masterTimeline.to(clip, {
                         ...curr.data,
                         duration: duration,
                         ease: "power1.inOut",
@@ -205,7 +240,7 @@ class myStageClass {
                             console.log("onComplete动画结束后隐藏")
                             clip.visible(false); // 动画结束后隐藏
                         }
-                    }, startTime); // 注意：to 动画通常从上一帧时间点开始
+                    }, prev.startTime); // 注意：to 动画通常从上一帧时间点开始
                 } else {
                     // 如果时间差为0，也瞬间设置
                     this.masterTimeline.set(clip, {
@@ -291,11 +326,66 @@ class myStageClass {
             scaleY: rect.scaleY(),
         }
         this.rebuildTimeline()
+        let insetkeyframesItem = this.insetkeyframes.find(k => k.clipid == clipid)
+        myitemKeyframe.show(keyframes, insetkeyframesItem)
     }
+    // 添加过渡动画
+    addkeyFrame(time) {
+
+        let insetkeyframesItem = this.insetkeyframes.find(k => k.clipid == this.selectedclipId)
+        let trackItem = this.state.tracks.find(t => t.id == this.selectedtrackId)
+        let clipItem = trackItem.clips.find(c => c.id == this.selectedclipId)
+        let rect = this.selectedNode
+        let addItem = {
+            time: time - clipItem.start,
+            data: {
+                x: rect.x(),
+                y: rect.y(),
+                width: rect.width(),
+                height: rect.height(),
+                rotation: rect.rotation(),
+                scaleX: rect.scaleX(),
+                scaleY: rect.scaleY(),
+            }
+        }
+        if (insetkeyframesItem) {
+            insetkeyframesItem.key.push(addItem)
+        } else {
+            this.insetkeyframes.push({
+                clipid: this.selectedclipId,
+                key: [{ ...addItem }]
+            })
+            
+        }
+        // 进行排序
+        insetkeyframesItem = this.insetkeyframes.find(k => k.clipid == this.selectedclipId)
+        insetkeyframesItem.key.sort((a, b) => a.time - b.time);
+
+
+
+        insetkeyframesItem = this.insetkeyframes.find(k => k.clipid == this.selectedclipId)
+        let keyframes = this.keyframes.find(k => k.clipid == this.selectedclipId)
+        this.rebuildTimeline()
+        myitemKeyframe.show(keyframes, insetkeyframesItem)
+    }
+    delKeyframes(clipid, index) {
+        let delkeyframesItem = this.insetkeyframes.find(k => k.clipid == clipid)
+        if (!delkeyframesItem) return
+        delkeyframesItem.key.splice(index, 1)
+        let keyframes = this.keyframes.find(k => k.clipid == this.selectedclipId)
+        let keyframesItem = this.insetkeyframes.find(k => k.clipid == clipid)
+        this.rebuildTimeline()
+        myitemKeyframe.show(keyframes, keyframesItem)
+
+    }
+
+    
+
+
 }
 
 
-myStage = new myStageClass(state)
+
 
 
 
