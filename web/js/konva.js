@@ -192,6 +192,7 @@ class myStageClass {
                     _this.state.currentTime = _this.masterTimeline.time()
                     animatePlayhead(_this.masterTimeline.time())
                 }
+                _this.stage.draw()
             }
         });
 
@@ -246,16 +247,24 @@ class myStageClass {
                         },
                         onUpdate:()=>{
                             
-                            // 判断有他的音频 if()
-                            if( Math.floor(state.currentTime *2%2)){
-                                clip.image(_this.imagelist[0])
-                                clip.getLayer().batchDraw();
-                            }else{
-                                clip.image(_this.imagelist[1])
-                                clip.getLayer().batchDraw();
-                            }
-                            console.log(state.currentTime,"--------")
+                            // // 判断有他的音频 if()
+                            // if( Math.floor(state.currentTime *2%2)){
+                            //     clip.image(_this.imagelist[0])
+                            //     clip.getLayer().batchDraw();
+                            // }else{
+                            //     clip.image(_this.imagelist[1])
+                            //     clip.getLayer().batchDraw();
+                            // }
+                            // console.log(state.currentTime,"--------")
                            
+
+                            // 在 startTime 时刻执行 myCallback 函数
+                            // this.masterTimeline.call(myCallback, [param1, param2], startTime);
+
+                            // function myCallback(param1, param2) {
+                            //     console.log("时间轴到达指定时间点", param1, param2);
+                            //     // 在这里执行你需要的逻辑，比如手动更新 Konva 图片
+                            // }
 
                         }
                     }, prev.startTime); // 注意：to 动画通常从上一帧时间点开始
