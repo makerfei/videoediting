@@ -1,0 +1,100 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>GSAP + Konva 音频口型同步</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/gsap.min.js"></script>
+    <script src="https://unpkg.com/konva@9.3.6/konva.min.js"></script>
+    <style>
+        body {
+            background-color: #0f172a;
+            color: #e2e8f0;
+            font-family: 'Inter', sans-serif;
+        }
+
+        .glass-panel {
+            background: rgba(30, 41, 59, 0.7);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        /* 隐藏默认文件输入框 */
+        input[type="file"] {
+            display: none;
+        }
+    </style>
+</head>
+
+<body class="min-h-screen flex flex-col items-center justify-center p-4">
+
+</body>
+<script>
+    // 假设你有一个输入框或变量存储音频链接
+    // const audioUrl = "https://example.com/music.mp3"; 
+
+    // 替换原来的 fileInput 监听器，或者创建一个新函数来加载链接
+    async function loadAudioFromUrl(audioUrl) {
+        if (!audioUrl) return;
+
+
+
+        // 1. 使用 fetch 获取音频文件
+        const response = await fetch(audioUrl);
+
+
+        // 2. 将响应转换为 ArrayBuffer (替代 file.arrayBuffer())
+        const arrayBuffer = await response.arrayBuffer();
+
+        const AudioContext = window.AudioContext || window.webkitAudioContext;
+        audioContext = new AudioContext();
+        analyser = audioContext.createAnalyser();
+        analyser.fftSize = 256; // 频率数据量
+
+        // 3. 解码音频数据 (这一步与原来完全相同)
+        audioBuffer = await audioContext.decodeAudioData(arrayBuffer);
+
+
+        source = audioContext.createBufferSource();
+        source.buffer = audioBuffer;
+
+        // 连接分析器
+        source.connect(analyser);
+        analyser.connect(audioContext.destination);
+        source.start(0, 0) //(‌when‌,offset‌,duration‌:null (播完)) 
+        state.source.onended = () => {
+            console.log("播完了")
+        };
+        animate()
+    }
+
+    // 调用示例：
+    loadAudioFromUrl('1.mp3');
+
+    function animate() {
+        if (!state.isPlaying) return;
+
+        state.animationId = requestAnimationFrame(animate);
+        const bufferLength = analyser.frequencyBinCount;
+        const dataArray = new Uint8Array(bufferLength);
+        analyser.getByteFrequencyData(dataArray);
+        debugger
+
+
+
+    }
+
+
+
+
+
+
+
+
+
+
+</script>
+
+</html>
