@@ -6,7 +6,7 @@ class myStageClass {
         this.keyframes = []; // 存储关键帧数据 按物体分类。  [{name:"clipid",islaod,trackid,keyframes:[x,y,z,k]}]
 
         this.insetkeyframes = []
-        this.imagelist=[]
+
         this.stage.on('click', (e) => {
             this.stageClick(e)
         });
@@ -14,13 +14,8 @@ class myStageClass {
 
     }
     reStart(instate) {
-        const layers = this.stage.getChildren(); // 获取所有图层
-        // 遍历并销毁每个图层
-        layers.forEach((layer) => {
-            layer.destroy();
-        });
-        // 重要：重绘舞台以反映变化
-        this.stage.draw();
+         // 一行代码替代整个循环
+        this.stage.destroyChildren();
         this.keyframes.forEach(e => {
             e = { ...e, isload: false }
         })
@@ -28,7 +23,7 @@ class myStageClass {
         this.shape = {}// 存储所有形状引用 轨道和元素混用
         this.state = {
             ...instate,
-            tracks: instate.tracks.filter(f => f.type !== "audio")
+            tracks: instate.tracks.filter(f => f.type === "video")
         }
         console.log('-----', this.state)
         this.tr = null;
@@ -68,6 +63,10 @@ class myStageClass {
 
     // 创建图层
     createLayer() {
+         // 一行代码替代整个循环
+        this.stage.destroyChildren();
+        // 重要：重绘舞台以反映变化
+        this.stage.draw();
         this.state.tracks.forEach((e, i) => {
             const layer = new Konva.Layer();
             layer.setZIndex(i)
@@ -104,7 +103,7 @@ class myStageClass {
         this.shape[clip.id] = konvaImg
 
         this.addDefKeyframes(track, clip)
-        this.imagelist.push(img)
+       
         konvaImg.on('click', (e) => {
             console.log('图片被点击了！');
             e.cancelBubble = true; // ✅ 关键：阻止冒泡
@@ -114,7 +113,7 @@ class myStageClass {
             this.selectedclipId = clip.id;
             this.selectedtrackId = track.id;
 
-            
+
 
             let keyframe = this.keyframes.find(s => s.clipid === clip.id)
             let insetkeyframesItem = this.insetkeyframes.find(k => k.clipid == clip.id)
@@ -245,8 +244,8 @@ class myStageClass {
                             console.log("onComplete动画结束后隐藏")
                             clip.visible(false); // 动画结束后隐藏
                         },
-                        onUpdate:()=>{
-                            
+                        onUpdate: () => {
+
                             // // 判断有他的音频 if()
                             // if( Math.floor(state.currentTime *2%2)){
                             //     clip.image(_this.imagelist[0])
@@ -256,7 +255,7 @@ class myStageClass {
                             //     clip.getLayer().batchDraw();
                             // }
                             // console.log(state.currentTime,"--------")
-                           
+
 
                             // 在 startTime 时刻执行 myCallback 函数
                             // this.masterTimeline.call(myCallback, [param1, param2], startTime);
@@ -279,6 +278,7 @@ class myStageClass {
             }
         }
         this.contorlClipVisible(state.currentTime)
+        this.syncToTime(state.currentTime)
 
     }
     //  调整时间

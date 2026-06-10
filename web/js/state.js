@@ -7,7 +7,8 @@ class myStateClass {
     }
     defData() {
         return {
-            name:"videoJsonData/jjqq",
+            
+            name: "videoJsonData/jjqq",
             scale: 100, // 像素/秒
             currentTime: 0, // 当前播放时间（秒）
             isPlaying: false,
@@ -16,10 +17,17 @@ class myStateClass {
                 {
                     id: 'vtid', type: 'video', name: '图像轨道 1',
                     clips: [
-                        { 
-                            id: 'c1', type: "image",  categorize:"persion",   start: 0, duration: 1, x: 0, y: 0, width: 1920, height: 1080, name: '张三', src: "save.png" 
-                        },
-                        { id: 'c2', type: "image", start: 1, duration: 2, name: '22222222', src: "1.gif" }
+                        {
+                            id: 'c21', type: "image", categorize: "persion", start: 0, duration: 10, x: 0, y: 0, width: 1920, height: 1080, name: '张三', src: "image/1.jpg"
+                        }
+                    ]
+                },
+                {
+                    id: 'vtid2', type: 'video', name: '图像轨道 1',
+                    clips: [
+                        { id: 'c2', type: "image", start: 0, duration: 2,  x: 0, y: 0,   name: '22222222', src: "gif/3.gif" },
+
+                        { id: 'c22', type: "image", start: 0, duration: 2, x: 0, y: 0,   name: '22222222', src: "gif/2.gif" }
                     ]
                 },
                 {
