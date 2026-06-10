@@ -4,157 +4,16 @@
 <head>
     <meta charset="UTF-8">
     <title>调试录制</title>
+    <link rel="icon" href="1.gif">
     <script src="https://cdn.jsdelivr.net/npm/konva@9/konva.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/gsap@3/dist/gsap.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/ccapture.js@1.1.0/build/CCapture.all.min.js"></script>
 </head>
 
 <body>
-    <div id="container"></div>
-    <button id="recordBtn">录制视频</button>
-
-    <script>
-        // ========== Konva 舞台 ==========
-        const stage = new Konva.Stage({
-            container: 'container',
-            width: 800,
-            height: 600
-        });
-        const layer = new Konva.Layer();
-        stage.add(layer);
-
-        const rect = new Konva.Rect({
-            x: 50,
-            y: 250,
-            width: 100,
-            height: 100,
-            fill: '#ff6b6b'
-        });
-        layer.add(rect);
-        layer.draw();
-
-        // ========== GSAP 时间轴 ==========
-        const tl = gsap.timeline({ paused: true });
-        tl.to(rect, {
-            x: 650,
-            duration: 2,
-            ease: 'power2.inOut',
-            onUpdate: () => layer.batchDraw()
-        });
-        tl.to(rect, {
-            rotation: 360,
-            duration: 2,
-            onUpdate: () => layer.batchDraw()
-        });
-        tl.to(rect, {
-            fill: '#4ecdc4',
-            duration: 1,
-            onUpdate: () => layer.batchDraw()
-        });
-
-
-        function record() {
-            console.log('========== 开始录制 ==========');
-
-            const fps = 30;
-
-            // ★ 强制计算时间轴时长
-            tl.invalidate();
-            tl.progress(1, false);  // 瞬间跳到终点
-            const totalDuration = tl.totalDuration();
-            tl.progress(0, false);  // 瞬间回到起点
-            tl.pause();
-
-            console.log('总时长(秒):', totalDuration);
-
-            // ★ 安全检查
-            if (!totalDuration || totalDuration <= 0 || !isFinite(totalDuration)) {
-                console.error('❌ 时间轴时长异常:', totalDuration);
-                alert('动画时长异常，无法录制。请检查 GSAP 时间轴是否正确配置。');
-                return;
-            }
-
-            const totalFrames = Math.ceil(totalDuration * fps);
-            console.log('总帧数:', totalFrames);
-
-            // ★ 创建 CCapture，加 try-catch
-            let capturer;
-            try {
-                capturer = new CCapture({
-                    format: 'webm',
-                    framerate: fps,
-                    quality: 90,
-                    name: 'animation',
-                    verbose: true
-                });
-                console.log('✅ CCapture 创建成功');
-            } catch (e) {
-                console.error('❌ CCapture 创建失败:', e);
-                return;
-            }
-
-            const canvas = stage.toCanvas();
-            capturer.start();
-            console.log('✅ capturer.start() 完成');
-
-            let frameCount = 0;
-            let startTime = Date.now();
-
-
-            function renderLoop() {
-                console.log('🔵 渲染帧:', frameCount, '/', totalFrames);
-
-                if (frameCount >= totalFrames) {
-                    console.log('🏁 录制完成，开始编码...');
-                    capturer.stop();
-                    capturer.save(blob => {
-                        console.log('✅ 下载触发，大小:', (blob.size / 1024 / 1024).toFixed(2), 'MB');
-                        const url = URL.createObjectURL(blob);
-                        const a = document.createElement('a');
-                        a.href = url;
-                        a.download = 'animation.webm';
-                        a.click();
-                        URL.revokeObjectURL(url);
-                    });
-                    return;
-                }
-
-                const time = frameCount / fps;
-                tl.time(time);
-                stage.batchDraw();
-
-                try {
-                    capturer.capture(canvas);
-                } catch (e) {
-                    console.error('❌ capture 出错:', e.message);
-                }
-
-                frameCount++;
-                // ★ 关键改动：用 setTimeout 替代 requestAnimationFrame
-                setTimeout(renderLoop, 1000 / fps);
-            }
-
-            console.log('🚀 启动录制循环（setTimeout 模式）...');
-            setTimeout(renderLoop, 0);
-
-        }
-
-        // DOM 加载完再绑定
-        document.addEventListener('DOMContentLoaded', () => {
-            const btn = document.getElementById('recordBtn');
-            if (btn) {
-                btn.addEventListener('click', record);
-                console.log('✅ 按钮事件绑定成功');
-            } else {
-                console.error('❌ 找不到 id 为 recordBtn 的按钮');
-            }
-        });
-
-
-
-
-
-    </script>
+    <div id="playBtn">开始</div>
+    <button id="recordBtn"></button>
+    <script src="js/konva.js"></script>
 </body>
 
 </html>

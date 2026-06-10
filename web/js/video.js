@@ -9,6 +9,9 @@ function updateVideoPreview() {
         t.clips.sort((a, b) => a.start - b.start);
     });
     console.log("updateVideoPreview",state)
+
+    // 进入之前 先把类分好
+
     myStage.reStart(state)
    
 }
