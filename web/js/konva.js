@@ -242,23 +242,15 @@ class myStageClass {
                     clip.visible(false); // 动画结束后隐藏
                 },
                 onUpdate: () => {
-
                     if (data.src.toLowerCase().endsWith('.gif') && _this.state.currentTime > startTime) {
                         let fps = _this.imagePool.gifFpt(data.src)
                         if (Math.floor((_this.state.currentTime * fps) % 1) == 0) {
-
-
                             // 此处判断
                             let index = Math.floor(((_this.state.currentTime - startTime) * fps) / 1)
-
-
-
                             clip.image(_this.imagePool.get(data.src, index))
                             clip.getLayer().batchDraw();
                         }
-
                     }
-
                     // // 判断有他的音频 if()
                     // if( Math.floor(state.currentTime *2%2)){
                     //     clip.image(_this.imagelist[0])
@@ -279,10 +271,6 @@ class myStageClass {
                 }
             }, startTime) : this.masterTimeline.set(clip, { ...data }, startTime) : null;
         }
-
-
-
-
         this.syncToTime(state.currentTime)
     }
     //  调整时间

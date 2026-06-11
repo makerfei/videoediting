@@ -25,17 +25,9 @@ async function exportAllFramesAsUpload(inmyStage) {
     let totalFrames = Math.ceil(inmyStage.masterTimeline.totalDuration() * fps);
     let tl = inmyStage.masterTimeline;
     let stage = inmyStage.stage;
+
     console.log(`开始上传: 总帧数 ${totalFrames}, 时长 ${tl.totalDuration()}s`);
-     axios.post('/api/imagetovideo')
-        .then(response => {
-            showToast(`视频生成中`)
-        })
-        .catch(error => {
-            showToast(`视频生成失败: ${error}`)
-        });
-        return
-
-
+    inmyStage.syncToTime(0)
 
     for (let i = 0; i < totalFrames; i++) {
         const time = i / fps;
@@ -78,14 +70,17 @@ async function exportAllFramesAsUpload(inmyStage) {
         // await new Promise(resolve => setTimeout(resolve, 50)); 
     }
 
-   
-
-
-
-
     console.log('🎉 所有帧上传完成！ ', (Date.now() - timestamp) / 1000, '秒');
-}
 
+    axios.post('/api/imagetovideo')
+        .then(response => {
+            showToast(`视频生成中`)
+        })
+        .catch(error => {
+            showToast(`视频生成失败: ${error}`)
+        });
+    return
+}
 // 绑定点击事件
 document.getElementById("exportBtnVideo").onclick = function () {
     // 确保 myStage 已经在作用域中可用
