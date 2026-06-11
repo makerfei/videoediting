@@ -5,12 +5,14 @@ class myStageClass {
         this.masterTimeline = null
         this.keyframes = []; // 存储关键帧数据 按物体分类。  [{name:"clipid",islaod,trackid,keyframes:[x,y,z,k]}]
         this.insetkeyframes = []
+        this.imagePool = new ImagePool();
         this.stage.on('click', (e) => {
             this.stageClick(e)
         });
+
         // this.reStart(instate)
     }
-    reStart(instate) {
+    async reStart(instate) {
         // 一行代码替代整个循环
         this.stage.destroyChildren();
         if (this.masterTimeline) this.masterTimeline.kill();
@@ -18,13 +20,15 @@ class myStageClass {
             e = { ...e, isload: false }
         })
 
+
+
         this.shape = {}// 存储所有形状引用 轨道和元素混用
-     
+
         this.state = {
             ...instate,
             tracks: instate.tracks.filter(f => f.type === "video")
         }
-
+        await this.imagePool.preloadAll(getTracksImage(this.state.tracks))
         this.tr = null;
         this.selectedNode = null;
         this.selectedclipId = null;
@@ -75,52 +79,42 @@ class myStageClass {
     createNode() {
         this.state.tracks.forEach((t, i) => {
             t.clips.forEach((c, j) => {
-                const img = new Image();
-                img.src = c.src;
-                img.onload = () => {
-                    this.imageOnload(t, c, img)
-                }
+                let track = t;
+                let clip = c
+                if (this.shape[clip.id]) return;
+                let img = this.imagePool.get(c.src)
+                const konvaImg = new Konva.Image({
+                    x: clip.x > -1 ? clip.x : 100,
+                    y: clip.y > -1 ? clip.y : 100,
+                    width: clip.width ? clip.width : img.width,
+                    height: clip.height ? clip.height : img.height,
+                    image: img,
+                    draggable: true,
+                });
+                this.shape[track.id].add(konvaImg);
+                konvaImg.visible(false)
+                this.shape[clip.id] = konvaImg
+                this.addDefKeyframes(track, clip)
+                konvaImg.on('click', (e) => {
+                    console.log('图片被点击了！');
+                    e.cancelBubble = true; // ✅ 关键：阻止冒泡
+                    this.tr.nodes([konvaImg]);
+                    this.shape[track.id].batchDraw();
+                    this.selectedNode = konvaImg;
+                    this.selectedclipId = clip.id;
+                    this.selectedtrackId = track.id;
+                    let keyframe = this.keyframes.find(s => s.clipid === clip.id)
+                    let insetkeyframesItem = this.insetkeyframes.find(k => k.clipid == clip.id)
+                    myitemKeyframe.show(keyframe, insetkeyframesItem)
+                });
+                // 2. 监听拖拽结束（移动位置）
+                konvaImg.on('dragend', () => {
+                    // this.stage.draw();
+                });
             })
         })
     }
-    imageOnload(track, clip, img) {
 
-        if (this.shape[clip.id]) return;
-        const konvaImg = new Konva.Image({
-            x: clip.x > -1 ? clip.x : 100,
-            y: clip.y > -1 ? clip.y : 100,
-            width: clip.width ? clip.width : img.width,
-            height: clip.height ? clip.height : img.height,
-            image: img,
-            draggable: true,
-        });
-        this.shape[track.id].add(konvaImg);
-        konvaImg.visible(false)
-        this.shape[clip.id] = konvaImg
-
-        this.addDefKeyframes(track, clip)
-
-        konvaImg.on('click', (e) => {
-            console.log('图片被点击了！');
-            e.cancelBubble = true; // ✅ 关键：阻止冒泡
-            this.tr.nodes([konvaImg]);
-            this.shape[track.id].batchDraw();
-            this.selectedNode = konvaImg;
-            this.selectedclipId = clip.id;
-            this.selectedtrackId = track.id;
-
-
-
-            let keyframe = this.keyframes.find(s => s.clipid === clip.id)
-            let insetkeyframesItem = this.insetkeyframes.find(k => k.clipid == clip.id)
-            myitemKeyframe.show(keyframe, insetkeyframesItem)
-        });
-        // 2. 监听拖拽结束（移动位置）
-        konvaImg.on('dragend', () => {
-            // this.stage.draw();
-        });
-
-    };
     // 其他位置点击
     stageClick(e) {
         if (e.target === this.stage) {
@@ -230,7 +224,7 @@ class myStageClass {
             let clip = finalkeyframesItem.clip
             let duration = finalkeyframesItem.duration
             let startTime = finalkeyframesItem.startTime
-             let data = finalkeyframesItem.data
+            let data = finalkeyframesItem.data
 
             clip && this.masterTimeline.to(clip, {
                 ...data,
