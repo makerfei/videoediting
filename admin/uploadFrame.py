@@ -4,13 +4,6 @@ import re
 from email.parser import BytesParser
 from email.policy import default
 
-UPLOAD_FOLDER = 'uploaded_frames'
-
-def ensure_upload_dir():
-    if not os.path.exists(UPLOAD_FOLDER):
-        os.makedirs(UPLOAD_FOLDER)
-
-
 def handle_upload_frame(handler, params):
     """
     处理 multipart/form-data 文件上传
@@ -56,9 +49,7 @@ def handle_upload_frame(handler, params):
 
        
 
-        ensure_upload_dir()
-        UPLOAD_FOLDER_FIL = os.path.join(parent_dir, UPLOAD_FOLDER)
-        save_path = os.path.join(UPLOAD_FOLDER_FIL, filename)
+        save_path = os.path.join(parent_dir, filename)
 
         # 7. 写入文件
         with open(save_path, 'wb') as f:

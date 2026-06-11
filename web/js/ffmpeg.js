@@ -25,7 +25,6 @@ async function exportAllFramesAsUpload(inmyStage) {
     let totalFrames = Math.ceil(inmyStage.masterTimeline.totalDuration() * fps);
     let tl = inmyStage.masterTimeline;
     let stage = inmyStage.stage;
-
     console.log(`开始上传: 总帧数 ${totalFrames}, 时长 ${tl.totalDuration()}s`);
     inmyStage.syncToTime(0)
 
@@ -40,7 +39,7 @@ async function exportAllFramesAsUpload(inmyStage) {
         const dataURL = stage.toDataURL({ pixelRatio: 1 });
         // 提取 base64 内容部分 (去掉 "data:image/png;base64," 前缀)
         const base64Data = dataURL.split(',');
-        const filename = `frame_${String(i).padStart(5, '0')}.png`;
+        const filename = `uploaded_frames/frame_${String(i).padStart(5, '0')}.png`;
         try {
             // 3. 将 Base64 转换为 Blob 以便上传
             // 注意：toDataURL 默认通常是 image/png
@@ -60,7 +59,6 @@ async function exportAllFramesAsUpload(inmyStage) {
             }
             // 可选：解析后端返回结果
             // const result = await response.json();
-            console.clear();
             console.log(`✅ 已上传: ${i + 1}/${totalFrames} - ${filename}`);
         } catch (error) {
             console.error(`❌ 上传失败 (帧 ${i}):`, error);
@@ -71,7 +69,7 @@ async function exportAllFramesAsUpload(inmyStage) {
     }
 
     console.log('🎉 所有帧上传完成！ ', (Date.now() - timestamp) / 1000, '秒');
-
+    await myAudio.uploadFrame()
     axios.post('/api/imagetovideo')
         .then(response => {
             showToast(`视频生成中`)

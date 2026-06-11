@@ -22,7 +22,12 @@ function startPlayback() {
     state.isPlaying = true
     updatePlayButtonUI();
     myStage.startPlayback(state.currentTime)
+    myAudio.startPlayback(state.currentTime)
     animatePlayhead();
+
+
+
+
 }
 
 function stopPlayback() {
@@ -32,7 +37,9 @@ function stopPlayback() {
 
     // const video = DOM.previewVideo;
     // video.pause();
-    myStage.stopPlayback(state.currentTime)
+    myStage.stopPlayback()
+    myAudio.stopPlayback()
+
     // if (state.animationFrameId) {
     //     cancelAnimationFrame(state.animationFrameId);
     //     state.animationFrameId = null;

@@ -2,7 +2,7 @@
     "state": {
         "name": "videoJsonData/jjqq",
         "scale": 100,
-        "currentTime": 9.9583333,
+        "currentTime": 8.9166667,
         "isPlaying": false,
         "maxTime": 35,
         "tracks": [
@@ -16,7 +16,7 @@
                         "type": "image",
                         "categorize": "persion",
                         "start": 0,
-                        "duration": 10,
+                        "duration": 8.93,
                         "x": 0,
                         "y": 0,
                         "width": 1920,
@@ -34,7 +34,7 @@
                     {
                         "id": "c2",
                         "type": "image",
-                        "start": 0,
+                        "start": 1.52,
                         "duration": 2,
                         "x": 0,
                         "y": 0,
@@ -44,7 +44,7 @@
                     {
                         "id": "c22",
                         "type": "image",
-                        "start": 0,
+                        "start": 4.76,
                         "duration": 2,
                         "x": 0,
                         "y": 0,
@@ -60,16 +60,44 @@
                 "clips": [
                     {
                         "id": "c3",
+                        "start": 1,
+                        "duration": 2.0599999999999996,
+                        "name": "2212",
+                        "src": "audio/1.mp3"
+                    },
+                    {
+                        "id": "c4",
+                        "start": 3.0599999999999996,
+                        "duration": 2.84,
+                        "name": "2212",
+                        "src": "audio/脚步声zth070522.wav"
+                    }
+                ]
+            },
+            {
+                "id": "dds",
+                "type": "audio",
+                "name": "音频轨道 2",
+                "clips": [
+                    {
+                        "id": "c7",
                         "start": 0,
-                        "duration": 10,
-                        "name": "12221dfdfd放豆腐的方法德国的v分丰富的vv根本不够丰富v的v",
-                        "audioSrc": null
+                        "duration": 1.4,
+                        "name": "冒泡",
+                        "src": "audio/冒泡-WQ20070416.wav"
+                    },
+                    {
+                        "id": "c6",
+                        "start": 4.54,
+                        "duration": 4.08,
+                        "name": "sdsd",
+                        "src": "audio/2.mp3"
                     }
                 ]
             }
         ],
-        "selectedClipId": null,
-        "selectedTrackId": null,
+        "selectedClipId": "c21",
+        "selectedTrackId": "vtid",
         "dragState": null,
         "playheadDrag": false,
         "animationFrameId": null,
@@ -96,7 +124,7 @@
                     }
                 },
                 {
-                    "time": 10,
+                    "time": 8.93,
                     "data": {
                         "src": "image/1.jpg",
                         "x": 0,
@@ -117,11 +145,11 @@
             "isload": true,
             "key": [
                 {
-                    "time": 0,
+                    "time": 1.52,
                     "data": {
                         "src": "gif/3.gif",
-                        "x": 0,
-                        "y": 0,
+                        "x": 470.0000000000001,
+                        "y": -616.6666666666667,
                         "width": 1080,
                         "height": 1920,
                         "rotation": 0,
@@ -131,11 +159,11 @@
                     }
                 },
                 {
-                    "time": 2,
+                    "time": 3.52,
                     "data": {
                         "src": "gif/3.gif",
-                        "x": 0,
-                        "y": 0,
+                        "x": 739.998477,
+                        "y": -336.664669,
                         "width": 1080,
                         "height": 1920,
                         "rotation": 0,
@@ -152,11 +180,11 @@
             "isload": true,
             "key": [
                 {
-                    "time": 0,
+                    "time": 4.76,
                     "data": {
                         "src": "gif/2.gif",
-                        "x": 0,
-                        "y": 0,
+                        "x": 806.6666666666667,
+                        "y": 90,
                         "width": 500,
                         "height": 500,
                         "rotation": 0,
@@ -166,11 +194,11 @@
                     }
                 },
                 {
-                    "time": 2,
+                    "time": 6.76,
                     "data": {
                         "src": "gif/2.gif",
-                        "x": 0,
-                        "y": 0,
+                        "x": 830,
+                        "y": 676.6666666666666,
                         "width": 500,
                         "height": 500,
                         "rotation": 0,

@@ -8,7 +8,9 @@ updatetime = () => {
     }
     this.timer = setTimeout(() => {
       console.log("画布重新画 ----reStart---- 画布重新画")
+      stopPlayback()
       myStage.reStart(instate)
+      myAudio.reStart(instate)
     }, 1000);
 
   }

@@ -313,7 +313,7 @@ class myStageClass {
         this.masterTimeline.resume();
         // this.masterTimeline.restart();
     }
-    stopPlayback(time) {
+    stopPlayback() {
         if (!this.masterTimeline) return;
         this.masterTimeline.pause();
     }
