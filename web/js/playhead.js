@@ -49,7 +49,6 @@ function handlePlayheadDragStart(e) {
     }
     //播放头拖拽运动
     function onMove(ev) {
-        console.log("播放头拖拽运动")
         if (!state.playheadDrag) return;
         const rect = DOM.tracksContainer.getBoundingClientRect();
         const x = ev.clientX - rect.left + DOM.scrollContainer.scrollLeft;

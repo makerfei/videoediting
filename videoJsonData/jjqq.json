@@ -2,7 +2,7 @@
     "state": {
         "name": "videoJsonData/jjqq",
         "scale": 100,
-        "currentTime": 0,
+        "currentTime": 9.9833333,
         "isPlaying": false,
         "maxTime": 35,
         "tracks": [
@@ -12,24 +12,44 @@
                 "name": "图像轨道 1",
                 "clips": [
                     {
-                        "id": "c2",
+                        "id": "c21",
                         "type": "image",
-                        "start": 1,
-                        "duration": 2,
-                        "name": "22222222",
-                        "src": "1.gif"
-                    },
-                    {
-                        "id": "c1",
-                        "type": "image",
-                        "start": 4,
-                        "duration": 1,
+                        "categorize": "persion",
+                        "start": 0,
+                        "duration": 10,
                         "x": 0,
                         "y": 0,
                         "width": 1920,
                         "height": 1080,
-                        "name": "111111",
-                        "src": "save.png"
+                        "name": "张三",
+                        "src": "image/1.jpg"
+                    }
+                ]
+            },
+            {
+                "id": "vtid2",
+                "type": "video",
+                "name": "图像轨道 1",
+                "clips": [
+                    {
+                        "id": "c2",
+                        "type": "image",
+                        "start": 0,
+                        "duration": 2,
+                        "x": 0,
+                        "y": 0,
+                        "name": "22222222",
+                        "src": "gif/3.gif"
+                    },
+                    {
+                        "id": "c22",
+                        "type": "image",
+                        "start": 0,
+                        "duration": 2,
+                        "x": 0,
+                        "y": 0,
+                        "name": "22222222",
+                        "src": "gif/2.gif"
                     }
                 ]
             },
@@ -48,8 +68,8 @@
                 ]
             }
         ],
-        "selectedClipId": "c2",
-        "selectedTrackId": "vtid",
+        "selectedClipId": null,
+        "selectedTrackId": null,
         "dragState": null,
         "playheadDrag": false,
         "animationFrameId": null,
@@ -57,17 +77,18 @@
     },
     "keyframes": [
         {
-            "clipid": "c2",
+            "clipid": "c21",
             "trackid": "vtid",
             "isload": true,
             "key": [
                 {
-                    "time": 1,
+                    "time": 0,
                     "data": {
-                        "x": 86.66666666666663,
-                        "y": 690,
-                        "width": 256,
-                        "height": 256,
+                        "src": "image/1.jpg",
+                        "x": 0,
+                        "y": 0,
+                        "width": 1920,
+                        "height": 1080,
                         "rotation": 0,
                         "scaleX": 1,
                         "scaleY": 1,
@@ -75,12 +96,13 @@
                     }
                 },
                 {
-                    "time": 3,
+                    "time": 10,
                     "data": {
-                        "x": 1390,
-                        "y": 670,
-                        "width": 256,
-                        "height": 256,
+                        "src": "image/1.jpg",
+                        "x": 0,
+                        "y": 0,
+                        "width": 1920,
+                        "height": 1080,
                         "rotation": 0,
                         "scaleX": 1,
                         "scaleY": 1,
@@ -90,17 +112,18 @@
             ]
         },
         {
-            "clipid": "c1",
-            "trackid": "vtid",
+            "clipid": "c2",
+            "trackid": "vtid2",
             "isload": true,
             "key": [
                 {
-                    "time": 4,
+                    "time": 0,
                     "data": {
+                        "src": "gif/3.gif",
                         "x": 0,
                         "y": 0,
-                        "width": 1920,
-                        "height": 1080,
+                        "width": 1080,
+                        "height": 1920,
                         "rotation": 0,
                         "scaleX": 1,
                         "scaleY": 1,
@@ -108,12 +131,48 @@
                     }
                 },
                 {
-                    "time": 5,
+                    "time": 2,
                     "data": {
+                        "src": "gif/3.gif",
                         "x": 0,
                         "y": 0,
-                        "width": 1920,
-                        "height": 1080,
+                        "width": 1080,
+                        "height": 1920,
+                        "rotation": 0,
+                        "scaleX": 1,
+                        "scaleY": 1,
+                        "opacity": 1
+                    }
+                }
+            ]
+        },
+        {
+            "clipid": "c22",
+            "trackid": "vtid2",
+            "isload": true,
+            "key": [
+                {
+                    "time": 0,
+                    "data": {
+                        "src": "gif/2.gif",
+                        "x": 0,
+                        "y": 0,
+                        "width": 500,
+                        "height": 500,
+                        "rotation": 0,
+                        "scaleX": 1,
+                        "scaleY": 1,
+                        "opacity": 1
+                    }
+                },
+                {
+                    "time": 2,
+                    "data": {
+                        "src": "gif/2.gif",
+                        "x": 0,
+                        "y": 0,
+                        "width": 500,
+                        "height": 500,
                         "rotation": 0,
                         "scaleX": 1,
                         "scaleY": 1,
@@ -123,35 +182,5 @@
             ]
         }
     ],
-    "insetkeyframes": [
-        {
-            "clipid": "c2",
-            "key": [
-                {
-                    "time": 0.8799999999999999,
-                    "data": {
-                        "x": 751.317334,
-                        "y": 188.9226666666666,
-                        "width": 256,
-                        "height": 256,
-                        "rotation": 0,
-                        "scaleX": 1,
-                        "scaleY": 1
-                    }
-                },
-                {
-                    "time": 1.3599999999999999,
-                    "data": {
-                        "x": 762.6021226666667,
-                        "y": 678.9782863333334,
-                        "width": 256,
-                        "height": 256,
-                        "rotation": 0,
-                        "scaleX": 1,
-                        "scaleY": 1
-                    }
-                }
-            ]
-        }
-    ]
+    "insetkeyframes": []
 }

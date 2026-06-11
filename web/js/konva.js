@@ -82,7 +82,7 @@ class myStageClass {
                 let track = t;
                 let clip = c
                 if (this.shape[clip.id]) return;
-                let img = this.imagePool.get(c.src)
+                let img = this.imagePool.get(c.src, 0)
                 const konvaImg = new Konva.Image({
                     x: clip.x > -1 ? clip.x : 100,
                     y: clip.y > -1 ? clip.y : 100,
@@ -133,8 +133,8 @@ class myStageClass {
                 trackid: t.id,
                 isload: true,
                 key: [
-                    { "time": c.start, data: { x: rect.x(), y: rect.y(), width: rect.width(), height: rect.height(), rotation: rect.rotation(), scaleX: rect.scaleX(), scaleY: rect.scaleY(), opacity: 1 } },
-                    { "time": c.start + c.duration, data: { x: rect.x(), y: rect.y(), width: rect.width(), height: rect.height(), rotation: rect.rotation(), scaleX: rect.scaleX(), scaleY: rect.scaleY(), opacity: 1 } }
+                    { "time": c.start, data: { src: c.src, x: rect.x(), y: rect.y(), width: rect.width(), height: rect.height(), rotation: rect.rotation(), scaleX: rect.scaleX(), scaleY: rect.scaleY(), opacity: 1 } },
+                    { "time": c.start + c.duration, data: { src: c.src, x: rect.x(), y: rect.y(), width: rect.width(), height: rect.height(), rotation: rect.rotation(), scaleX: rect.scaleX(), scaleY: rect.scaleY(), opacity: 1 } }
                 ]
             })
         } else {
@@ -198,8 +198,6 @@ class myStageClass {
                 })
             }
             newCurrtimeKey.push(currItem.key[1])
-
-
             for (let j = 0; j < newCurrtimeKey.length; j++) {
                 const curr = newCurrtimeKey[j];
                 const prev = j > 0 ? newCurrtimeKey[j - 1] : null;
@@ -207,11 +205,15 @@ class myStageClass {
                 const startTime = curr.time;
                 // 计算持续时间：如果是第一帧，无需duration；否则为当前帧与上一帧的时间差
                 const duration = prev ? (curr.time - prev.time) : 0;
-                duration && finalkeyframes.push({
+                duration ? finalkeyframes.push({
                     clip,
                     data: curr.data,
                     duration: duration,
                     startTime: prev.time,
+                }) : finalkeyframes.push({
+                    clip,
+                    data: curr.data,
+                    startTime: curr.time,
                 })
             }
         }
@@ -226,7 +228,7 @@ class myStageClass {
             let startTime = finalkeyframesItem.startTime
             let data = finalkeyframesItem.data
 
-            clip && this.masterTimeline.to(clip, {
+            clip ? duration ? this.masterTimeline.to(clip, {
                 ...data,
                 duration: duration,
                 ease: "power1.inOut",
@@ -240,6 +242,22 @@ class myStageClass {
                     clip.visible(false); // 动画结束后隐藏
                 },
                 onUpdate: () => {
+
+                    if (data.src.toLowerCase().endsWith('.gif') && _this.state.currentTime > startTime) {
+                        let fps = _this.imagePool.gifFpt(data.src)
+                        if (Math.floor((_this.state.currentTime * fps) % 1) == 0) {
+
+
+                            // 此处判断
+                            let index = Math.floor(((_this.state.currentTime - startTime) * fps) / 1)
+
+
+
+                            clip.image(_this.imagePool.get(data.src, index))
+                            clip.getLayer().batchDraw();
+                        }
+
+                    }
 
                     // // 判断有他的音频 if()
                     // if( Math.floor(state.currentTime *2%2)){
@@ -259,7 +277,7 @@ class myStageClass {
                     //     // 在这里执行你需要的逻辑，比如手动更新 Konva 图片
                     // }
                 }
-            }, startTime);
+            }, startTime) : this.masterTimeline.set(clip, { ...data }, startTime) : null;
         }
 
 

@@ -8,7 +8,6 @@ class RouteManager:
             'GET': {},
             'POST': {}
         }
-
     def add_route(self, method, path, handler):
         """
         注册路由。
