@@ -4,28 +4,27 @@ class myStageClass {
         this.stage = new Konva.Stage({ container: 'preview-placeholder', width: 1920, height: 1080 });
         this.masterTimeline = null
         this.keyframes = []; // 存储关键帧数据 按物体分类。  [{name:"clipid",islaod,trackid,keyframes:[x,y,z,k]}]
-
         this.insetkeyframes = []
-
         this.stage.on('click', (e) => {
             this.stageClick(e)
         });
-        this.reStart(instate)
-
+        // this.reStart(instate)
     }
     reStart(instate) {
-        
-      
+        // 一行代码替代整个循环
+        this.stage.destroyChildren();
+        if (this.masterTimeline) this.masterTimeline.kill();
         this.keyframes.forEach(e => {
             e = { ...e, isload: false }
         })
 
         this.shape = {}// 存储所有形状引用 轨道和元素混用
+     
         this.state = {
             ...instate,
             tracks: instate.tracks.filter(f => f.type === "video")
         }
-        console.log('-----', this.state)
+
         this.tr = null;
         this.selectedNode = null;
         this.selectedclipId = null;
@@ -37,7 +36,6 @@ class myStageClass {
         // this.rebuildTimeline()
 
     }
-
     createTr() {
         this.tr = new Konva.Transformer({
             // --- 外框样式 ---
@@ -56,20 +54,18 @@ class myStageClass {
         });
         // 1. 监听变换结束（缩放、旋转）
         this.tr.on('transformend', () => {
-            this.stage.draw();
+            // this.stage.draw();
             // getResult(konvaImg);
         });
     }
-
     // 创建图层
     createLayer() {
-         // 一行代码替代整个循环
-        this.stage.destroyChildren();
+
         // 重要：重绘舞台以反映变化
-        this.stage.draw();
+        // this.stage.draw();
         this.state.tracks.forEach((e, i) => {
             const layer = new Konva.Layer();
-            layer.setZIndex(i)
+            // layer.setZIndex(i)
             this.shape[e.id] = layer
             layer.add(this.tr);
             this.stage.add(layer)
@@ -103,7 +99,7 @@ class myStageClass {
         this.shape[clip.id] = konvaImg
 
         this.addDefKeyframes(track, clip)
-       
+
         konvaImg.on('click', (e) => {
             console.log('图片被点击了！');
             e.cancelBubble = true; // ✅ 关键：阻止冒泡
@@ -121,7 +117,7 @@ class myStageClass {
         });
         // 2. 监听拖拽结束（移动位置）
         konvaImg.on('dragend', () => {
-            this.stage.draw();
+            // this.stage.draw();
         });
 
     };
@@ -130,7 +126,7 @@ class myStageClass {
         if (e.target === this.stage) {
             console.log('点击了空白处');
             this.tr.nodes([]);
-            this.stage.draw()
+            // this.stage.draw()
         }
     }
     // addDefKeyframes 添加默认的Keyframes
@@ -165,37 +161,26 @@ class myStageClass {
         const _this = this;
         if (this.masterTimeline) this.masterTimeline.kill();
         let isloadkeyframes = this.keyframes.filter(k => k.isload)
-
-
         if (isloadkeyframes.length === 0) return;
         let uu = false
         this.masterTimeline = gsap.timeline({
             paused: true,
             onComplete: () => {
                 console.log("rebuildTimeline线程完成")
-                state.currentTime = 0
-                this.masterTimeline.time(0)
-                this.contorlClipVisible(0)
+
+                this.syncToTime(0)
                 stopPlayback()
             },
             onStart: () => {
-                // _this.masterTimeline.time(state.currentTime)
+
             },
             onUpdate: function () {
-                console.log(_this.state.currentTime, "----", _this.masterTimeline.time())
-                if (_this.state.currentTime >= _this.masterTimeline.time()) {
-                    _this.syncToTime(state.currentTime)
-                    animatePlayhead(state.currentTime)
-
-                } else {
-                    _this.state.currentTime = _this.masterTimeline.time()
-                    animatePlayhead(_this.masterTimeline.time())
-                }
-                _this.stage.draw()
+                _this.state.currentTime = _this.masterTimeline.time()
+                animatePlayhead(_this.masterTimeline.time())
             }
         });
 
-
+        let finalkeyframes = []
 
         for (let i = 0; i < isloadkeyframes.length; i++) {
             const currItem = isloadkeyframes[i];
@@ -224,81 +209,83 @@ class myStageClass {
             for (let j = 0; j < newCurrtimeKey.length; j++) {
                 const curr = newCurrtimeKey[j];
                 const prev = j > 0 ? newCurrtimeKey[j - 1] : null;
-
                 // 计算开始时间：如果是第一帧，时间为0；否则为上一帧的时间
                 const startTime = curr.time;
                 // 计算持续时间：如果是第一帧，无需duration；否则为当前帧与上一帧的时间差
                 const duration = prev ? (curr.time - prev.time) : 0;
-                // 【其他帧】保持原有动画效果
-                if (j > 0) {
-                    this.masterTimeline.to(clip, {
-                        ...curr.data,
-                        duration: duration,
-                        ease: "power1.inOut",
-                        onStart: () => {
-                            console.log("onStart动画显示开始")
-                            clip.visible(true); // 确保动画开始时元素是可见的
-                            clip.opacity(1);    // 确保起始透明度正确（如果 curr.data 不包含 opacity 起始值）
-                        },
-                        onComplete: () => {
-                            console.log("onComplete动画结束后隐藏")
-                            clip.visible(false); // 动画结束后隐藏
-                        },
-                        onUpdate: () => {
-
-                            // // 判断有他的音频 if()
-                            // if( Math.floor(state.currentTime *2%2)){
-                            //     clip.image(_this.imagelist[0])
-                            //     clip.getLayer().batchDraw();
-                            // }else{
-                            //     clip.image(_this.imagelist[1])
-                            //     clip.getLayer().batchDraw();
-                            // }
-                            // console.log(state.currentTime,"--------")
-
-
-                            // 在 startTime 时刻执行 myCallback 函数
-                            // this.masterTimeline.call(myCallback, [param1, param2], startTime);
-
-                            // function myCallback(param1, param2) {
-                            //     console.log("时间轴到达指定时间点", param1, param2);
-                            //     // 在这里执行你需要的逻辑，比如手动更新 Konva 图片
-                            // }
-
-                        }
-                    }, prev.startTime); // 注意：to 动画通常从上一帧时间点开始
-                } else {
-                    // 如果时间差为0，也瞬间设置
-                    this.masterTimeline.set(clip, {
-                        ...curr.data,
-
-                    }, startTime);
-                }
-
+                duration && finalkeyframes.push({
+                    clip,
+                    data: curr.data,
+                    duration: duration,
+                    startTime: prev.time,
+                })
             }
         }
-        this.contorlClipVisible(state.currentTime)
-        this.syncToTime(state.currentTime)
 
+        finalkeyframes.sort((a, b) => b.startTime - b.startTime)
+        console.log(finalkeyframes)
+
+        for (let k = 0; k < finalkeyframes.length; k++) {
+            let finalkeyframesItem = finalkeyframes[k]
+            let clip = finalkeyframesItem.clip
+            let duration = finalkeyframesItem.duration
+            let startTime = finalkeyframesItem.startTime
+             let data = finalkeyframesItem.data
+
+            clip && this.masterTimeline.to(clip, {
+                ...data,
+                duration: duration,
+                ease: "power1.inOut",
+                onStart: () => {
+                    console.log("onStart动画显示开始")
+                    clip.visible(true); // 确保动画开始时元素是可见的
+                    clip.opacity(1);    // 确保起始透明度正确（如果 curr.data 不包含 opacity 起始值）
+                },
+                onComplete: () => {
+                    console.log("onComplete动画结束后隐藏")
+                    clip.visible(false); // 动画结束后隐藏
+                },
+                onUpdate: () => {
+
+                    // // 判断有他的音频 if()
+                    // if( Math.floor(state.currentTime *2%2)){
+                    //     clip.image(_this.imagelist[0])
+                    //     clip.getLayer().batchDraw();
+                    // }else{
+                    //     clip.image(_this.imagelist[1])
+                    //     clip.getLayer().batchDraw();
+                    // }
+                    // console.log(state.currentTime,"--------")
+
+                    // 在 startTime 时刻执行 myCallback 函数
+                    // this.masterTimeline.call(myCallback, [param1, param2], startTime);
+
+                    // function myCallback(param1, param2) {
+                    //     console.log("时间轴到达指定时间点", param1, param2);
+                    //     // 在这里执行你需要的逻辑，比如手动更新 Konva 图片
+                    // }
+                }
+            }, startTime);
+        }
+
+
+
+
+        this.syncToTime(state.currentTime)
     }
     //  调整时间
     syncToTime(time) {
-        console.log("syncToTime", time)
         if (!this.masterTimeline) return;
         console.log("syncToTime", time)
         this.contorlClipVisible(time)
         this.state.currentTime = time
         state.currentTime = time
         this.masterTimeline.time(time);
-        this.stage.draw()
-
-        // console.log("视频内部当前时间",time)
     }
     contorlClipVisible(time) {
         if (time == null) {
             console.log("contorlClipVisible 传入时间")
         }
-        console.log("contorlClipVisible", time)
         for (let i = 0; i < this.keyframes.length; i++) {
             const currItem = this.keyframes[i];
             let clip = this.shape[currItem.clipid]
@@ -309,16 +296,14 @@ class myStageClass {
             const startTime = curr.time;
             const endTime = last.time
             // 计算持续时间：如果是第一帧，无需duration；否则为当前帧与上一帧的时间差
-            try {
-                if (startTime <= time && endTime > time) {
-                    clip.visible(true); // 确保动画开始时元素是可见的
-                    clip.opacity(1);    // 确保起始透明度正确（如果 curr.data 不包含 opacity 起始值）
-                } else {
-                    clip.visible(false);
-                }
-            } catch (error) {
-                console.log("错误触发contorlClipVisible", error)
+
+            if (startTime <= time && endTime > time) {
+                clip.visible(true); // 确保动画开始时元素是可见的
+                clip.opacity(1);    // 确保起始透明度正确（如果 curr.data 不包含 opacity 起始值）
+            } else {
+                clip.visible(false);
             }
+
         }
     }
 
