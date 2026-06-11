@@ -11,12 +11,16 @@ import webbrowser
 from admin.RouteManager import RouteManager
 from admin.apiExportData import *
 from admin.uploadFrame import *
+from admin.imagetovideo import *
 PORT = 8000
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 DIRECTORY = os.path.join(BASE_DIR, 'web')
 
 # 全局路由实例
 router = RouteManager()
+
+
+router.add_route('POST', r'/api/imagetovideo',  imagetovideo)
 router.add_route('POST', r'/api/exportData',  apiExportData)
 router.add_route('POST', r'/api/upload/frame',  handle_upload_frame)
 

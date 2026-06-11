@@ -1,7 +1,29 @@
 import subprocess
 import os
+import sys
+import json
+import shutil
 
-def images_to_video_ffmpeg(image_folder,audio_path ,output_video_path, fps=24, img_pattern='frame_%04d.png'):
+
+def clear_folder(folder_path):
+    """
+    清除文件夹内的所有文件和子目录，但保留文件夹本身
+    """
+    if not os.path.exists(folder_path):
+        print(f"文件夹不存在: {folder_path}")
+        return
+
+    # 1. 删除整个文件夹
+    shutil.rmtree(folder_path)
+    
+    # 2. 重新创建空文件夹
+    os.makedirs(folder_path)
+    print(f"文件夹已清空: {folder_path}")
+
+# 使用示例
+clear_folder('uploads')
+
+def images_to_video_ffmpeg(image_folder,audio_path ,output_video_path, fps=24, img_pattern='frame_%05d.png'):
     """
     使用 FFmpeg 合成视频
     :param img_pattern: FFmpeg 的文件名模式，例如 frame_%05d.png 对应 frame_00001.png
@@ -27,10 +49,23 @@ def images_to_video_ffmpeg(image_folder,audio_path ,output_video_path, fps=24, i
     try:
         subprocess.run(cmd, check=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
         print(f"视频已保存至: {output_video_path}")
+        clear_folder(image_folder)
+
     except FileNotFoundError:
         print("错误: 未找到 FFmpeg。请确保已安装并添加到系统 PATH。")
     except subprocess.CalledProcessError as e:
         print(f"FFmpeg 错误: {e.stderr.decode()}")
 
 # 使用示例
-images_to_video_ffmpeg('uploaded_frames','冒泡-WQ20070416.wav', 'output.mp4', fps=60, img_pattern='frame_%04d.png')
+images_to_video_ffmpeg('../uploaded_frames','../冒泡-WQ20070416.wav', '../output.mp4', fps=24, img_pattern='frame_%05d.png')
+
+# 1. 读取所有传入的数据
+input_data = sys.stdin.read()
+# 3. 如果需要结构化数据，可以解析 JSON
+try:
+    data = json.loads(input_data)
+    # print(f"Parsed JSON key 'prompt': {data.get('prompt')}")
+    sys.stdout.flush()
+except:
+    pass
+

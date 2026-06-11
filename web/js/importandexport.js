@@ -11,9 +11,7 @@ class importandexportClass {
             keyframes: this.myStage.keyframes,
             insetkeyframes: this.myStage.insetkeyframes
             }
-           
         }
-
         axios.post('/api/exportData', outputdatajson)
             .then(response => {
                 showToast(`提交成功，ID: ${outputdatajson.state.name}`)
@@ -21,8 +19,6 @@ class importandexportClass {
             .catch(error => {
                 showToast(`提交失败: ${error}`)
             });
-
-
     }
 
 }
