@@ -50,6 +50,8 @@ def images_to_video_ffmpeg(image_folder,audio_path ,output_video_path, fps=24, i
         subprocess.run(cmd, check=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
         print(f"视频已保存至: {output_video_path}")
         clear_folder(image_folder)
+        if os.path.exists(audio_path):
+            os.remove(audio_path)
 
     except FileNotFoundError:
         print("错误: 未找到 FFmpeg。请确保已安装并添加到系统 PATH。")
@@ -57,7 +59,7 @@ def images_to_video_ffmpeg(image_folder,audio_path ,output_video_path, fps=24, i
         print(f"FFmpeg 错误: {e.stderr.decode()}")
 
 # 使用示例
-images_to_video_ffmpeg('../uploaded_frames','../audio.wav', '../output.mp4', fps=24, img_pattern='frame_%05d.png')
+images_to_video_ffmpeg('../uploaded_frames','../audio.wav', '../../output.mp4', fps=24, img_pattern='frame_%05d.png')
 
 # 1. 读取所有传入的数据
 input_data = sys.stdin.read()
