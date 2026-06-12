@@ -11,7 +11,7 @@
   <script src="js/cnd/axios.min.js"></script>
   <script src="js/cnd/konva.min.js"></script>
   <script src="js/cnd/gsap.min.js"></script>
-   <!-- <script src="js/cnd/jszip.min.js"></script> -->
+  <!-- <script src="js/cnd/jszip.min.js"></script> -->
 
 
 </head>
@@ -19,9 +19,7 @@
 <body>
   <!-- 顶部工具栏 -->
   <div class="toolbar">
-    <button class="btn" onclick="addTrack('video')">📹 视频轨道</button>
-    <button class="btn" onclick="addTrack('audio')">🎵 音频轨道</button>
-    <button class="btn" onclick="addClipToSelected()">➕ 添加片段</button>
+    <button class="btn" id="">场景</button>
     <div style="flex:1"></div>
     <span class="time-display" id="time-display">00:00.0</span>
     <button class="btn" onclick="zoomTimeline(-10)">🔍-</button>
@@ -38,27 +36,68 @@
   <div class="main-layout">
     <!-- 视频预览区 -->
     <div class="preview-section" id="preview-section">
-      <div class="imgselce">1</div>
+      <div class="imgselect">
+        <div>
+          <span>视频预览区</span>
+          <span>视频预览区</span>
+          <span>视频预览区</span>
+          <span>视频预览区</span>
+           <span>视频预览区</span>
+          <span>视频预览区</span>
+          <span>视频预览区</span>
+          <span>视频预览区</span>
+          <span>视频预览区</span>
+          <span>视频预览区</span>
+        </div>
+        <div>
+          <img src="image/1.jpg" />
+          <img src="image/1.jpg" />
+          <img src="image/1.jpg" />
+          <img src="image/2.jpg" />
+          <img src="image/2.png" />
+          <img src="image/3.jpg" />
+          <img src="image/4.jpg" />
+          <img src="image/1.jpg" />
+          <img src="image/2.jpg" />
+          <img src="image/2.png" />
+          <img src="image/3.jpg" />
+          <img src="image/4.jpg" />
+          <img src="image/1.jpg" />
+
+          <img src="image/1.jpg" />
+
+          <img src="image/1.jpg" />
+
+
+
+        </div>
+
+
+
+
+
+
+
+      </div>
       <div class="preview-placeholder">
         <div id="preview-placeholder"></div>
       </div>
-      <div class="altcon">
-        <!-- 时间轴 -->
-        <div class="rebuildTimeline">
+      <div class="altcon" id="altcon">
+
+        <!-- konva内容属性 -->
+        <div id="rebuildTimeline" class="rebuildTimeline hide">
           <div>
             <div><span id="addkeyFrame" class="btn-modern">插帧</span></div>
             <div class="timelist" id="keyframelist">
-              <div><span>起始</span><span>设置</span></div>
-              <div><span>0802</span><span>删除</span></div>
-              <div><span>结束</span><span>设置</span></div>
             </div>
           </div>
-
         </div>
-        <div class="showtimedata">
+        <div id="showtimedata" class="showtimedata hide">
           <pre id="json-preview">
-          </pre>
+        </pre>
         </div>
+
+
       </div>
     </div>
 
@@ -66,6 +105,9 @@
     <div class="playback-bar">
       <button class="play-btn paused" id="play-btn" onclick="togglePlay()" title="播放/暂停 (空格键)"></button>
       <span style="font-size:12px; color:#888;">空格键控制播放</span>
+      <button class="btn" onclick="addTrack('video')">📹 视频轨道</button>
+      <button class="btn" onclick="addTrack('audio')">🎵 音频轨道</button>
+      <button class="btn" onclick="addClipToSelected()">➕ 添加片段</button>
       <div style="flex:1"></div>
       <span style="font-size:12px; color:#666;">当前时间: </span>
       <span class="time-display" id="current-time">00:00.0</span>
@@ -98,7 +140,7 @@
   <!-- Toast -->
   <div class="toast" id="toast"></div>
 
- 
+
   <!-- ==================== 状态管理 ==================== -->
 
   <script src="js/state.js"></script>
@@ -122,10 +164,11 @@
   <script src="js/tool.js"></script>
   <script src="js/listeners.js"></script>
   <script src="js/itemKeyframe.js"></script>
-  <script  src="js/ffmpeg.js"></script>
-  <script  src="js/classify.js"></script>
-  <script  src="js/imagePool.js"></script>
-  <script  src="js/audio.js"></script>
+  <script src="js/ffmpeg.js"></script>
+  <script src="js/classify.js"></script>
+  <script src="js/imagePool.js"></script>
+  <script src="js/audio.js"></script>
+  <script src="js/altcon.js"></script>
 
 
   <script>

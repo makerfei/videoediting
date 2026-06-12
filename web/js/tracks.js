@@ -27,8 +27,6 @@ function renderTracks() {
         DOM.tracksContainer.appendChild(DOM.playhead);
     }
     updateVideoPreview()
-
-
 }
 // ==================== 查找辅助 ====================
 function findTrack(id) {

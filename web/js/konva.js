@@ -20,7 +20,7 @@ class myStageClass {
             e = { ...e, isload: false }
         })
 
-
+        altconHideUI()
 
         this.shape = {}// 存储所有形状引用 轨道和元素混用
 
@@ -96,6 +96,7 @@ class myStageClass {
                 this.shape[clip.id] = konvaImg
                 this.addDefKeyframes(track, clip)
                 konvaImg.on('click', (e) => {
+                    altconShowUI()
                     console.log('图片被点击了！');
                     e.cancelBubble = true; // ✅ 关键：阻止冒泡
                     this.tr.nodes([konvaImg]);
@@ -120,6 +121,7 @@ class myStageClass {
         if (e.target === this.stage) {
             console.log('点击了空白处');
             this.tr.nodes([]);
+            altconHideUI()
             // this.stage.draw()
         }
     }
