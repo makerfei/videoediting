@@ -1,3 +1,6 @@
 output.mp4
 uploaded_frames/
 .DS_Store
+images.zip
+audio.wav
+admin/__pycache__
