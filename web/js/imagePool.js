@@ -96,7 +96,8 @@ class ImagePool {
      */
     preloadAll(urls) {
         const promises = []
-        urls.forEach(url => {
+       let newurls = [...urls,"image/2.png"]
+        newurls.forEach(url => {
             promises.push(this.preload(url))
         })
         return Promise.all(promises);

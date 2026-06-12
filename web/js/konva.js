@@ -203,15 +203,22 @@ class myStageClass {
                 const prev = j > 0 ? newCurrtimeKey[j - 1] : null;
                 // 计算开始时间：如果是第一帧，时间为0；否则为上一帧的时间
                 const startTime = curr.time;
+
+                const prevImage = prev  ? prev.data.src : null;
+                const currImage = curr.data.src;
+                const isImageChange = prevImage != currImage
                 // 计算持续时间：如果是第一帧，无需duration；否则为当前帧与上一帧的时间差
-                const duration = prev ? (curr.time - prev.time) : 0;
+                const duration =    prev ? (curr.time - prev.time) : 0;
+
                 duration ? finalkeyframes.push({
                     clip,
                     data: curr.data,
                     duration: duration,
                     startTime: prev.time,
+                    isImageChange
                 }) : finalkeyframes.push({
                     clip,
+                    isImageChange,
                     data: curr.data,
                     startTime: curr.time,
                 })
@@ -227,12 +234,19 @@ class myStageClass {
             let duration = finalkeyframesItem.duration
             let startTime = finalkeyframesItem.startTime
             let data = finalkeyframesItem.data
+            let {  isImageChange } = finalkeyframesItem
 
             clip ? duration ? this.masterTimeline.to(clip, {
                 ...data,
                 duration: duration,
+                isImageChange,
                 ease: "power1.inOut",
                 onStart: () => {
+                    if(isImageChange){
+                        clip.image(_this.imagePool.get(data.src))
+                        clip.getLayer().batchDraw();
+                    }
+                   
                     console.log("onStart动画显示开始")
                     clip.visible(true); // 确保动画开始时元素是可见的
                     clip.opacity(1);    // 确保起始透明度正确（如果 curr.data 不包含 opacity 起始值）
@@ -349,9 +363,13 @@ class myStageClass {
         let trackItem = this.state.tracks.find(t => t.id == this.selectedtrackId)
         let clipItem = trackItem.clips.find(c => c.id == this.selectedclipId)
         let rect = this.selectedNode
+
+
         let addItem = {
             time: time - clipItem.start,
             data: {
+                // src:clipItem.src,
+                src: "image/2.png",
                 x: rect.x(),
                 y: rect.y(),
                 width: rect.width(),

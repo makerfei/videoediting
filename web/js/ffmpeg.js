@@ -27,12 +27,13 @@ async function exportAllFramesAsUpload(inmyStage) {
     let stage = inmyStage.stage;
     console.log(`开始上传: 总帧数 ${totalFrames}, 时长 ${tl.totalDuration()}s`);
     inmyStage.syncToTime(0)
-
+    inmyStage.tr.nodes([]);
     for (let i = 0; i < totalFrames; i++) {
         const time = i / fps;
         // 1. 设置时间轴并重绘
         // 使用 Math.min 防止超出总时长
         tl.time(Math.min(time, tl.totalDuration()));
+       
         stage.batchDraw();
         // 2. 获取图像数据 (Base64)
         // pixelRatio: 2 可以提高清晰度，但会增加数据量，请根据带宽调整
