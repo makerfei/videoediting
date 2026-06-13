@@ -22,7 +22,7 @@ class myStageClass {
         // 一行代码替代整个循环
         this.stage.destroyChildren();
         if (this.masterTimeline) this.masterTimeline.kill();
-       
+
 
         altconHideUI()
 
@@ -34,7 +34,7 @@ class myStageClass {
         }
 
         // 删除已经废弃掉的 tracks
-        
+
 
 
         await this.imagePool.preloadAll(getTracksImage(this.state.tracks))
@@ -50,7 +50,8 @@ class myStageClass {
         this.createTr()
         this.createLayer()
         this.createNode()
-        // this.rebuildTimeline()
+        this.delErrorkeyframes()
+        this.rebuildTimeline()
 
     }
     createTr() {
@@ -158,8 +159,7 @@ class myStageClass {
         }
 
         this.keyframes.sort((a, b) => a.key[0].time - b.key[0].time)
-        // 加点就重新构建
-        this.rebuildTimeline()
+
 
     }
 
@@ -167,9 +167,9 @@ class myStageClass {
     rebuildTimeline() {
         const _this = this;
         if (this.masterTimeline) this.masterTimeline.kill();
-        
+
         if (this.keyframes.length === 0) return;
-   
+
         this.masterTimeline = gsap.timeline({
             paused: true,
             onComplete: () => {
@@ -227,6 +227,7 @@ class myStageClass {
                     data: curr.data,
                     duration: duration,
                     startTime: prev.time,
+
                     isImageChange
                 }) : finalkeyframes.push({
                     clip,
@@ -246,10 +247,10 @@ class myStageClass {
             let duration = finalkeyframesItem.duration
             let startTime = finalkeyframesItem.startTime
             let data = finalkeyframesItem.data
-            let isImageChange  = finalkeyframesItem.isImageChange
+            let isImageChange = finalkeyframesItem.isImageChange
             const { x, y, scale, rotation, opacity } = data;
             clip ? duration ? this.masterTimeline.to(clip, {
-                 x, y, scale, rotation,
+                x, y, scale, rotation,
                 duration: duration,
                 ease: "power1.inOut",
                 onStart: () => {
@@ -294,10 +295,20 @@ class myStageClass {
                     //     // 在这里执行你需要的逻辑，比如手动更新 Konva 图片
                     // }
                 }
-            }, startTime) : this.masterTimeline.set(clip, {  x, y, scale, rotation }, startTime) : null;
+            }, startTime) : this.masterTimeline.set(clip, { x, y, scale, rotation }, startTime) : null;
         }
         this.savelocaKeyframes()
         this.syncToTime(state.currentTime)
+    }
+
+    // 删除错误的keyframes 和 insetkeyframes
+    delErrorkeyframes() {
+        this.keyframes = this.keyframes.filter(k => {
+            return this.shape[k.clipid];
+        });
+         this.insetkeyframes = this.insetkeyframes.filter(k => {
+            return this.shape[k.clipid];
+        });
     }
     //  调整时间
     syncToTime(time) {
@@ -371,7 +382,7 @@ class myStageClass {
             scaleY: rect.scaleY(),
         }
         this.rebuildTimeline()
-       
+
         let insetkeyframesItem = this.insetkeyframes.find(k => k.clipid == clipid)
         myitemKeyframe.show(keyframes, insetkeyframesItem)
     }
@@ -415,7 +426,7 @@ class myStageClass {
         insetkeyframesItem = this.insetkeyframes.find(k => k.clipid == this.selectedclipId)
         let keyframes = this.keyframes.find(k => k.clipid == this.selectedclipId)
         this.rebuildTimeline()
-       
+
         myitemKeyframe.show(keyframes, insetkeyframesItem)
     }
     delKeyframes(clipid, index) {
@@ -425,7 +436,7 @@ class myStageClass {
         let keyframes = this.keyframes.find(k => k.clipid == this.selectedclipId)
         let keyframesItem = this.insetkeyframes.find(k => k.clipid == clipid)
         this.rebuildTimeline()
-       
+
         myitemKeyframe.show(keyframes, keyframesItem)
 
     }
