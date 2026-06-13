@@ -22,9 +22,7 @@ class myStageClass {
         // 一行代码替代整个循环
         this.stage.destroyChildren();
         if (this.masterTimeline) this.masterTimeline.kill();
-        this.keyframes.forEach(e => {
-            e = { ...e, isload: false }
-        })
+       
 
         altconHideUI()
 
@@ -148,14 +146,12 @@ class myStageClass {
             this.keyframes.push({
                 clipid: c.id,
                 trackid: t.id,
-                isload: true,
                 key: [
                     { "time": c.start, data: { src: c.src, x: rect.x(), y: rect.y(), width: rect.width(), height: rect.height(), rotation: rect.rotation(), scaleX: rect.scaleX(), scaleY: rect.scaleY(), opacity: 1 } },
                     { "time": c.start + c.duration, data: { src: c.src, x: rect.x(), y: rect.y(), width: rect.width(), height: rect.height(), rotation: rect.rotation(), scaleX: rect.scaleX(), scaleY: rect.scaleY(), opacity: 1 } }
                 ]
             })
         } else {
-            keyframe.isload = true
             keyframe.trackid = t.id
             keyframe.key[0]["time"] = c.start
             keyframe.key[1]["time"] = c.start + c.duration
@@ -171,14 +167,13 @@ class myStageClass {
     rebuildTimeline() {
         const _this = this;
         if (this.masterTimeline) this.masterTimeline.kill();
-        let isloadkeyframes = this.keyframes.filter(k => k.isload)
-        if (isloadkeyframes.length === 0) return;
-        let uu = false
+        
+        if (this.keyframes.length === 0) return;
+   
         this.masterTimeline = gsap.timeline({
             paused: true,
             onComplete: () => {
                 console.log("rebuildTimeline线程完成")
-
                 this.syncToTime(0)
                 stopPlayback()
             },
@@ -193,8 +188,8 @@ class myStageClass {
 
         let finalkeyframes = []
 
-        for (let i = 0; i < isloadkeyframes.length; i++) {
-            const currItem = isloadkeyframes[i];
+        for (let i = 0; i < this.keyframes.length; i++) {
+            const currItem = this.keyframes[i];
             let clip = this.shape[currItem.clipid]
             // 获取其插入的关键帧
             let inSertkey = this.insetkeyframes.find(k => k.clipid == currItem.clipid)
@@ -251,12 +246,11 @@ class myStageClass {
             let duration = finalkeyframesItem.duration
             let startTime = finalkeyframesItem.startTime
             let data = finalkeyframesItem.data
-            let { isImageChange } = finalkeyframesItem
-
+            let isImageChange  = finalkeyframesItem.isImageChange
+            const { x, y, scale, rotation, opacity } = data;
             clip ? duration ? this.masterTimeline.to(clip, {
-                ...data,
+                 x, y, scale, rotation,
                 duration: duration,
-                isImageChange,
                 ease: "power1.inOut",
                 onStart: () => {
                     if (isImageChange) {
@@ -300,7 +294,7 @@ class myStageClass {
                     //     // 在这里执行你需要的逻辑，比如手动更新 Konva 图片
                     // }
                 }
-            }, startTime) : this.masterTimeline.set(clip, { ...data }, startTime) : null;
+            }, startTime) : this.masterTimeline.set(clip, {  x, y, scale, rotation }, startTime) : null;
         }
         this.savelocaKeyframes()
         this.syncToTime(state.currentTime)
