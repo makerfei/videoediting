@@ -22,11 +22,13 @@ function setupEventListeners() {
         const clipEl = e.target.closest('.clip');
         const trackEl = e.target.closest('.track')
         if (!trackEl) return;
-        const trackId = trackEl.dataset.id;
-
-        // 轨道推动开始
-        if (!clipEl) {
-
+        const trackId = trackEl.dataset.id
+        
+        // 页面输入框展示
+        if (clipEl && clipEl.dataset.id) {
+            document.getElementById("trackInputId").value = clipEl.dataset.id
+        } else if (trackEl.dataset.id) {
+            document.getElementById("trackInputId").value = trackEl.dataset.id
         }
         //判断为时间长度拖动
         if (clipEl && e.target.classList.contains('handle')) {
@@ -130,7 +132,7 @@ function setupEventListeners() {
     DOM.scrollContainer.addEventListener('wheel', (e) => {
         if (e.ctrlKey) {
             e.preventDefault();
-            zoomTimeline(e.deltaY > 0 ? -5 :5 );
+            zoomTimeline(e.deltaY > 0 ? -5 : 5);
         }
     });
 
@@ -144,7 +146,7 @@ function setupEventListeners() {
             deleteSelectedClipOrTrack();
         }
 
-        if ((e.code === 'ArrowUp' || e.code === 'ArrowDown'||e.code === 'KeyW'||e.code === 'KeyS') && state.selectedTrackId) {
+        if ((e.code === 'ArrowUp' || e.code === 'ArrowDown' || e.code === 'KeyW' || e.code === 'KeyS') && state.selectedTrackId) {
             changeSelectedClipOrTrack(e.code);
         }
 

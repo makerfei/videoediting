@@ -153,6 +153,10 @@ body {
     border-bottom: 1px solid var(--border-color);
     flex-shrink: 0;
 }
+.playbackinput{
+    width: 50px;
+    height: 30px;
+}
 
 .play-btn {
     width: 36px;
@@ -586,6 +590,7 @@ body {
     flex: 1;
     object-fit: contain;
     cursor: pointer;
+    margin-right: 10px;
 }
 
 .imgselect>div:nth-child(2) {
@@ -596,3 +601,11 @@ body {
 .imgselect>div:nth-child(2)>img:hover {
     border: 1px solid #ffffff;
 }
+
+#typeUI >button{
+    margin-right: 10px;
+}
+
+
+
+

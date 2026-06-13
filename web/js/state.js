@@ -2,12 +2,36 @@
 
 class myStateClass {
     constructor() {
-        this.state = this.defData()
+        // 先获取本地的数据
+        let StorageState = localStorage.getItem("state")
+        StorageState = StorageState?JSON.parse(StorageState):null
 
+        this.state = StorageState || this.defData()
+        this.updataKonvaTimer = null
+
+    }
+    // 更新排序
+    updataStateTracks() {
+        this.state.tracks.forEach(t => {
+            t.clips.sort((a, b) => a.start - b.start);
+        });
+    }
+    dataToKonva(callback) {
+        this.updataStateTracks();
+        this.saveStorage();
+        if (this.updataKonvaTimer) {
+            clearTimeout(this.updataKonvaTimer);
+        }
+        this.updataKonvaTimer = setTimeout(() => {
+            callback(this.state)
+        }, 1000);
+    }
+
+    saveStorage() {
+        localStorage.setItem("state",  JSON.stringify(this.state))
     }
     defData() {
         return {
-
             name: "videoJso3232nData/jjqq",
             scale: 100, // 像素/秒
             currentTime: 0, // 当前播放时间（秒）
@@ -55,7 +79,6 @@ class myStateClass {
 
         };
     }
-
     get() {
         return this.state
     }

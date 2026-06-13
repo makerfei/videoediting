@@ -1,8 +1,3 @@
-
-
-
-
-
 // 展示
 function altconShowUI() {
     let rebuildTimeline = document.getElementById("rebuildTimeline")
@@ -19,6 +14,7 @@ function altconHideUI() {
     rebuildTimeline.classList.add("hide")
     showtimedata.classList.add("hide")
 }
+
 
 
 

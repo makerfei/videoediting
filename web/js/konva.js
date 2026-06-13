@@ -3,8 +3,14 @@ class myStageClass {
     constructor(instate) {
         this.stage = new Konva.Stage({ container: 'preview-placeholder', width: 1920, height: 1080 });
         this.masterTimeline = null
-        this.keyframes = []; // 存储关键帧数据 按物体分类。  [{name:"clipid",islaod,trackid,keyframes:[x,y,z,k]}]
-        this.insetkeyframes = []
+
+        let localkeyframes = localStorage.getItem("keyframes")
+        this.keyframes = localkeyframes ? JSON.parse(localkeyframes) : []; // 存储关键帧数据 按物体分类。  [{name:"clipid",islaod,trackid,keyframes:[x,y,z,k]}]
+
+
+        let localInsetkeyframes = localStorage.getItem("insetkeyframes")
+        this.insetkeyframes = localInsetkeyframes ? JSON.parse(localInsetkeyframes) : []
+
         this.imagePool = new ImagePool();
         this.stage.on('click', (e) => {
             this.stageClick(e)
@@ -28,7 +34,16 @@ class myStageClass {
             ...instate,
             tracks: instate.tracks.filter(f => f.type === "video")
         }
+
+        // 删除已经废弃掉的 tracks
+        
+
+
         await this.imagePool.preloadAll(getTracksImage(this.state.tracks))
+
+
+
+
         this.tr = null;
         this.selectedNode = null;
         this.selectedclipId = null;
@@ -206,11 +221,11 @@ class myStageClass {
                 // 计算开始时间：如果是第一帧，时间为0；否则为上一帧的时间
                 const startTime = curr.time;
 
-                const prevImage = prev  ? prev.data.src : null;
+                const prevImage = prev ? prev.data.src : null;
                 const currImage = curr.data.src;
                 const isImageChange = prevImage != currImage
                 // 计算持续时间：如果是第一帧，无需duration；否则为当前帧与上一帧的时间差
-                const duration =    prev ? (curr.time - prev.time) : 0;
+                const duration = prev ? (curr.time - prev.time) : 0;
 
                 duration ? finalkeyframes.push({
                     clip,
@@ -236,7 +251,7 @@ class myStageClass {
             let duration = finalkeyframesItem.duration
             let startTime = finalkeyframesItem.startTime
             let data = finalkeyframesItem.data
-            let {  isImageChange } = finalkeyframesItem
+            let { isImageChange } = finalkeyframesItem
 
             clip ? duration ? this.masterTimeline.to(clip, {
                 ...data,
@@ -244,11 +259,11 @@ class myStageClass {
                 isImageChange,
                 ease: "power1.inOut",
                 onStart: () => {
-                    if(isImageChange){
+                    if (isImageChange) {
                         clip.image(_this.imagePool.get(data.src))
                         clip.getLayer().batchDraw();
                     }
-                   
+
                     console.log("onStart动画显示开始")
                     clip.visible(true); // 确保动画开始时元素是可见的
                     clip.opacity(1);    // 确保起始透明度正确（如果 curr.data 不包含 opacity 起始值）
@@ -287,6 +302,7 @@ class myStageClass {
                 }
             }, startTime) : this.masterTimeline.set(clip, { ...data }, startTime) : null;
         }
+        this.savelocaKeyframes()
         this.syncToTime(state.currentTime)
     }
     //  调整时间
@@ -335,8 +351,14 @@ class myStageClass {
     }
 
     //------- 对关键帧的操作--------
+    savelocaKeyframes() {
+        localStorage.setItem("insetkeyframes", JSON.stringify(this.insetkeyframes))
+        localStorage.setItem("keyframes", JSON.stringify(this.keyframes))
+
+    }
     getItemAllKeylist(clipid) {
         let keyframes = this.keyframes.find(k => k.clipid == clipid)
+
         return { keyframes }
     }
     setKeyframesPost(clipid, index) {
@@ -355,6 +377,7 @@ class myStageClass {
             scaleY: rect.scaleY(),
         }
         this.rebuildTimeline()
+       
         let insetkeyframesItem = this.insetkeyframes.find(k => k.clipid == clipid)
         myitemKeyframe.show(keyframes, insetkeyframesItem)
     }
@@ -388,7 +411,6 @@ class myStageClass {
                 clipid: this.selectedclipId,
                 key: [{ ...addItem }]
             })
-
         }
         // 进行排序
         insetkeyframesItem = this.insetkeyframes.find(k => k.clipid == this.selectedclipId)
@@ -399,6 +421,7 @@ class myStageClass {
         insetkeyframesItem = this.insetkeyframes.find(k => k.clipid == this.selectedclipId)
         let keyframes = this.keyframes.find(k => k.clipid == this.selectedclipId)
         this.rebuildTimeline()
+       
         myitemKeyframe.show(keyframes, insetkeyframesItem)
     }
     delKeyframes(clipid, index) {
@@ -408,13 +431,10 @@ class myStageClass {
         let keyframes = this.keyframes.find(k => k.clipid == this.selectedclipId)
         let keyframesItem = this.insetkeyframes.find(k => k.clipid == clipid)
         this.rebuildTimeline()
+       
         myitemKeyframe.show(keyframes, keyframesItem)
 
     }
-
-
-
-
 }
 
 

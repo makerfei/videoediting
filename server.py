@@ -12,6 +12,7 @@ from admin.RouteManager import RouteManager
 from admin.apiExportData import *
 from admin.uploadFrame import *
 from admin.imagetovideo import *
+from admin.pageOperation import *
 PORT = 8000
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 DIRECTORY = os.path.join(BASE_DIR, 'web')
@@ -23,7 +24,7 @@ router = RouteManager()
 router.add_route('POST', r'/api/imagetovideo',  imagetovideo)
 router.add_route('POST', r'/api/exportData',  apiExportData)
 router.add_route('POST', r'/api/upload/frame',  handle_upload_frame)
-
+router.add_route('POST', r'/api/pageOperation/getSourceData',  getSourceData)
 
 
 

@@ -1,12 +1,12 @@
 function renderTracks() {
     DOM.tracksContainer.innerHTML = '';
     DOM.tracksContainer.style.width = (state.maxTime * state.scale) + 'px';
-    state.tracks.forEach((track,i) => {
+    state.tracks.forEach((track, i) => {
         const trackEl = document.createElement('div');
-        if(state.selectedTrackId == track.id) {
+        if (state.selectedTrackId == track.id) {
             trackEl.className = 'track selected'
-        }else{
-             trackEl.className = 'track'
+        } else {
+            trackEl.className = 'track'
         }
         trackEl.dataset.id = track.id;
         const label = document.createElement('div');
@@ -36,14 +36,50 @@ function findTrack(id) {
 
 
 // ==================== 轨道与片段管理 ====================
-function addTrack(type) {
+function trackHasTheSameId(id) {
+    let hasThisId = false
+    state.tracks.forEach(t => {
+        if (id === t.id) {
+            hasThisId = true
+        }
+    })
+    if (hasThisId) {
+        showToast("trackID重复")
+    }
+    return hasThisId
+}
 
+
+function changeTrackId() {
+    let value = document.getElementById("trackInputId").value
+    if (trackHasTheSameId(value)) {
+        return
+    }
+    if (state.selectedTrackId) {
+        let selectedTrack = state.tracks.find((t) => t.id == state.selectedTrackId)
+        selectedTrack.name =(selectedTrack.type === 'video' ? '📹 图像 ' : '🎵 音频 ') + "ID :" + (value),
+        selectedTrack.id = value
+        state.selectedTrackId = value
+    }
+    renderTracks();
+}
+
+
+
+function addTrack(type) {
     console.log("轨道与片段管理")
-    const id = 't' + Date.now();
+    let value = document.getElementById("trackInputId").value
+    if (!value) {
+        showToast("没有填ID")
+        return
+    }
+    if (trackHasTheSameId(value)) {
+        return
+    }
     state.tracks.push({
-        id,
+        id: value,
         type,
-        name: (type === 'video' ? '📹 图像轨道 ' : '🎵 音频轨道 ') + (state.tracks.length + 1),
+        name: (type === 'video' ? '📹 图像 ' : '🎵 音频 ') + "ID :" + (value),
         clips: []
     });
     renderTracks();
