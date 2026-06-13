@@ -41,35 +41,7 @@
         <div id = "categorizationListUI">
           
         </div>
-        <div id="fillListUI">
-          <img src="image/1.jpg" />
-          <img src="image/1.jpg" />
-          <img src="image/1.jpg" />
-          <img src="image/2.jpg" />
-          <img src="image/2.png" />
-          <img src="image/3.jpg" />
-          <img src="image/4.jpg" />
-          <img src="image/1.jpg" />
-          <img src="image/2.jpg" />
-          <img src="image/2.png" />
-          <img src="image/3.jpg" />
-          <img src="image/4.jpg" />
-          <img src="image/1.jpg" />
-
-          <img src="image/1.jpg" />
-
-          <img src="image/1.jpg" />
-
-
-
-        </div>
-
-
-
-
-
-
-
+        <div id="fillListUI"></div>
       </div>
       <div class="preview-placeholder">
         <div id="preview-placeholder"></div>
@@ -101,7 +73,7 @@
       <button class="btn"  onclick="addTrack('audio')">🎵 音频轨道</button>
       <button class="btn" onclick="addClipToSelected()">➕ 添加片段</button>
       <input type="text" class="playbackinput" id="fillName" />
-      <button class="btn btn-primary" onclick="exportData()">保存</button>
+      <button class="btn btn-primary" onclick="saveCurrentWorkspaceClick()">保存</button>
 
       <div style="flex:1"></div>
       <span style="font-size:12px; color:#666;">当前时间: </span>
@@ -141,7 +113,6 @@
   <script src="js/state.js"></script>
   <script src="js/konva.js"></script>
   <script src="js/dom.js"></script>
-  <script src="js/importandexport.js"></script>
   <!-- // ==================== 时间轴渲染 ==================== -->
   <script src="js/ruler.js"></script>
   <!-- 轨道 -->
@@ -165,11 +136,14 @@
   <script src="js/audio.js"></script>
   <script src="js/altcon.js"></script>
   <script src="js/pageOperation.js"></script>
+  <script src="js/xml.js"></script>
 
 
   <script>
     // ==================== 初始化 ====================
     function init() {
+      //后端上传接口地址
+      UPLOAD_API_URL = '/api/upload/frame';
       myState = new myStateClass()
       state = myState.get()
       myStage = new myStageClass(state)

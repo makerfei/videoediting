@@ -1,5 +1,4 @@
-// 假设这是你的后端上传接口地址
-const UPLOAD_API_URL = '/api/upload/frame';
+
 
 /**
  * 辅助函数：将 base64 字符串转换为 Blob 对象

@@ -245,7 +245,7 @@ class myAudioClass {
         // 字段名必须与后端解析的 name == 'file' 和 name == 'index' 一致
         formData.append('file',wavBlob, 'audio.wav');
         formData.append('index', '00000');
-        return fetch('/api/upload/frame', {
+        return fetch(UPLOAD_API_URL, {
             method: 'POST',
             body: formData
             // 不要手动设置 Content-Type，浏览器会自动设置 boundary

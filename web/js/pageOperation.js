@@ -1,5 +1,6 @@
 class myPageOperationClass {
     constructor() {
+        this.topSurcePath = "web"
         this.sourcePath = "source"
         this.typeSelect = "";
         this.categorizationSelect = ""
@@ -9,15 +10,13 @@ class myPageOperationClass {
         this.categorizationList = []
         this.fillList = []
 
-
         this.getTypeListData().then(async () => {
             await this.getCategorizationListData();
             await this.getFillListData()
-
-
             this.updataTypeUI()
         })
     }
+    // 获取页面数据
     apiAxiosGetFillNameList(name, index) {
         return axios.post('/api/pageOperation/getSourceData', { source: name })
             .then(response => {
@@ -51,7 +50,7 @@ class myPageOperationClass {
         })
     }
 
-
+    // 获取图片资源
     getFillListData() {
         return this.apiAxiosGetFillNameList(`${this.sourcePath}/${this.typeSelect}/${this.categorizationSelect}`, 3).then(res => {
             this.fillList = res
@@ -59,13 +58,11 @@ class myPageOperationClass {
         })
 
     }
-
+    // 更新页面
     updataTypeUI() {
         let typeUIEL = document.getElementById("typeUI")
         let categorizationListUIEL = document.getElementById("categorizationListUI")
         let fillListUIEL = document.getElementById("fillListUI")
-
-
 
         typeUIEL.innerHTML = '';
         categorizationListUIEL.innerHTML = '';
@@ -97,6 +94,7 @@ class myPageOperationClass {
             fillListUIEL.appendChild(img)
         })
     }
+    // 主类点击
     typeClick(_this, e) {
         _this.typeSelect = e.currentTarget.textContent;
         _this.categorizationSelect = ""
@@ -107,27 +105,73 @@ class myPageOperationClass {
             })
         })
     }
+    // 副类点击
     categorizationClick(_this, e) {
         _this.categorizationSelect = e.currentTarget.textContent
         _this.fillSelect = ""
         _this.getFillListData().then(() => {
             _this.updataTypeUI()
         })
-
-
-
     }
+    // 图片点击
     fillListClick(e) {
 
 
     }
 
+    // 保存当前工作区
+    async saveCurrentWorkspace() {
+        let filename = document.getElementById("fillName").value
+        if (!filename) {
+            showToast("请填写名字")
+            return
+        }
+
+        let saveData = {
+            state: { ...state, name: filename },
+            keyframes: myStage.keyframes,
+            insetkeyframes: myStage.insetkeyframes
+        }
+
+        let fullname = `${this.topSurcePath}/${this.sourcePath}/${this.typeSelect}/${this.categorizationSelect}/${filename}`
+      
+      
 
 
 
 
+        const dataURL = myStage.stage.toDataURL({ pixelRatio: 1 });
+        const base64Data = dataURL.split(',');
+        const blobImg = base64ToBlob(base64Data, 'image/png');
+
+        const formDataImg = new FormData();
+        formDataImg.append('file', blobImg, fullname + ".png"); // 'file' 是后端接收文件的字段名，需与后端约定
+        formDataImg.append('index', '00000');
+
+
+        const blobTxt = new Blob([JSON.stringify(saveData)], { type: "application/json" });
+        const formDataTxt = new FormData();
+        formDataTxt.append('file', blobTxt, fullname + ".json"); // 'file' 是后端接收文件的字段名，需与后端约定
+        formDataTxt.append('index', '00000');
+        // 5. 发送请求到后端接口
+        const responseTxt = await fetch(UPLOAD_API_URL, { method: 'POST', body: formDataTxt });
+        const responseImg = await fetch(UPLOAD_API_URL, { method: 'POST', body: formDataImg });
+        if (!responseTxt.ok||!responseTxt.ok) {
+            showToast(`上传失败`)
+            throw new Error(`HTTP error! status: ${response.status}`);
+        } else {
+            showToast(`上传成功`)
+        }
+
+    }
+}
+function saveCurrentWorkspaceClick() {
+
+    myPageOperation.saveCurrentWorkspace()
 
 }
+
+
 
 
 

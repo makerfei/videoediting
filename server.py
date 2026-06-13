@@ -9,7 +9,6 @@ from urllib.parse import urlparse, parse_qs
 import time
 import webbrowser
 from admin.RouteManager import RouteManager
-from admin.apiExportData import *
 from admin.uploadFrame import *
 from admin.imagetovideo import *
 from admin.pageOperation import *
@@ -22,7 +21,6 @@ router = RouteManager()
 
 
 router.add_route('POST', r'/api/imagetovideo',  imagetovideo)
-router.add_route('POST', r'/api/exportData',  apiExportData)
 router.add_route('POST', r'/api/upload/frame',  handle_upload_frame)
 router.add_route('POST', r'/api/pageOperation/getSourceData',  getSourceData)
 

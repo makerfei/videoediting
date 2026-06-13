@@ -3,45 +3,26 @@ class myStageClass {
     constructor(instate) {
         this.stage = new Konva.Stage({ container: 'preview-placeholder', width: 1920, height: 1080 });
         this.masterTimeline = null
-
         let localkeyframes = localStorage.getItem("keyframes")
         this.keyframes = localkeyframes ? JSON.parse(localkeyframes) : []; // 存储关键帧数据 按物体分类。  [{name:"clipid",islaod,trackid,keyframes:[x,y,z,k]}]
-
-
         let localInsetkeyframes = localStorage.getItem("insetkeyframes")
         this.insetkeyframes = localInsetkeyframes ? JSON.parse(localInsetkeyframes) : []
-
         this.imagePool = new ImagePool();
         this.stage.on('click', (e) => {
             this.stageClick(e)
         });
-
-        // this.reStart(instate)
     }
     async reStart(instate) {
         // 一行代码替代整个循环
         this.stage.destroyChildren();
         if (this.masterTimeline) this.masterTimeline.kill();
-
-
         altconHideUI()
-
         this.shape = {}// 存储所有形状引用 轨道和元素混用
-
         this.state = {
             ...instate,
             tracks: instate.tracks.filter(f => f.type === "video")
         }
-
-        // 删除已经废弃掉的 tracks
-
-
-
         await this.imagePool.preloadAll(getTracksImage(this.state.tracks))
-
-
-
-
         this.tr = null;
         this.selectedNode = null;
         this.selectedclipId = null;
@@ -167,9 +148,7 @@ class myStageClass {
     rebuildTimeline() {
         const _this = this;
         if (this.masterTimeline) this.masterTimeline.kill();
-
         if (this.keyframes.length === 0) return;
-
         this.masterTimeline = gsap.timeline({
             paused: true,
             onComplete: () => {
@@ -185,9 +164,7 @@ class myStageClass {
                 animatePlayhead(_this.masterTimeline.time())
             }
         });
-
         let finalkeyframes = []
-
         for (let i = 0; i < this.keyframes.length; i++) {
             const currItem = this.keyframes[i];
             let clip = this.shape[currItem.clipid]
@@ -195,10 +172,8 @@ class myStageClass {
             let inSertkey = this.insetkeyframes.find(k => k.clipid == currItem.clipid)
             let startTime = currItem.key[0].time
             let endTime = currItem.key[currItem.key.length - 1].time;
-
             let newCurrtimeKey = []
             newCurrtimeKey.push(currItem.key[0])
-
             if (inSertkey) {
                 inSertkey.key.forEach(k => {
                     if ((startTime + k.time) < endTime) {
@@ -237,10 +212,8 @@ class myStageClass {
                 })
             }
         }
-
         finalkeyframes.sort((a, b) => b.startTime - b.startTime)
         console.log(finalkeyframes)
-
         for (let k = 0; k < finalkeyframes.length; k++) {
             let finalkeyframesItem = finalkeyframes[k]
             let clip = finalkeyframesItem.clip
@@ -258,7 +231,6 @@ class myStageClass {
                         clip.image(_this.imagePool.get(data.src))
                         clip.getLayer().batchDraw();
                     }
-
                     console.log("onStart动画显示开始")
                     clip.visible(true); // 确保动画开始时元素是可见的
                     clip.opacity(1);    // 确保起始透明度正确（如果 curr.data 不包含 opacity 起始值）
