@@ -34,26 +34,10 @@ function importData(input) {
     if (!file) return;
     const reader = new FileReader();
     reader.onload = (e) => {
-        try {
-            const data = JSON.parse(e.target.result);
-            state.scale = data.scale || 100;
-            state.currentTime = data.currentTime || 0;
-            state.tracks = data.tracks || [];
-            state.selectedClipId = null;
-            state.selectedTrackId = null;
-            if (state.isPlaying) { state.isPlaying = false; updatePlayButtonUI(); stopPlayback(); }
-            updateMaxTime();
-            renderRuler();
-            renderTracks();
-            updatePlayheadPosition();
-            updateTimeDisplay();
-            // updateVideoPreview();
-            showToast('项目已导入 ✅');
-        } catch (err) {
-            showToast('文件格式错误 ❌');
-        }
+        const data = JSON.parse(e.target.result);
+        AllNewStart(data)
     };
-    reader.readAsText(file);
+    reader.readAsText(file[0], 'UTF-8');
     input.value = '';
 }
 

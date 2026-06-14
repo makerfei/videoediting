@@ -11,7 +11,8 @@
   <script src="js/cnd/axios.min.js"></script>
   <script src="js/cnd/konva.min.js"></script>
   <script src="js/cnd/gsap.min.js"></script>
-  <!-- <script src="js/cnd/jszip.min.js"></script> -->
+  <script src="js/cnd/d3.v7.min.js"></script>
+    <script src="js/cnd/regl.min.js"></script>
 </head>
 
 <body>
@@ -38,8 +39,8 @@
     <!-- 视频预览区 -->
     <div class="preview-section" id="preview-section">
       <div class="imgselect">
-        <div id = "categorizationListUI">
-          
+        <div id="categorizationListUI">
+
         </div>
         <div id="fillListUI"></div>
       </div>
@@ -68,9 +69,9 @@
       <button class="play-btn paused" id="play-btn" onclick="togglePlay()" title="播放/暂停 (空格键)"></button>
       <span style="font-size:12px; color:#888;">空格键控制播放</span>
       <input type="text" id="trackInputId" class="playbackinput" />
-      <button class="btn"  onclick="changeTrackId()"  >修改id</button>
+      <button class="btn" onclick="changeTrackId()">修改id</button>
       <button class="btn" onclick="addTrack('video')">📹 视频轨道</button>
-      <button class="btn"  onclick="addTrack('audio')">🎵 音频轨道</button>
+      <button class="btn" onclick="addTrack('audio')">🎵 音频轨道</button>
       <button class="btn" onclick="addClipToSelected()">➕ 添加片段</button>
       <input type="text" class="playbackinput" id="fillName" />
       <button class="btn btn-primary" onclick="saveCurrentWorkspaceClick()">保存</button>
@@ -136,26 +137,40 @@
   <script src="js/audio.js"></script>
   <script src="js/altcon.js"></script>
   <script src="js/pageOperation.js"></script>
-  <script src="js/xml.js"></script>
+  <script src="js/imagecompositing.js"></script>
 
 
   <script>
     // ==================== 初始化 ====================
-    function init() {
-      //后端上传接口地址
-      UPLOAD_API_URL = '/api/upload/frame';
-      myState = new myStateClass()
-      state = myState.get()
-      myStage = new myStageClass(state)
-      myAudio = new myAudioClass(state)
-      myPageOperation = new myPageOperationClass()
-
+    // 更新所有页面内容
+    function upDataAllUI() {
       updateMaxTime();
       renderRuler();
       renderTracks();
       updatePlayheadPosition();
       setupEventListeners();
       updateTimeDisplay();
+    }
+    // 导入文件，重新开始
+    function AllNewStart(inStateData) {
+      debugger
+      myState.reStart(inStateData.state)
+      state = myState.get()
+      myStage.reSetKeyframes(inStateData)
+      upDataAllUI()
+    }
+
+    function init() {
+      //后端上传接口地址
+      UPLOAD_API_URL = '/api/upload/frame';
+      myState = new myStateClass()
+      state = myState.get()
+
+      myStage = new myStageClass(state)
+      myAudio = new myAudioClass(state)
+
+      myPageOperation = new myPageOperationClass()
+      upDataAllUI()
     }
 
     // ==================== 启动 ====================

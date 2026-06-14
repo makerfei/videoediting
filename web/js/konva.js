@@ -12,6 +12,10 @@ class myStageClass {
             this.stageClick(e)
         });
     }
+    reSetKeyframes(inData) {
+        this.keyframes = inData.keyframes
+        this.insetkeyframes = inData.insetkeyframes
+    }
     async reStart(instate) {
         // 一行代码替代整个循环
         this.stage.destroyChildren();
@@ -220,8 +224,9 @@ class myStageClass {
             let duration = finalkeyframesItem.duration
             let startTime = finalkeyframesItem.startTime
             let data = finalkeyframesItem.data
+
             let isImageChange = finalkeyframesItem.isImageChange
-            const { x, y, scale, rotation, opacity } = data;
+            const { x, y, scale, rotation, opacity ,width,height} = data;
             clip ? duration ? this.masterTimeline.to(clip, {
                 x, y, scale, rotation,
                 duration: duration,
@@ -240,7 +245,15 @@ class myStageClass {
                     clip.visible(false); // 动画结束后隐藏
                 },
                 onUpdate: () => {
-                    if (data.src.toLowerCase().endsWith('.gif') && _this.state.currentTime > startTime) {
+                    // 展示图片全凭逻辑画
+
+                    //需要合成标识
+                    if (data.src == "gif/2.gif") {
+                        let fps = 24;
+                        if (Math.floor((_this.state.currentTime * fps) % 1) == 0) {
+                            clip.image(getimage(width, height, _this.state.currentTime, startTime))
+                        }
+                    }else if (data.src.toLowerCase().endsWith('.gif') && _this.state.currentTime > startTime) {
                         let fps = _this.imagePool.gifFpt(data.src)
                         if (Math.floor((_this.state.currentTime * fps) % 1) == 0) {
                             // 此处判断
@@ -278,7 +291,7 @@ class myStageClass {
         this.keyframes = this.keyframes.filter(k => {
             return this.shape[k.clipid];
         });
-         this.insetkeyframes = this.insetkeyframes.filter(k => {
+        this.insetkeyframes = this.insetkeyframes.filter(k => {
             return this.shape[k.clipid];
         });
     }

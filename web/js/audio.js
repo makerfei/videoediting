@@ -265,14 +265,6 @@ class myAudioClass {
     }
 
 
-
-
-
-
-
-
-
-
     startPlayback(time) {
         // 8. 播放合并后的音频
         this.audioCtx = new (window.AudioContext || window.webkitAudioContext)();

@@ -8,7 +8,8 @@ class ImagePool {
         this.setdefimg()
     }
     async setdefimg() {
-        let img = await createEmptyPngBlob(200, 200)
+        let img = await createEmptyPngCanvas(200, 200)
+      
         this.imageList.set("", img)
     }
 
@@ -173,22 +174,16 @@ function getTracksImage(tracks = []) {
     return imageList
 }
 
-async function createEmptyPngBlob(width, height) {
+async function createEmptyPngCanvas(width, height) {
     const canvas = document.createElement('canvas');
     canvas.width = width;
     canvas.height = height;
     const ctx = canvas.getContext('2d');
-
     // 填充白色背景（PNG 默认透明，如需白色需手动填充）
-    ctx.fillStyle = '#FFFFFF00';
+    ctx.fillStyle = '#000000';
     ctx.fillRect(0, 0, width, height);
-
-    // 导出为 PNG Blob
-    return new Promise((resolve) => {
-        canvas.toBlob((blob) => {
-            resolve(createImageBitmap(blob));
-        }, 'image/png');
-    });
+   return canvas
+  
 }
 
 

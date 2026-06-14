@@ -2,19 +2,30 @@
 
 class myStateClass {
     constructor() {
-        // 先获取本地的数据
-        let StorageState = localStorage.getItem("state")
-        StorageState = StorageState ? JSON.parse(StorageState) : null
-        this.state = StorageState || this.defData()
         this.updataKonvaTimer = null
+        this.reStart()
+    }
+    reStart(indata) {
+        if (indata) {
+            this.state = indata;
+        } else {
+            // 先获取本地的数据
+            let StorageState = localStorage.getItem("state")
+            StorageState = StorageState ? JSON.parse(StorageState) : null
+            this.state =StorageState || this.defData()
+        }
+        
+
         document.getElementById("fillName").value = this.state.name
     }
+
     // 更新排序
     updataStateTracks() {
         this.state.tracks.forEach(t => {
             t.clips.sort((a, b) => a.start - b.start);
         });
     }
+
     dataToKonva(callback) {
         this.updataStateTracks();
         this.saveStorage();
