@@ -1,0 +1,125 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Live2D + Pixi.js 完整示例</title>
+    <style>
+        body { margin: 0; overflow: hidden; background-color: #333; }
+        canvas { display: block; }
+        #loading {
+            position: absolute;
+            top: 50%; left: 50%;
+            transform: translate(-50%, -50%);
+            color: white; font-family: sans-serif;
+            pointer-events: none;
+        }
+    </style>
+    
+    <!-- 1. 引入 Pixi.js (v7 版本兼容性最好) -->
+    <script src="https://cdn.jsdelivr.net/npm/pixi.js@7.3.2/dist/pixi.min.js"></script>
+    
+    <!-- 2. 引入 Live2D Cubism Core (官方核心解析库) -->
+    <!-- 注意：生产环境建议从 live2d.com 下载最新 core 并本地部署 -->
+    <script src="https://cubism.live2d.com/sdk-web/cubismcore/live2dcubismcore.min.js"></script>
+    
+    <!-- 3. 引入 pixi-live2d-display (桥接库) -->
+    <script src="https://cdn.jsdelivr.net/npm/pixi-live2d-display@0.4.0/dist/index.min.js"></script>
+</head>
+<body>
+
+    <div id="loading">正在加载模型...</div>
+
+    <script>
+        // --- 配置部分 ---
+        // 替换为你本地模型的路径，例如 'model/hiyori/hiyori.model3.json'
+        // 这里使用一个公开的测试模型路径作为演示 (如果失效请替换为本地路径)
+const MODEL_URL = 'models/runtime/ren.model3.json';
+
+        // --- 1. 初始化 Pixi 应用 ---
+        const app = new PIXI.Application({
+            width: window.innerWidth,
+            height: window.innerHeight,
+            backgroundAlpha: 0, // 透明背景
+            antialias: true,    // 抗锯齿
+            resolution: window.devicePixelRatio || 1,
+            autoDensity: true
+        });
+        document.body.appendChild(app.view);
+
+        // --- 2. 加载 Live2D 模型 ---
+        // Live2DModel.from 是 pixi-live2d-display 提供的静态方法
+        PIXI.Live2DModel.from(MODEL_URL)
+            .then((model) => {
+                // 隐藏加载文字
+                document.getElementById('loading').style.display = 'none';
+
+                // --- 3. 调整模型位置和大小 ---
+                
+                // 锚点设为中心，方便居中
+                model.anchor.set(0.5, 0.5);
+                
+                // 设置位置到屏幕中心
+                model.x = app.screen.width / 2;
+                model.y = app.screen.height / 2;
+
+                // 自动缩放以适应屏幕高度 (保留宽高比)
+                const scale = (app.screen.height * 0.8) / model.height;
+                model.scale.set(scale);
+
+                // 添加到舞台
+                app.stage.addChild(model);
+
+                // --- 4. 交互与动画控制 ---
+
+                // A. 鼠标跟随 (Look At)
+                // 让角色的眼睛/头部跟随鼠标移动
+                app.stage.interactive = true;
+                app.stage.on('pointermove', (e) => {
+                    model.focus(e.global.x, e.global.y);
+                });
+
+                // B. 播放随机动作
+                // 获取所有可用的动作组名称 (通常在 model3.json 中定义，如 "Idle", "TapBody" 等)
+                // 注意：不同模型的动作组名称不同，需查看其 .model3.json 文件
+                const motionGroups = model.internalModel.motionManager.priorityMap;
+                console.log("可用动作组:", Object.keys(motionGroups));
+
+                // 每3秒随机播放一个动作 (如果有定义的话)
+                setInterval(() => {
+                    // 尝试播放 'TapBody' 或 'Idle'，具体取决于模型
+                    // 这里假设模型有 'TapBody' 动作，如果没有会报错或忽略
+                    try {
+                        // 参数: 动作组名, 索引(可选), 优先级(可选)
+                        model.motion('TapBody'); 
+                    } catch (e) {
+                        // 如果该动作不存在，跳过
+                    }
+                }, 5000);
+
+                // C. 点击互动
+                model.on('hit', (hitAreas) => {
+                    if (hitAreas.includes('Body')) {
+                        console.log('身体被点击');
+                        model.motion('TapBody');
+                    }
+                });
+
+                // D. 表达式切换 (如果有)
+                // model.expression('Smile'); 
+
+            })
+            .catch((error) => {
+                console.error("模型加载失败:", error);
+                document.getElementById('loading').innerText = "模型加载失败，请检查控制台";
+            });
+
+        // --- 5. 窗口自适应 ---
+        window.addEventListener('resize', () => {
+            app.renderer.resize(window.innerWidth, window.innerHeight);
+            // 重新居中模型逻辑可在此添加
+        });
+
+    </script>
+</body>
+</html>

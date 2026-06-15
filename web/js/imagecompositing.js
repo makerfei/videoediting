@@ -1,6 +1,15 @@
 
 
 
+
+
+
+
+
+
+
+
+// 基本绘画内容 canvas
 function getimage(width, height, c, s) {
     const canvas = document.createElement('canvas');
     canvas.width = width;
@@ -11,8 +20,8 @@ function getimage(width, height, c, s) {
     return canvas
 
 }
-// let body =  d3.select("body");
-// debugger
+
+
 
 
 
