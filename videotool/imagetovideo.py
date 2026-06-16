@@ -21,7 +21,7 @@ def clear_folder(folder_path):
     print(f"文件夹已清空: {folder_path}")
 
 # 使用示例
-clear_folder('uploads')
+clear_folder('uploaded_frames')
 
 def images_to_video_ffmpeg(image_folder,audio_path ,output_video_path, fps=24, img_pattern='frame_%05d.png'):
     """
@@ -58,16 +58,20 @@ def images_to_video_ffmpeg(image_folder,audio_path ,output_video_path, fps=24, i
     except subprocess.CalledProcessError as e:
         print(f"FFmpeg 错误: {e.stderr.decode()}")
 
-# 使用示例
-images_to_video_ffmpeg('../uploaded_frames','../audio.wav', '../../output.mp4', fps=24, img_pattern='frame_%05d.png')
 
 # 1. 读取所有传入的数据
 input_data = sys.stdin.read()
 # 3. 如果需要结构化数据，可以解析 JSON
 try:
     data = json.loads(input_data)
-    # print(f"Parsed JSON key 'prompt': {data.get('prompt')}")
+    print(data)
+    # 使用示例
+    images_to_video_ffmpeg('../uploaded_frames','../audio.wav', '../../output.mp4', fps=24, img_pattern='frame_%05d.png')
+    print("--完成--")
+    print('{"state": "视频生成完成"}')
     sys.stdout.flush()
 except:
+    print("--完成--")
+    print('{"state": "图片转视频程序运行错误"}')
     pass
 

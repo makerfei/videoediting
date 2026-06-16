@@ -26,7 +26,7 @@ def write_input(process, inputs):
     except Exception as e:
         print(f"写入错误: {e}")
 
-def run_external_script(script_path, input_value=""):
+def run_external_script(script_path, input_value="",handler=None,callback=None):
     # 启动进程
     process = subprocess.Popen(
         ["python", "-u", script_path],
@@ -40,16 +40,47 @@ def run_external_script(script_path, input_value=""):
     t_write = threading.Thread(target=write_input, args=(process, json.dumps(input_value)))
     t_write.start()
    # 2. 主线程负责“实时读取并打印”
-    try:
+    try:    
+        outPut = ""
         for line in process.stdout:
             print(f"[Recv] {line.strip()}")
+            outPut += line.strip()
+            
+        if(callback):
+            outPut = outPut.split("--完成--")[1]
+            callback(handler,outPut)
     except Exception as e:
         print(f"读取错误: {e}")
 
     # 3. 等待线程和进程结束
     t_write.join()
     process.wait()
+
+def callback(handler,indata):
+    handler.send_json_response(200, indata)
+    pass
+
+def script_api(handler, params):
+    content_length = int(handler.headers['Content-Length'])
+    post_data = handler.rfile.read(content_length)
+    received_json = json.loads(post_data.decode('utf-8'))
+    script_path = received_json["script_path"]
+    input_value = received_json["input_value"]
+    run_external_script(script_path,input_value,handler,callback)
+
    
+
+   
+
+
+
+
+
+
+
+
+
+
 
 # 使用
 # run_external_script("t.py", {"prompt": "讲一个好玩的故事"})

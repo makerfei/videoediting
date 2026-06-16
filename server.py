@@ -9,8 +9,9 @@ from urllib.parse import urlparse, parse_qs
 import time
 import webbrowser
 from admin.RouteManager import RouteManager
+
 from admin.uploadFrame import *
-from admin.imagetovideo import *
+from admin.mysubprocess import *
 from admin.pageOperation import *
 PORT = 8000
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
@@ -20,7 +21,7 @@ DIRECTORY = os.path.join(BASE_DIR, 'web')
 router = RouteManager()
 
 
-router.add_route('POST', r'/api/imagetovideo',  imagetovideo)
+router.add_route('POST', r'/api/script_api',  script_api)
 router.add_route('POST', r'/api/upload/frame',  handle_upload_frame)
 router.add_route('POST', r'/api/pageOperation/getSourceData',  getSourceData)
 

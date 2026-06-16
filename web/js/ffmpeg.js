@@ -69,9 +69,10 @@ async function exportAllFramesAsUpload(inmyStage) {
 
     console.log('🎉 所有帧上传完成！ ', (Date.now() - timestamp) / 1000, '秒');
     await myAudio.uploadFrame()
-    axios.post('/api/imagetovideo')
+    axios.post('/api/script_api',{script_path:"../videotool/imagetovideo.py",input_value:{text:"视频合成服务调用"}})
         .then(response => {
-            showToast(`视频生成中`)
+            debugger
+            showToast(JSON.parse(response.data).state)
         })
         .catch(error => {
             showToast(`视频生成失败: ${error}`)
