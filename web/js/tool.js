@@ -1,34 +1,11 @@
 
-// ==================== 视频文件加载  已无用   ====================
-function loadVideoFile(file) {
-    const url = URL.createObjectURL(file);
-    DOM.previewVideo.src = url;
-    DOM.previewVideo.style.display = 'block';
-    DOM.previewPlaceholder.style.display = 'none';
-    DOM.previewVideo.play().catch(() => { });
-
-    // 将视频关联到选中的片段或第一个视频片段
-    const videoClips = [];
-    state.tracks.forEach(t => {
-        if (t.type === 'video') t.clips.forEach(c => videoClips.push(c));
-    });
-
-    if (state.selectedClipId) {
-        const clip = findClip(state.selectedClipId);
-        if (clip) clip.videoSrc = url;
-    } else if (videoClips.length > 0) {
-        videoClips.videoSrc = url;
-    }
-
-    showToast('视频已加载 ✅ 点击预览区可替换视频');
-}
 
 
 
 
 
 
-
+// 加载数据
 function importData(input) {
     const file = input.files;
     if (!file) return;
@@ -47,4 +24,39 @@ function showToast(msg) {
     DOM.toast.classList.add('show');
     clearTimeout(DOM.toast._timeout);
     DOM.toast._timeout = setTimeout(() => DOM.toast.classList.remove('show'), 1800);
+}
+
+
+
+function cropImageByCoords(img, x1, y1, x2, y2) {
+    return new Promise((resolve) => {
+        let myimg = new Image()
+        myimg.onload = () => {
+            // 1. 计算裁剪尺寸和起始点
+            const width = Math.abs(x2 - x1);
+            const height = Math.abs(y2 - y1);
+            const startX = Math.min(x1, x2);
+            const startY = Math.min(y1, y2);
+
+            // 2. 创建临时 Canvas
+            const canvas = document.createElement('canvas');
+            canvas.width = width;
+            canvas.height = height;
+            const ctx = canvas.getContext('2d');
+
+            // 3. 执行切图 (源x, 源y, 源宽, 源高, 目标x, 目标y, 目标宽, 目标高)
+            ctx.drawImage(myimg, startX, startY, width, height, 0, 0, width, height);
+
+            resolve({
+                base64: canvas.toDataURL('image/png')
+            });
+            // canvas.toBlob((blob) => {
+            //     resolve({
+            //         base64: canvas.toDataURL('image/png'),
+            //         blob: blob
+            //     });
+            // }, 'image/png');
+        }
+        myimg.src = img
+    });
 }

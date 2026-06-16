@@ -1,0 +1,1474 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+
+<head>
+    <meta charset="UTF-8">
+    <link rel="icon" href="gif/2.gif">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <script src="js/cnd/axios.min.js"></script>
+    <script src="js/tool.js"></script>
+    <title>图片ai 对接</title>
+    <!-- 引入 TailwindCSS -->
+    <style>
+        /* 头部容器样式 */
+        header {
+            display: flex;
+            justify-content: space-between;
+            /* 左右两端对齐 */
+            align-items: center;
+            /* 垂直居中 */
+            background-color: #ffffff;
+            /* 白色背景 */
+            padding: 12px 24px;
+            /* 内边距：上下12px，左右24px */
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+            /* 轻微底部阴影 */
+            border-bottom: 1px solid #e5e7eb;
+            /* 底部边框 */
+            position: sticky;
+            /* 可选：使头部在滚动时固定在顶部 */
+            top: 0;
+            z-index: 100;
+            /* 确保头部在其他内容之上 */
+        }
+
+        /* 左右分组容器 */
+        header>div {
+            display: flex;
+            gap: 12px;
+            /* 按钮之间的间距 */
+            align-items: center;
+        }
+
+        /* 通用按钮样式 */
+        header button {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            padding: 8px 16px;
+            font-size: 14px;
+            font-weight: 500;
+            border-radius: 6px;
+            /* 圆角 */
+            cursor: pointer;
+            transition: all 0.2s ease;
+            /* 平滑过渡效果 */
+            border: 1px solid transparent;
+            outline: none;
+        }
+
+        /*主要操作按钮（上传图片）*/
+        header button:first-of-type {
+            background-color: #3b82f6;
+            /* 蓝色背景 */
+            color: white;
+            box-shadow: 0 2px 4px rgba(59, 130, 246, 0.2);
+        }
+
+        header button:first-of-type:hover {
+            background-color: #2563eb;
+            /* 悬停时深蓝色 */
+            transform: translateY(-1px);
+            /* 轻微上浮效果 */
+            box-shadow: 0 4px 6px rgba(59, 130, 246, 0.3);
+        }
+
+        /* 次要操作按钮（导入/导出）*/
+        header button:not(:first-of-type) {
+            background-color: #ffffff;
+            color: #374151;
+            /* 深灰色文字 */
+            border: 1px solid #d1d5db;
+            /* 灰色边框 */
+        }
+
+        header button:not(:first-of-type):hover {
+            background-color: #f9fafb;
+            /* 悬停时浅灰背景 */
+            border-color: #9ca3af;
+            color: #111827;
+        }
+
+        /* 隐藏文件输入框 */
+        #fileInput {
+            display: none;
+        }
+
+        main {
+            display: flex;
+            flex-wrap: nowrap;
+            align-content: flex-start;
+            justify-content: space-between;
+            align-items: flex-start;
+        }
+
+        /* 侧边栏整体容器 */
+        aside {
+            width: 280px;
+            /* 固定宽度，可根据需求调整 */
+            background-color: #ffffff;
+            border-right: 1px solid #e5e7eb;
+            /* 右侧分隔线 */
+            display: flex;
+            flex-direction: column;
+            height: 100%;
+            /* 占满父容器高度 */
+            box-shadow: 2px 0 5px rgba(0, 0, 0, 0.03);
+        }
+
+        /* 顶部搜索区域 */
+        aside>div:first-child {
+            padding: 16px;
+            border-bottom: 1px solid #f3f4f6;
+        }
+
+        /* 搜索输入框样式 */
+        #searchInput {
+            box-sizing: border-box;
+            width: 100%;
+            padding: 10px 12px 10px 36px;
+            /* 左侧留出图标位置 */
+            border: 1px solid #d1d5db;
+            border-radius: 8px;
+            font-size: 14px;
+            color: #374151;
+            background-color: #f9fafb;
+            background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 24 24' stroke='%239ca3af'%3E%3Cpath stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z'/%3E%3C/svg%3E");
+            background-repeat: no-repeat;
+            background-position: 10px center;
+            background-size: 16px;
+            transition: all 0.2s ease;
+            outline: none;
+        }
+
+        #searchInput:focus {
+            border-color: #3b82f6;
+            background-color: #ffffff;
+            box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+        }
+
+        #searchInput::placeholder {
+            color: #9ca3af;
+        }
+
+        /*中间图片列表区域 */
+        #imageList {
+            flex: 1;
+            /* 占据剩余空间 */
+            overflow-y: auto;
+            /* 允许垂直滚动 */
+            padding: 8px 0;
+        }
+
+        /* 自定义滚动条样式 (Webkit内核) */
+        #imageList::-webkit-scrollbar {
+            width: 6px;
+        }
+
+        #imageList::-webkit-scrollbar-track {
+            background: transparent;
+        }
+
+        #imageList::-webkit-scrollbar-thumb {
+            background-color: #cbd5e1;
+            border-radius: 3px;
+        }
+
+        #imageList::-webkit-scrollbar-thumb:hover {
+            background-color: #94a3b8;
+        }
+
+        /* 空状态提示样式 */
+        #imageList>div {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            height: 100%;
+            color: #9ca3af;
+            text-align: center;
+            padding: 20px;
+        }
+
+        #imageList>div i {
+            font-size: 48px;
+            margin-bottom: 12px;
+            opacity: 0.5;
+            /* 如果你使用 FontAwesome，这里可以添加具体的 icon class */
+        }
+
+        #imageList>div p {
+            font-size: 14px;
+            margin: 0;
+        }
+
+        /* 底部统计信息区域 */
+        aside>div:last-child {
+            padding: 12px 16px;
+            border-top: 1px solid #f3f4f6;
+            font-size: 12px;
+            color: #6b7280;
+            background-color: #f9fafb;
+            text-align: right;
+        }
+
+        #imgCount {
+
+            font-weight: 600;
+            color: #3b82f6;
+            margin: 0 4px;
+        }
+
+        /* 动态生成的图片列表项样式建议 (供 JS 生成时参考) */
+        .image-item {
+            display: flex;
+            align-items: center;
+            padding: 10px 16px;
+            cursor: pointer;
+            transition: background-color 0.2s;
+            border-left: 3px solid transparent;
+        }
+
+        .image-item:hover {
+            background-color: #f3f4f6;
+        }
+
+        .image-item.active {
+            background-color: #eff6ff;
+            border-left-color: #3b82f6;
+        }
+
+        .image-item img {
+            width: 40px;
+            height: 40px;
+            object-fit: cover;
+            border-radius: 4px;
+            margin-right: 12px;
+            border: 1px solid #e5e7eb;
+        }
+
+        .image-item .info {
+            flex: 1;
+            overflow: hidden;
+        }
+
+        .image-item .name {
+            font-size: 14px;
+            color: #1f2937;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
+        .image-item .meta {
+            font-size: 12px;
+            color: #9ca3af;
+            margin-top: 2px;
+        }
+
+        #imageList img {
+            object-fit: contain;
+            width: 250px;
+            height: 250px;
+        }
+
+        /* 卡片整体容器 */
+        .group {
+            /* 确保布局稳定 */
+            display: flex;
+            flex-direction: column;
+            /* 保持原有的圆角和边框视觉 */
+            overflow: hidden;
+        }
+
+        /* 图片区域容器 (第一个子 div) */
+        .group>div:first-child {
+            position: relative;
+            width: 100%;
+            aspect-ratio: 1 / 1;
+            /* 强制正方形比例，防止图片变形 */
+            background-color: #f9fafb;
+            /* gray-50，作为图片加载前的底色 */
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            overflow: hidden;
+        }
+
+        /* 图片本身 */
+        .group>div:first-child img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            /* 保持比例填充，裁剪多余部分 */
+            transition: transform 0.3s ease;
+        }
+
+        /* 悬停时图片轻微放大效果 */
+        .group:hover>div:first-child img {
+            transform: scale(1.05);
+        }
+
+        /* 标注数量标签 (第三个子 div: "1 标注") */
+        .group>div:first-child>div:last-child {
+            position: absolute;
+            top: 8px;
+            right: 8px;
+            background-color: rgba(59, 130, 246, 0.9);
+            /* blue-600 with opacity */
+            color: white;
+            font-size: 12px;
+            font-weight: 600;
+            padding: 2px 8px;
+            border-radius: 4px;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+            z-index: 10;
+            pointer-events: none;
+            /* 防止遮挡鼠标事件 */
+        }
+
+        /* 底部信息区域 (第二个子 div) */
+        .group>div:last-child {
+            padding: 12px;
+            background-color: white;
+            border-top: 1px solid #f3f4f6;
+            /* 轻微分隔线 */
+        }
+
+        /* 文件名 */
+        .group>div:last-child p:first-child {
+            font-size: 14px;
+            font-weight: 500;
+            color: #1f2937;
+            /* gray-800 */
+            margin: 0 0 4px 0;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            /* 长文件名显示省略号 */
+        }
+
+        /* 分辨率信息 */
+        .group>div:last-child p:last-child {
+            font-size: 12px;
+            color: #9ca3af;
+            /* gray-400 */
+            margin: 0;
+        }
+
+        /* 增强原有的 Tailwind 悬停效果 */
+        .group:hover {
+            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+            transform: translateY(-2px);
+        }
+
+        /* 1. 主工作区容器 */
+        section {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            height: 100%;
+            /* 占满父容器剩余高度 */
+            background-color: #f3f4f6;
+            /* gray-100，作为画布背景底色 */
+            position: sticky;
+            top: 60px;
+        }
+
+        /* 2. 顶部工具栏 */
+        section>div:first-child {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 10px 20px;
+            background-color: #ffffff;
+            border-bottom: 1px solid #e5e7eb;
+            box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
+            z-index: 20;
+        }
+
+        /* 模式显示区域 */
+        section>div:first-child>div:first-child {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-size: 14px;
+            color: #4b5563;
+        }
+
+        #modeDisplay {
+            font-weight: 600;
+            color: #2563eb;
+            /* blue-600 */
+            background-color: #eff6ff;
+            padding: 2px 8px;
+            border-radius: 4px;
+        }
+
+        /* 工具按钮组 */
+        section>div:first-child>div:last-child {
+            display: flex;
+            gap: 10px;
+        }
+
+        section button {
+            padding: 6px 12px;
+            font-size: 13px;
+            border: 1px solid #d1d5db;
+            background-color: white;
+            border-radius: 6px;
+            cursor: pointer;
+            transition: all 0.2s;
+            color: #374151;
+        }
+
+        section button:hover {
+            background-color: #f9fafb;
+            border-color: #9ca3af;
+            color: #111827;
+        }
+
+        section button:active {
+            transform: scale(0.98);
+        }
+
+        /* 3. 画布容器核心区域 */
+        #canvasWrapper {
+            flex: 1;
+            /* 占据剩余所有空间 */
+            overflow: auto;
+            /* 允许画布过大时滚动 */
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            /* 专业的绘图网格背景 */
+            background-image:
+                linear-gradient(#e5e7eb 1px, transparent 1px),
+                linear-gradient(90deg, #e5e7eb 1px, transparent 1px);
+            background-size: 20px 20px;
+            background-position: -1px -1px;
+        }
+
+        /* 4. 空状态提示 (未加载图片时) */
+        #emptyState {
+            text-align: center;
+            color: #9ca3af;
+            display: flex;
+            /* 默认显示，JS控制隐藏 */
+            flex-direction: column;
+            align-items: center;
+            gap: 12px;
+        }
+
+        #emptyState i {
+            font-size: 48px;
+            margin-bottom: 8px;
+            opacity: 0.5;
+            /* 如果使用 FontAwesome，请确保引入了库 */
+        }
+
+        #emptyState h3 {
+            font-size: 18px;
+            font-weight: 500;
+            color: #4b5563;
+            margin: 0;
+        }
+
+        #emptyState p {
+            font-size: 14px;
+            margin: 0;
+        }
+
+        /* 5. 实际绘图区域 (加载图片后显示) */
+        #drawingArea {
+            position: relative;
+            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+            background-color: white;
+
+        }
+
+        #drawingArea.visible {
+            display: block;
+        }
+
+        /* Canvas 样式 */
+        #mainCanvas {
+            display: block;
+            max-width: 100%;
+            height: auto;
+            /* 防止高分屏模糊，需在 JS 中设置 width/height 属性 */
+        }
+
+        /* 标注覆盖层 */
+        #overlayLayer {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+            /* 关键：让鼠标事件穿透到 Canvas，除非点到标注框 */
+            z-index: 10;
+        }
+
+        /* 6. 底部状态栏 */
+        footer {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 6px 16px;
+            background-color: #ffffff;
+            border-top: 1px solid #e5e7eb;
+            font-size: 12px;
+            color: #6b7280;
+            z-index: 20;
+        }
+
+        footer>div:last-child {
+            display: flex;
+            gap: 16px;
+        }
+
+        #cursorPos,
+        #zoomLevel {
+            font-family: monospace;
+            /* 等宽字体适合显示坐标 */
+            background-color: #f3f4f6;
+            padding: 2px 6px;
+            border-radius: 4px;
+        }
+
+        .hidden {
+            display: none !important;
+        }
+
+
+
+        /* 1. 侧边栏整体容器 */
+        .raside {
+            position: sticky;
+            top: 60px;
+            width: 320px;
+            /* 固定宽度，可根据需求调整 */
+            background-color: #ffffff;
+            border-left: 1px solid #e5e7eb;
+            display: flex;
+            flex-direction: column;
+            height: 100%;
+            /* 占满父容器高度 */
+            box-shadow: -2px 0 8px rgba(0, 0, 0, 0.04);
+            z-index: 20;
+        }
+
+        /* 2. 顶部标题栏 */
+        .raside>div:first-child {
+            padding: 16px 20px;
+            border-bottom: 1px solid #f3f4f6;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            background-color: #f9fafb;
+        }
+
+        .raside>div:first-child span:first-child {
+            font-weight: 600;
+            color: #1f2937;
+            font-size: 15px;
+        }
+
+        #selectedRectId {
+            font-family: 'Consolas', 'Monaco', monospace;
+            background-color: #e5e7eb;
+            padding: 2px 8px;
+            border-radius: 4px;
+            font-size: 12px;
+            color: #4b5563;
+            font-weight: 500;
+        }
+
+        /* 3. 中间内容区域 (表单/空状态) */
+        .raside>div:nth-child(2) {
+            flex: 1;
+            /* 占据剩余空间 */
+            overflow-y: auto;
+            /* 允许内部滚动 */
+            padding: 20px;
+            position: relative;
+        }
+
+        /* 自定义滚动条 */
+        .raside>div:nth-child(2)::-webkit-scrollbar {
+            width: 6px;
+        }
+
+        .raside>div:nth-child(2)::-webkit-scrollbar-thumb {
+            background-color: #cbd5e1;
+            border-radius: 3px;
+        }
+
+        /* 表单容器样式 */
+        #inputFormContainer {
+            display: flex;
+            flex-direction: column;
+            gap: 16px;
+        }
+
+        /* 表单项通用样式 */
+        #inputFormContainer>div {
+            display: flex;
+            flex-direction: column;
+            gap: 6px;
+        }
+
+        /* 标签样式 */
+        #inputFormContainer label {
+            font-size: 13px;
+            font-weight: 500;
+            color: #374151;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        /* 标签中的辅助文字 */
+        #inputFormContainer label span,
+        #inputFormContainer label small {
+            font-weight: normal;
+            color: #9ca3af;
+            font-size: 12px;
+            margin-left: 4px;
+        }
+
+        /* 输入框与文本域样式 */
+        #inputFormContainer input,
+        #inputFormContainer textarea {
+            width: 100%;
+            padding: 8px 12px;
+            border: 1px solid #d1d5db;
+            border-radius: 6px;
+            font-size: 14px;
+            color: #1f2937;
+            background-color: #fff;
+            transition: all 0.2s ease;
+            outline: none;
+            box-sizing: border-box;
+        }
+
+        #inputFormContainer textarea {
+            resize: vertical;
+            /* 允许垂直调整大小 */
+            min-height: 80px;
+            font-family: inherit;
+            line-height: 1.5;
+        }
+
+        #inputFormContainer input:focus,
+        #inputFormContainer textarea:focus {
+            border-color: #3b82f6;
+            box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+        }
+
+        #inputFormContainer input::placeholder,
+        #inputFormContainer textarea::placeholder {
+            color: #9ca3af;
+        }
+
+        /* 按钮组样式 */
+        #inputFormContainer button {
+            width: 100%;
+            padding: 10px;
+            border: none;
+            border-radius: 6px;
+            font-size: 14px;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.2s;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+            margin-top: 4px;
+        }
+
+        /* 主要操作：保存 (蓝色) */
+        #inputFormContainer button:first-of-type {
+            background-color: #3b82f6;
+            color: white;
+            box-shadow: 0 2px 4px rgba(59, 130, 246, 0.2);
+        }
+
+        #inputFormContainer button:first-of-type:hover {
+            background-color: #2563eb;
+            transform: translateY(-1px);
+        }
+
+        /* 次要操作：切图 (绿色/青色) */
+        #inputFormContainer button:nth-of-type(2) {
+            background-color: #10b981;
+            color: white;
+        }
+
+        #inputFormContainer button:nth-of-type(2):hover {
+            background-color: #059669;
+        }
+
+        /* 危险操作：删除 (红色) */
+        #inputFormContainer button:last-of-type {
+            background-color: #ef4444;
+            color: white;
+        }
+
+        #inputFormContainer button:last-of-type:hover {
+            background-color: #dc2626;
+        }
+
+        /* 4. 未选中状态提示 */
+        #noSelectionMsg {
+            display: none;
+            /* 默认隐藏，JS控制显示 */
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            height: 100%;
+            text-align: center;
+            color: #9ca3af;
+            gap: 12px;
+            padding: 20px;
+        }
+
+        #noSelectionMsg i {
+            font-size: 48px;
+            opacity: 0.3;
+            margin-bottom: 8px;
+        }
+
+        #noSelectionMsg p {
+            font-size: 14px;
+            line-height: 1.6;
+            margin: 0;
+        }
+
+        /* 5. 底部帮助信息 */
+        .raside>div:last-child {
+            padding: 16px 20px;
+            border-top: 1px solid #f3f4f6;
+            background-color: #f9fafb;
+            font-size: 12px;
+            color: #6b7280;
+        }
+
+        .raside>div:last-child p {
+            font-weight: 600;
+            margin-bottom: 8px;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            color: #4b5563;
+        }
+
+        .raside>div:last-child ul {
+            list-style: none;
+            padding: 0;
+            margin: 0;
+        }
+
+        .raside>div:last-child li {
+            margin-bottom: 6px;
+            padding-left: 14px;
+            position: relative;
+            line-height: 1.4;
+        }
+
+        .raside>div:last-child li::before {
+            content: "•";
+            position: absolute;
+            left: 0;
+            color: #9ca3af;
+            font-weight: bold;
+        }
+
+
+
+
+
+        .annotation-rect {
+            border: 1px solid #2563eb;
+            position: absolute;
+            cursor: pointer;
+            pointer-events: painted;
+        }
+
+        .selected {
+            border: 1px solid #e34b13;
+        }
+    </style>
+</head>
+
+<body>
+    <!-- 头部导航 -->
+    <header>
+        <div>
+            <button onclick="document.getElementById('fileInput').click()">
+                上传图片
+            </button>
+            <input type="file" id="fileInput" multiple accept="image/*" onchange="app.handleUpload(this)">
+        </div>
+        <div>
+            <button onclick="app.inportData()">
+                导入 JSON
+            </button>
+            <button onclick="app.exportData()">
+                导出 JSON
+            </button>
+        </div>
+    </header>
+    <!-- 主体内容 -->
+    <main>
+        <!-- 左侧：图片列表侧边栏 -->
+        <aside>
+            <div>
+                <div>
+
+                    <input type="text" id="searchInput" placeholder="搜索图片..." oninput="app.filterList(this.value)">
+                </div>
+            </div>
+
+            <div id="imageList">
+                <!-- 动态生成的图片列表项将在这里 -->
+                <div>
+                    <i></i>
+                    <p>暂无图片，请上传</p>
+                </div>
+            </div>
+
+            <div>
+                已加载 <span id="imgCount">0</span> 张图片
+            </div>
+        </aside>
+
+        <!-- 中间：画布工作区 -->
+        <section>
+
+            <!-- 工具栏 -->
+            <div>
+                <div>
+                    <span>当前模式:</span>
+                    <span id="modeDisplay">绘制矩形</span>
+                </div>
+                <div></div>
+                <button onclick="app.clearRects()" title="清除当前所有标注">
+                    清除当前所有标注
+                </button>
+                <button onclick="app.undo()" title="撤销上一步">
+                    上一步
+                </button>
+
+                <button onclick="app.deleteimg()" title="撤销上一步">
+                    删除图片
+                </button>
+            </div>
+
+            <!-- 画布容器 -->
+            <div id="canvasWrapper">
+                <div id="emptyState">
+                    <div>
+                        <i></i>
+                    </div>
+                    <h3>开始工作</h3>
+                    <p>从左侧选择图片或上传新图片</p>
+                </div>
+
+                <!-- 实际绘图区域 -->
+                <div id="drawingArea" class="hidden">
+                    <canvas id="mainCanvas"></canvas>
+                    <!-- 标注层覆盖在 Canvas 上用于交互 -->
+                    <div id="overlayLayer"></div>
+                </div>
+            </div>
+
+            <!-- 底部状态栏 -->
+            <footer>
+                <div id="statusMsg">就绪</div>
+                <div>
+                    <span id="cursorPos">X: 0, Y: 0</span>
+                    <span id="zoomLevel">Zoom: 100%</span>
+                </div>
+            </footer>
+        </section>
+
+        <!-- 右侧：属性面板与输入框 -->
+        <aside class="raside">
+            <div>
+                <span>标注详情</span>
+                <span>ID: <span id="selectedRectId">-</span></span>
+            </div>
+
+            <div>
+                <!-- 输入表单区域 -->
+                <div id="inputFormContainer">
+                    <div>
+                        <label>图片倍率
+                            256*256
+                            (rate)</label>
+                        <input type="text" id="rate" placeholder="例如：1">
+                    </div>
+                    <div>
+                        <label>标签名称
+                            (Label)</label>
+                        <textarea type="text" id="labelInput" placeholder="例如：Person, Car..."></textarea>
+                    </div>
+
+                    <div>
+                        <label>备注信息
+                            (Note)</label>
+                        <textarea id="noteInput" rows="4" placeholder="添加关于此标注的详细说明..."></textarea>
+                    </div>
+
+                    <div>
+                        <button onclick="app.saveAnnotationDetails()">
+                            <i></i> 保存并请求后端
+                        </button>
+                    </div>
+
+                    <div>
+                        <button onclick="app.cropImageByCoordsImg()">
+                            <i></i> 切图
+                        </button>
+                    </div>
+
+                    <div>
+                        <button onclick="app.deleteRect()">
+                            <i></i> 删除
+                        </button>
+                    </div>
+                </div>
+
+                <!-- 未选中状态提示 -->
+                <div id="noSelectionMsg">
+                    <div>
+                        <i></i>
+                    </div>
+                    <p>请在画布上点击一个标注<br>以编辑其详细信息</p>
+                </div>
+            </div>
+
+            <!-- 底部帮助信息 -->
+            <div>
+                <p><i></i> 提示：</p>
+                <ul>
+                    <li>拖动鼠标绘制矩形</li>
+                    <li>点击矩形选中并编辑</li>
+                    <li>数据自动保存至本地</li>
+                </ul>
+            </div>
+        </aside>
+    </main>
+
+    <script>
+        /**
+         * 应用核心逻辑
+         */
+        const app = {
+            images: [], // 存储图片数据 { id, src, name, width, height, rects: [] }
+            currentImageId: null,
+            isDrawing: false,
+            startX: 0,
+            startY: 0,
+            currentRect: null,
+            scale: 1,
+            selectedRectId: null,
+
+            // DOM 元素缓存
+            dom: {
+                canvas: document.getElementById('mainCanvas'),
+                ctx: document.getElementById('mainCanvas').getContext('2d'),
+                wrapper: document.getElementById('drawingArea'),
+                overlay: document.getElementById('overlayLayer'),
+                list: document.getElementById('imageList'),
+                emptyState: document.getElementById('emptyState'),
+                status: document.getElementById('statusMsg'),
+                cursorPos: document.getElementById('cursorPos'),
+                // 右侧面板元素
+                inputContainer: document.getElementById('inputFormContainer'),
+                noSelectionMsg: document.getElementById('noSelectionMsg'),
+                labelInput: document.getElementById('labelInput'),
+                noteInput: document.getElementById('noteInput'),
+                selectedRectIdDisplay: document.getElementById('selectedRectId')
+            },
+
+            init() {
+                this.setupEventListeners();
+                this.loadFromLocalStorage();
+            },
+
+            setupEventListeners() {
+                const canvas = this.dom.canvas;
+
+                // 鼠标按下：开始绘制
+                canvas.addEventListener('mousedown', (e) => {
+                    if (!this.currentImageId) return;
+                    this.isDrawing = true;
+                    const rect = canvas.getBoundingClientRect();
+                    this.startX = e.clientX - rect.left;
+                    this.startY = e.clientY - rect.top;
+
+                    // 创建临时矩形 DOM
+                    this.currentRect = document.createElement('div');
+                    this.currentRect.className = 'annotation-rect pointer-events-auto';
+                    this.currentRect.style.left = `${this.startX}px`;
+                    this.currentRect.style.top = `${this.startY}px`;
+                    this.currentRect.style.width = '0px';
+                    this.currentRect.style.height = '0px';
+                    this.dom.overlay.appendChild(this.currentRect);
+                });
+
+                // 鼠标移动：更新矩形大小
+                window.addEventListener('mousemove', (e) => {
+                    if (!this.isDrawing || !this.currentRect) return;
+                    const rect = canvas.getBoundingClientRect();
+                    const currentX = e.clientX - rect.left;
+                    const currentY = e.clientY - rect.top;
+
+                    const width = Math.abs(currentX - this.startX);
+                    const height = Math.abs(currentY - this.startY);
+                    const left = Math.min(currentX, this.startX);
+                    const top = Math.min(currentY, this.startY);
+
+                    this.currentRect.style.left = `${left}px`;
+                    this.currentRect.style.top = `${top}px`;
+                    this.currentRect.style.width = `${width}px`;
+                    this.currentRect.style.height = `${height}px`;
+
+                    this.updateCursorPos(e.clientX - rect.left, e.clientY - rect.top);
+                });
+
+                // 鼠标松开：完成绘制
+                window.addEventListener('mouseup', () => {
+                    if (!this.isDrawing) return;
+                    this.isDrawing = false;
+
+                    if (this.currentRect) {
+                        const width = parseInt(this.currentRect.style.width);
+                        const height = parseInt(this.currentRect.style.height);
+
+                        // 忽略过小的误触
+                        if (width > 5 && height > 5) {
+                            this.saveRectToData(this.currentRect);
+                            this.showStatus('标注已添加');
+                        } else {
+                            this.currentRect.remove();
+                        }
+                        this.currentRect = null;
+                    }
+                });
+            },
+
+            handleUpload(input) {
+                const files = Array.from(input.files);
+                if (files.length === 0) return;
+
+                files.forEach(file => {
+                    const reader = new FileReader();
+                    reader.onload = (e) => {
+                        const img = new Image();
+                        img.src = e.target.result;
+                        img.onload = () => {
+                            const newImage = {
+                                id: Date.now() + Math.random().toString(36).substr(2, 9),
+                                src: e.target.result,
+                                name: file.name,
+                                width: img.width,
+                                height: img.height,
+                                rects: []
+                            };
+                            this.images.push(newImage);
+                            this.renderList();
+                            this.saveToLocalStorage();
+
+                            // 如果是第一张，自动选中
+                            if (this.images.length === 1) {
+                                this.selectImage(newImage.id);
+                            }
+                        };
+                    };
+                    reader.readAsDataURL(file);
+                });
+
+                // 清空 input 以便重复上传同名文件
+                input.value = '';
+            },
+
+            renderList(filterText = '') {
+                this.dom.list.innerHTML = '';
+                const filtered = this.images.filter(img =>
+                    img.name.toLowerCase().includes(filterText.toLowerCase())
+                );
+
+                document.getElementById('imgCount').innerText = this.images.length;
+
+                if (filtered.length === 0) {
+                    this.dom.list.innerHTML = `
+                        <div>
+                            <i></i>
+                            <p>未找到匹配图片</p>
+                        </div>`;
+                    return;
+                }
+
+                filtered.forEach(img => {
+                    const isActive = img.id === this.currentImageId;
+                    const item = document.createElement('div');
+                    item.className = `group relative bg-white rounded-lg border ${isActive ? 'border-blue-500 ring-2 ring-blue-100' : 'border-gray-200 hover:border-blue-300'}   cursor-pointer transition-all duration-200`;
+                    item.onclick = () => this.selectImage(img.id);
+
+                    item.innerHTML = `
+                        <div>
+                            <img src="${img.src}" alt="${img.name}">
+                            ${isActive ? '<div></div>' : ''}
+                            <div>
+                                ${img.rects.length} 标注
+                            </div>
+                        </div>
+                        <div>
+                            <p title="${img.name}">${img.name}</p>
+                            <p>${img.width} x ${img.height}</p>
+                        </div>
+                    `;
+                    this.dom.list.appendChild(item);
+                });
+            },
+
+            selectImage(id) {
+                this.currentImageId = id;
+                this.selectedRectId = null; // 切换图片时取消选中
+                this.updateRightPanelUI();
+
+                const imgData = this.images.find(i => i.id === id);
+                if (!imgData) return;
+
+                // UI 更新
+                this.dom.emptyState.classList.add('hidden');
+                this.dom.wrapper.classList.remove('hidden');
+                this.renderList(document.getElementById('searchInput').value); // 刷新激活状态
+
+                // 设置 Canvas 尺寸
+                this.dom.canvas.width = imgData.width;
+                this.dom.canvas.height = imgData.height;
+
+                // 绘制底图
+                const imgObj = new Image();
+                imgObj.src = imgData.src;
+                imgObj.onload = () => {
+                    this.dom.ctx.drawImage(imgObj, 0, 0);
+                    this.restoreRects();
+                };
+
+                // 适配屏幕大小 (简单缩放逻辑)
+                this.fitToScreen();
+                this.showStatus(`已加载: ${imgData.name}`);
+            },
+
+            fitToScreen() {
+                const container = document.getElementById('canvasWrapper');
+                const padding = 60;
+                const availW = container.clientWidth - padding;
+                const availH = container.clientHeight - padding;
+
+                const imgW = this.dom.canvas.width;
+                const imgH = this.dom.canvas.height;
+
+                const scaleW = availW / imgW;
+                const scaleH = availH / imgH;
+                // this.scale = Math.min(scaleW, scaleH, 1); // 最大不超过原始尺寸
+                this.scale = 1
+                this.dom.wrapper.style.transform = `scale(${this.scale})`;
+                document.getElementById('zoomLevel').innerText = `Zoom: ${Math.round(this.scale * 100)}%`;
+            },
+
+            saveRectToData(rectElement) {
+                const imgData = this.images.find(i => i.id === this.currentImageId);
+                if (!imgData) return;
+
+                // 获取相对于 Canvas 的坐标
+                const left = parseFloat(rectElement.style.left);
+                const top = parseFloat(rectElement.style.top);
+                const width = parseFloat(rectElement.style.width);
+                const height = parseFloat(rectElement.style.height);
+
+                // 转换为百分比存储，以适应不同显示尺寸
+                const rectData = {
+                    id: Date.now(),
+                    x: left / this.dom.canvas.width,
+                    y: top / this.dom.canvas.height,
+                    w: width / this.dom.canvas.width,
+                    h: height / this.dom.canvas.height,
+                    label: '',
+                    note: ''
+                };
+
+                imgData.rects.push(rectData);
+
+                // 绑定点击事件到 DOM 元素以支持删除/编辑
+                rectElement.dataset.id = rectData.id;
+                rectElement.onclick = (e) => {
+
+                    e.stopPropagation();
+
+
+                    this.selectRect(rectData.id, rectElement);
+                };
+
+                this.saveToLocalStorage();
+                this.renderList(document.getElementById('searchInput').value); // 更新计数
+
+                // 自动选中新创建的矩形
+                this.selectRect(rectData.id, rectElement);
+            },
+
+            restoreRects() {
+                this.dom.overlay.innerHTML = ''; // 清空覆盖层
+                const imgData = this.images.find(i => i.id === this.currentImageId);
+                if (!imgData) return;
+
+                imgData.rects.forEach(r => {
+                    const div = document.createElement('div');
+                    div.className = 'annotation-rect pointer-events-auto';
+                    div.style.left = `${r.x * this.dom.canvas.width}px`;
+                    div.style.top = `${r.y * this.dom.canvas.height}px`;
+                    div.style.width = `${r.w * this.dom.canvas.width}px`;
+                    div.style.height = `${r.h * this.dom.canvas.height}px`;
+                    div.dataset.id = r.id;
+
+                    div.onclick = (e) => {
+                        e.stopPropagation();
+                        this.selectRect(r.id, div);
+                    };
+
+                    this.dom.overlay.appendChild(div);
+                });
+            },
+
+            selectRect(id, element) {
+                // 移除其他选中状态
+                document.querySelectorAll('.annotation-rect').forEach(el => el.classList.remove('selected'));
+                element.classList.add('selected');
+
+                this.selectedRectId = id;
+                const imgData = this.images.find(i => i.id === this.currentImageId);
+                const rect = imgData.rects.find(r => r.id === id);
+
+                this.updateRightPanelUI(rect);
+            },
+
+            updateRightPanelUI(rect = null) {
+                const { inputContainer, noSelectionMsg, labelInput, noteInput, selectedRectIdDisplay } = this.dom;
+
+                if (rect) {
+                    // 显示表单，隐藏提示
+                    inputContainer.classList.remove('opacity-50', 'pointer-events-none');
+                    noSelectionMsg.classList.add('hidden');
+
+                    // 填充数据
+                    selectedRectIdDisplay.innerText = rect.id;
+                    labelInput.value = rect.label || '';
+                    noteInput.value = rect.note || '';
+                } else {
+                    // 隐藏表单，显示提示
+                    inputContainer.classList.add('opacity-50', 'pointer-events-none');
+                    noSelectionMsg.classList.remove('hidden');
+                    selectedRectIdDisplay.innerText = '-';
+                    labelInput.value = '';
+                    noteInput.value = '';
+                }
+            },
+            async toApi(imgData, rect) {
+                let x1 = Math.floor(imgData.width * rect.x)
+                let y1 = Math.floor(imgData.height * rect.y)
+                let x2 = Math.floor(imgData.width * (rect.x + rect.w))
+                let y2 = Math.floor(imgData.height * (rect.y + rect.h))
+                let { base64 } = await cropImageByCoords(imgData.src, x1, y1, x2, y2)
+                let rate = document.getElementById("rate").value
+                rate = rate && Number(rate) || 1
+
+                return axios.post('/api/script_api', {
+                    script_path: "../videotool/FLUXGetAIImg.py", input_value: {
+                        prompt: rect.label,
+                        rate,
+                        input_image_list: [base64]
+                    }
+                })
+            },
+            saveAnnotationDetails() {
+                if (!this.currentImageId) return;
+
+                const imgData = this.images.find(i => i.id === this.currentImageId);
+                let rect = imgData.rects.find(r => r.id === this.selectedRectId);
+
+                // 视觉反馈
+                const btn = event.target.closest('button');
+                const originalContent = btn.innerHTML;
+                btn.innerHTML = '<i></i> 请求中...';
+                btn.classList.add('bg-green-600', 'hover:bg-green-700');
+                btn.classList.remove('bg-blue-600', 'hover:bg-blue-700');
+                if (rect) {
+                    rect.label = this.dom.labelInput.value;
+                    rect.note = this.dom.noteInput.value;
+                    this.saveToLocalStorage();
+                    this.showStatus('标注详情已保存');
+
+
+
+                }
+                rect = rect || { x: 0, y: 0, w: 1, h:1,label:this.dom.labelInput.value,note:this.dom.noteInput.value }
+                this.toApi(imgData, rect).then(res => {
+                    let data = JSON.parse(res.data)
+                    let { base64, width, height } = data
+                    const newImage = {
+                        id: Date.now() + Math.random().toString(36).substr(2, 9),
+                        src: base64,
+                        name: Date.now() + Math.random().toString(36).substr(2, 9),
+                        width: width,
+                        height: height,
+                        rects: []
+                    };
+                    this.images.push(newImage);
+                    this.renderList();
+                    this.saveToLocalStorage();
+
+                    btn.innerHTML = originalContent;
+                    btn.classList.remove('bg-green-600', 'hover:bg-green-700');
+                    btn.classList.add('bg-blue-600', 'hover:bg-blue-700');
+                })
+            },
+            async cropImageByCoordsImg() {
+                if (!this.selectedRectId || !this.currentImageId) return;
+
+                const imgData = this.images.find(i => i.id === this.currentImageId);
+                const rect = imgData.rects.find(r => r.id === this.selectedRectId);
+                let x1 = Math.floor(imgData.width * rect.x)
+                let y1 = Math.floor(imgData.height * rect.y)
+                let x2 = Math.floor(imgData.width * (rect.x + rect.w))
+                let y2 = Math.floor(imgData.height * (rect.y + rect.h))
+                let { base64 } = await cropImageByCoords(imgData.src, x1, y1, x2, y2)
+
+                const newImage = {
+                    id: Date.now() + Math.random().toString(36).substr(2, 9),
+                    src: base64,
+                    name: Date.now() + Math.random().toString(36).substr(2, 9),
+                    width: x2 - x1,
+                    height: y2 - y1,
+                    rects: []
+                };
+                this.images.push(newImage);
+                this.renderList();
+                this.saveToLocalStorage();
+
+            },
+
+            deleteRect() {
+                let id = this.selectedRectId
+                const imgData = this.images.find(i => i.id === this.currentImageId);
+                if (!imgData) return;
+
+                imgData.rects = imgData.rects.filter(r => r.id !== id);
+                this.restoreRects();
+                this.saveToLocalStorage();
+                this.renderList(document.getElementById('searchInput').value);
+                this.updateRightPanelUI(null);
+                this.showStatus('标注已删除');
+            },
+            deleteimg() {
+                if (!confirm('确定要删除当前图片吗？')) return;
+                let id = this.currentImageId
+                this.images = this.images.filter(r => r.id !== id);
+                this.restoreRects();
+                this.saveToLocalStorage();
+                this.renderList(document.getElementById('searchInput').value);
+                this.updateRightPanelUI(null);
+                this.showStatus('图片已删除');
+            },
+
+            clearRects() {
+                if (!confirm('确定要清除当前图片的所有标注吗？')) return;
+                const imgData = this.images.find(i => i.id === this.currentImageId);
+                if (imgData) {
+                    imgData.rects = [];
+                    this.restoreRects();
+                    this.saveToLocalStorage();
+                    this.renderList(document.getElementById('searchInput').value);
+                    this.updateRightPanelUI(null);
+                    this.showStatus('所有标注已清除');
+                }
+            },
+
+            undo() {
+                // 简单实现：删除最后一个标注
+                const imgData = this.images.find(i => i.id === this.currentImageId);
+                if (imgData && imgData.rects.length > 0) {
+                    imgData.rects.pop();
+                    this.restoreRects();
+                    this.saveToLocalStorage();
+                    this.renderList(document.getElementById('searchInput').value);
+                    this.updateRightPanelUI(null);
+                    this.showStatus('已撤销');
+                }
+            },
+
+            filterList(text) {
+                this.renderList(text);
+            },
+
+            updateCursorPos(x, y) {
+                this.dom.cursorPos.innerText = `X: ${Math.round(x)}, Y: ${Math.round(y)}`;
+            },
+
+            showStatus(msg) {
+                this.dom.status.innerText = msg;
+                setTimeout(() => {
+                    if (this.dom.status.innerText === msg) this.dom.status.innerText = '就绪';
+                }, 3000);
+            },
+
+            // 模拟后端保存
+            exportData() {
+                const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(this.images, null, 2));
+                const downloadAnchorNode = document.createElement('a');
+                downloadAnchorNode.setAttribute("href", dataStr);
+                downloadAnchorNode.setAttribute("download", "annotations_data.json");
+                document.body.appendChild(downloadAnchorNode);
+                downloadAnchorNode.click();
+                downloadAnchorNode.remove();
+                this.showStatus('数据已导出');
+            },
+            inportData() {
+
+
+            },
+
+            // 本地持久化
+            saveToLocalStorage() {
+                try {
+                    localStorage.setItem('annotatePro_data_v2', JSON.stringify(this.images));
+                } catch (e) {
+                    console.warn('LocalStorage 空间不足，仅会话有效');
+                }
+            },
+
+            loadFromLocalStorage() {
+                const data = localStorage.getItem('annotatePro_data_v2');
+                if (data) {
+                    this.images = JSON.parse(data);
+                    this.renderList();
+                    if (this.images.length > 0) {
+                        this.selectImage(this.images[0].id);
+                    }
+                }
+            }
+        };
+
+        // 启动应用
+        window.addEventListener('DOMContentLoaded', () => app.init());
+    </script>
+</body>
+
+</html>

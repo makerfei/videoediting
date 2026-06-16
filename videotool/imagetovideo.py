@@ -1,10 +1,9 @@
+# 合成视频
 import subprocess
 import os
 import sys
 import json
 import shutil
-
-
 def clear_folder(folder_path):
     """
     清除文件夹内的所有文件和子目录，但保留文件夹本身
