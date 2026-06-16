@@ -1,6 +1,7 @@
 // 1. 初始化舞台
 class myStageClass {
-    constructor(instate) {
+    constructor() {
+        
         this.stage = new Konva.Stage({ container: 'preview-placeholder', width: 1920, height: 1080 });
         this.masterTimeline = null
         let localkeyframes = localStorage.getItem("keyframes")
@@ -226,9 +227,10 @@ class myStageClass {
             let data = finalkeyframesItem.data
 
             let isImageChange = finalkeyframesItem.isImageChange
-            const { x, y, scale, rotation, opacity ,width,height} = data;
+            const { x, y, scaleX,scaleY, rotation, opacity ,width,height} = data;
+            
             clip ? duration ? this.masterTimeline.to(clip, {
-                x, y, scale, rotation,
+                x, y, rotation,scaleX,scaleY,width,height,
                 duration: duration,
                 ease: "power1.inOut",
                 onStart: () => {
@@ -248,7 +250,7 @@ class myStageClass {
                     // 展示图片全凭逻辑画
 
                     //需要合成标识
-                    if (data.src == "gif/2.gif") {
+                    if (data.src == "image/11.png") {
                         let fps = 24;
                         if (Math.floor((_this.state.currentTime * fps) % 1) == 0) {
                             clip.image(getimage(width, height, _this.state.currentTime, startTime))
@@ -280,7 +282,7 @@ class myStageClass {
                     //     // 在这里执行你需要的逻辑，比如手动更新 Konva 图片
                     // }
                 }
-            }, startTime) : this.masterTimeline.set(clip, { x, y, scale, rotation }, startTime) : null;
+            }, startTime) : this.masterTimeline.set(clip, {  x, y, rotation,scaleX,scaleY,width,height }, startTime) : null;
         }
         this.savelocaKeyframes()
         this.syncToTime(state.currentTime)

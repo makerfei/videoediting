@@ -10,6 +10,7 @@ class myStateClass {
             this.state = indata;
         } else {
             // 先获取本地的数据
+            
             let StorageState = localStorage.getItem("state")
             StorageState = StorageState ? JSON.parse(StorageState) : null
             this.state =StorageState || this.defData()

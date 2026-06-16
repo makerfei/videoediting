@@ -5,6 +5,134 @@
 
 
 
+// -------- 骨骼类 --------
+class Bone {
+    constructor(parent, len, angle, src) {
+        this.parent = parent;
+        this.len = len;
+        this.angle = angle;
+        this.restAngle = angle;
+        this.src = src
+        this.children = [];
+        if (parent) parent.children.push(this);
+    }
+    // 计算绝对位置
+    getAbs() {
+        if (!this.parent) return { x: 0, y: 0, r: this.angle,src: this.src };
+        const p = this.parent.getAbs();
+        return {
+            x: p.x + Math.cos(p.r) * this.parent.len,
+            y: p.y + Math.sin(p.r) * this.parent.len,
+            r: p.r + this.angle,
+            src: this.src
+        };
+    }
+}
+
+class Person {
+    constructor(ctx, width, height, c, s) {
+        this.ctx = ctx
+        this.c =c;
+        this.s = s;
+
+        this.timeDifference = this.c -this.s
+        
+        let headangle =  this.timeDifference
+        let spineangle =this.timeDifference
+        let lshangle =this.timeDifference
+        // this.ctx.strokeStyle = '#0f0';
+        // this.ctx.lineWidth = 1;
+
+        // this.ctx.strokeRect(0, 0, width, height);
+        // -------- 搭建小人 --------
+        const head = new Bone(null, 180, Math.PI / 180 * 90, "image/st/1.png");          // 头
+
+       
+
+        const lshoulder = new Bone(head, 80, -Math.PI / 180 * 90);        //右肩
+        const lua = new Bone(lshoulder, 160, 0);                 // 左上臂
+        const lfa = new Bone(lua, 160, 0.5);                   // 左前臂
+
+
+        const rshoulder = new Bone(head, 80, Math.PI / 180 * 90);        //右肩
+        const rua = new Bone(rshoulder, 160, 0.6);                  // 右上臂
+        const rfa = new Bone(rua, 160, -0.5);                  // 右前臂
+
+
+        const spine = new Bone(head, 250, 0+spineangle, "image/st/2.png");       // 脊椎（向上）
+
+
+
+
+        const lbutt = new Bone(spine, 80, Math.PI / 180 * 90);                   // 左屁股
+        const lth = new Bone(lbutt, 160, -Math.PI / 180 * 90);                   // 左大腿
+        const lsh = new Bone(lth, 160, 0.2+lshangle, "image/st/70.png");                  // 左小腿
+
+        const rbutt = new Bone(spine, 80, -Math.PI / 180 * 90);                   // 右屁股
+        const rth = new Bone(rbutt, 160, Math.PI / 180 * 90);                   // 右大腿
+        const rsh = new Bone(rth, 160, 0);                   // 右小腿
+
+        // / -------- 收集所有骨骼 --------
+        this.allBones = [spine, head, lshoulder, lua, lfa, rshoulder, rua, rfa, lbutt, lth, lsh, rbutt, rth, rsh];
+
+
+
+    }
+
+    drawBone(bone, ox, oy) {
+        const a = bone.getAbs();
+        const x1 = a.x + ox, y1 = a.y + oy;
+        const x2 = x1 + Math.cos(a.r) * bone.len;
+        const y2 = y1 + Math.sin(a.r) * bone.len;
+        
+        if (a.src) {
+            let img = myStage.imagePool.get(a.src)
+            let width = img.width / 4
+            let height = img.height / 4
+            this.ctx.save();
+            this.ctx.translate(x1, y1);           // 1. 移动原点到旋转中心
+            this.ctx.rotate(a.r + 3 * Math.PI / 2);             // 2. 旋转坐标系
+            this.ctx.drawImage(img, -width / 2, 0, width, height); // 3. 居中画图
+            this.ctx.restore();
+        }
+
+        if (bone.len > 0) {
+            this.ctx.beginPath();
+            this.ctx.moveTo(x1, y1);
+            this.ctx.lineTo(x2, y2);
+            this.ctx.strokeStyle = '#00d2ff';
+            this.ctx.lineWidth = 5;
+            this.ctx.lineCap = 'round';
+            this.ctx.stroke();
+        }
+        // 关节圆点
+        this.ctx.beginPath();
+        this.ctx.arc(x1, y1, 3, 0, Math.PI * 2);
+        this.ctx.fillStyle = '#f00';
+        this.ctx.fill();
+    }
+    drawAll(ox, oy) {
+        // // 头部圆圈
+        // let bimg = myStage.imagePool.get("image/11.png")
+        // let x1 = 0
+        // let y1 = 0
+        // this.ctx.drawImage(bimg, x1, y1, bimg.width, bimg.height);
+
+        for (const b of this.allBones) this.drawBone(b, ox, oy);
+        let b = this.allBones[1].getAbs()
+
+        
+        // // 关节圆点
+        // this.ctx.beginPath();
+        // this.ctx.arc(b.x + ox, b.y + oy, 50, 0, Math.PI * 2);
+        // this.ctx.fillStyle = '#f00';
+        // this.ctx.fill();
+    }
+}
+
+
+
+
 
 
 
@@ -15,154 +143,12 @@ function getimage(width, height, c, s) {
     canvas.width = width;
     canvas.height = height;
     const ctx = canvas.getContext('2d'); // 假设画布大小 200x200
-     // 填充白色背景（PNG 默认透明，如需白色需手动填充）
-    ctx.drawImage(myStage.imagePool.get("image/2.png"),-(c-s)*100,-(c-s)*100)
+    // 填充白色背景（PNG 默认透明，如需白色需手动填充）
+    new Person(ctx, width, height, c, s).drawAll(width / 2, 0)
+
     return canvas
 
 }
-
-
-
-
-
-
-
-
-
-// // 1. 初始化 Regl
-// const regl = createREGL({
-//     canvas: document.getElementById('glCanvas')
-// });
-
-// // 2. 模拟大量数据 (100,000 个点)
-// const numPoints = 100000;
-// const rawData = Array.from({ length: numPoints }, () => ({
-//     x: Math.random() * 100,
-//     y: Math.random() * 100,
-//     size: Math.random() * 5 + 1,
-//     color: [Math.random(), Math.random(), Math.random()]
-// }));
-
-// // 3. 使用 D3 创建比例尺 (将数据映射到 -1 到 1 的 WebGL 坐标空间)
-// // WebGL 坐标系中心是 (0,0)，范围是 [-1, 1]
-// const xScale = d3.scaleLinear()
-//     .domain([0, 100])
-//     .range([-1, 1]);
-
-// const yScale = d3.scaleLinear()
-//     .domain([0, 100])
-//     .range([1, -1]); // 注意：WebGL Y轴向上为正，所以这里反转
-
-// // 4. 将数据转换为 TypedArray (GPU 需要这种连续内存格式)
-// // 格式: [x, y, size, r, g, b, x, y, size, r, g, b, ...]
-// const positions = new Float32Array(numPoints * 6); 
-
-// rawData.forEach((d, i) => {
-//     const offset = i * 6;
-//     positions[offset]     = xScale(d.x);     // x
-//     positions[offset + 1] = yScale(d.y);     // y
-//     positions[offset + 2] = d.size;          // point size
-//     positions[offset + 3] = d.color;      // r
-//     positions[offset + 4] = d.color;      // g
-//     positions[offset + 5] = d.color;      // b
-// });
-
-// // 5. 创建缓冲区 Buffer
-// const positionBuffer = regl.buffer({
-//     data: positions,
-//     usage: 'static' // 数据不变用 static，频繁更新用 dynamic/stream
-// });
-
-// // 6. 定义顶点着色器 (Vertex Shader)
-// // 负责处理每个点的位置和大小
-// const vertShader = `
-//     precision mediump float;
-//     attribute vec2 position; // x, y
-//     attribute float pointSize;
-//     attribute vec3 color;
-    
-//     varying vec3 vColor;
-    
-//     void main() {
-//         vColor = color;
-//         gl_Position = vec4(position, 0, 1);
-//         gl_PointSize = pointSize; 
-//     }
-// `;
-
-// // 7. 定义片元着色器 (Fragment Shader)
-// // 负责处理每个像素的颜色
-// const fragShader = `
-//     precision mediump float;
-//     varying vec3 vColor;
-    
-//     void main() {
-//         // 画一个圆点，而不是方块
-//         vec2 coord = gl_PointCoord - vec2(0.5);
-//         if(length(coord) > 0.5) discard;
-        
-//         gl_FragColor = vec4(vColor, 1.0);
-//     }
-// `;
-
-// // 8. 创建 Regl 绘制命令
-// const drawPoints = regl({
-//     vert: vertShader,
-//     frag: fragShader,
-//     attributes: {
-//         position: {
-//             buffer: positionBuffer,
-//             offset: 0,
-//             stride: 24, // 6个float * 4字节 = 24字节
-//             size: 2     // vec2 (x, y)
-//         },
-//         pointSize: {
-//             buffer: positionBuffer,
-//             offset: 8,  // 跳过前2个float
-//             stride: 24,
-//             size: 1     // float
-//         },
-//         color: {
-//             buffer: positionBuffer,
-//             offset: 12, // 跳过前3个float
-//             stride: 24,
-//             size: 3     // vec3 (r, g, b)
-//         }
-//     },
-//     count: numPoints,
-//     primitive: 'points',
-//     blend: {
-//         enable: true,
-//         func: {
-//             srcRGB: 'src alpha',
-//             srcAlpha: 1,
-//             dstRGB: 'one minus src alpha',
-//             dstAlpha: 1
-//         }
-//     },
-//     depth: { enable: false } // 2D不需要深度测试
-// });
-
-// // 9. 渲染循环
-// function frame() {
-//     // 清空画布
-//     regl.clear({
-//         color: [0.1, 0.1, 0.1, 1],
-//         depth: 1
-//     });
-    
-//     // 执行绘制命令
-//     drawPoints();
-    
-//     requestAnimationFrame(frame);
-// }
-
-// frame();
-
-// // 10. 处理窗口缩放
-// window.addEventListener('resize', () => {
-//     regl.resize();
-// });
 
 
 

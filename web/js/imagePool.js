@@ -9,7 +9,7 @@ class ImagePool {
     }
     async setdefimg() {
         let img = await createEmptyPngCanvas(200, 200)
-      
+
         this.imageList.set("", img)
     }
 
@@ -97,7 +97,12 @@ class ImagePool {
      */
     preloadAll(urls) {
         const promises = []
-       let newurls = [...urls,"image/2.png"]
+        let newurls = [...urls,
+            "image/st/1.png",
+            "image/st/2.png",
+             "image/st/3.png",
+            "image/st/70.png"
+        ]
         newurls.forEach(url => {
             promises.push(this.preload(url))
         })
@@ -182,8 +187,8 @@ async function createEmptyPngCanvas(width, height) {
     // 填充白色背景（PNG 默认透明，如需白色需手动填充）
     ctx.fillStyle = '#000000';
     ctx.fillRect(0, 0, width, height);
-   return canvas
-  
+    return canvas
+
 }
 
 

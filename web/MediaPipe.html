@@ -1,0 +1,463 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>MediaPipe Pose - 实时动捕驱动</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+            background: #1a1a2e;
+            color: #eee;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        h1 {
+            font-size: 1.5rem;
+            margin-bottom: 12px;
+            color: #00d2ff;
+        }
+
+        .container {
+            position: relative;
+            border-radius: 12px;
+            overflow: hidden;
+            box-shadow: 0 0 30px rgba(0, 210, 255, 0.15);
+        }
+
+        video {
+            display: none;
+        }
+
+        canvas {
+            display: block;
+            max-width: 100%;
+            height: auto;
+        }
+
+        .panel {
+            margin-top: 16px;
+            display: flex;
+            gap: 12px;
+            align-items: center;
+            flex-wrap: wrap;
+            justify-content: center;
+        }
+
+        button {
+            padding: 10px 24px;
+            border: none;
+            border-radius: 8px;
+            font-size: 1rem;
+            cursor: pointer;
+            transition: all 0.2s;
+            font-weight: 600;
+        }
+
+        #btnStart {
+            background: #00d2ff;
+            color: #1a1a2e;
+        }
+
+        #btnStart:hover {
+            background: #00e5ff;
+            transform: translateY(-1px);
+        }
+
+        #btnStop {
+            background: #ff4757;
+            color: #fff;
+        }
+
+        #btnStop:hover {
+            background: #ff6b7a;
+            transform: translateY(-1px);
+        }
+
+        .info {
+            font-size: 0.9rem;
+            color: #aaa;
+        }
+
+        .info span {
+            color: #00d2ff;
+            font-weight: bold;
+        }
+
+        .warning {
+            margin-top: 10px;
+            padding: 10px 16px;
+            background: rgba(255, 71, 87, 0.15);
+            border: 1px solid rgba(255, 71, 87, 0.3);
+            border-radius: 8px;
+            font-size: 0.85rem;
+            display: none;
+        }
+    </style>
+</head>
+
+<body>
+
+    <h1>🎯 MediaPipe Pose 实时动捕</h1>
+
+    <div class="container">
+        <video id="video" autoplay playsinline></video>
+        <canvas id="canvas"></canvas>
+    </div>
+
+    <div class="panel">
+        <button id="btnStart" onclick="startCapture()">▶ 开始捕捉</button>
+        <button id="btnStop" onclick="stopCapture()">⏹ 停止</button>
+        <div class="info">
+            FPS: <span id="fpsDisplay">--</span> |
+            关键点: <span id="landmarkCount">0</span>/33
+        </div>
+    </div>
+    <div class="warning" id="warning">
+        ⚠️ 请使用 <b>HTTPS</b> 或 <b>localhost</b> 打开此页面，否则无法访问摄像头。
+    </div>
+
+    <!-- 加载 MediaPipe Pose JS SDK -->
+    <script src="https://cdn.jsdelivr.net/npm/@mediapipe/pose@0.5.1675469404/pose.js">
+    </script>
+
+    <script>
+        // ==================== DOM 元素 ====================
+        const videoEl = document.getElementById('video');
+        const canvasEl = document.getElementById('canvas');
+        const ctx = canvasEl.getContext('2d');
+        const btnStart = document.getElementById('btnStart');
+        const btnStop = document.getElementById('btnStop');
+        const fpsDisplay = document.getElementById('fpsDisplay');
+        const lmCountEl = document.getElementById('landmarkCount');
+        const warningEl = document.getElementById('warning');
+
+        // ==================== 全局状态 ====================
+        let poseInstance = null;   // MediaPipe Pose 实例
+        let stream = null;   // 摄像头流
+        let animFrameId = null;   // requestAnimationFrame ID
+        let processing = false;  // 防止帧堆积
+        let lastResults = null;   // 最新一次推理结果
+        let fpsCounter = { frames: 0, lastTime: performance.now(), current: 0 };
+
+        // Canvas / 视频尺寸
+        const VIDEO_W = 640;
+        const VIDEO_H = 480;
+
+        // ==================== 33个关键点连接关系 ====================
+        const POSE_CONNECTIONS = [
+            // 面部
+            [0, 1], [1, 2], [2, 3], [3, 7],
+            [0, 4], [4, 5], [5, 6], [6, 8],
+            [9, 10],
+            // 躯干
+            [11, 12], [11, 23], [12, 24], [23, 24],
+            // 左臂
+            [11, 13], [13, 15],
+            [15, 17], [15, 19], [15, 21], [17, 19],
+            // 右臂
+            [12, 14], [14, 16],
+            [16, 18], [16, 20], [16, 22], [18, 20],
+            // 左腿
+            [23, 25], [25, 27], [27, 29], [29, 31], [27, 31],
+            // 右腿
+            [24, 26], [26, 28], [28, 30], [30, 32], [28, 32],
+        ];
+
+        // 不同身体部位的连线颜色
+        const PART_COLORS = {
+            face: '#ffffff',
+            torso: '#00d2ff',
+            leftArm: '#4dabf7',
+            rightArm: '#51cf66',
+            leftLeg: '#ffd43b',
+            rightLeg: '#ff922b',
+        };
+
+        // 判断连线属于哪个身体部位
+        function getPartColor(idxA, idxB) {
+            const a = Math.min(idxA, idxB), b = Math.max(idxA, idxB);
+            // 面部 (0-10)
+            if (a <= 8 && b <= 10) return PART_COLORS.face;
+            // 躯干
+            if ((a === 11 && b === 12) || (a === 11 && b === 23) ||
+                (a === 12 && b === 24) || (a === 23 && b === 24)) return PART_COLORS.torso;
+            // 左臂 (11,13,15,17,19,21)
+            if ([11, 13, 15, 17, 19, 21].includes(a) && [11, 13, 15, 17, 19, 21].includes(b))
+                return PART_COLORS.leftArm;
+            // 右臂 (12,14,16,18,20,22)
+            if ([12, 14, 16, 18, 20, 22].includes(a) && [12, 14, 16, 18, 20, 22].includes(b))
+                return PART_COLORS.rightArm;
+            // 左腿 (23,25,27,29,31)
+            if ([23, 25, 27, 29, 31].includes(a) && [23, 25, 27, 29, 31].includes(b))
+                return PART_COLORS.leftLeg;
+            // 右腿 (24,26,28,30,32)
+            if ([24, 26, 28, 30, 32].includes(a) && [24, 26, 28, 30, 32].includes(b))
+                return PART_COLORS.rightLeg;
+            return '#ffffff';
+        }
+
+        // ==================== 初始化 MediaPipe Pose ====================
+        function initPose() {
+            // 如果已存在实例，先清理
+            if (poseInstance) {
+                poseInstance.close();
+                poseInstance = null;
+            }
+
+            poseInstance = new Pose({
+                locateFile: (file) =>
+                    `https://cdn.jsdelivr.net/npm/@mediapipe/pose@0.5.1675469404/${file}`
+            });
+
+            poseInstance.setOptions({
+                modelComplexity: 1,          // 0=Lite, 1=Full, 2=Heavy
+                smoothLandmarks: true,       // 平滑关键点（减少抖动）
+                enableSegmentation: false,   // 不需要人像分割
+                smoothSegmentation: true,
+                minDetectionConfidence: 0.5, // 检测置信度阈值
+                minTrackingConfidence: 0.2,  // 跟踪置信度阈值
+            });
+
+            // 每帧推理完成后的回调
+            poseInstance.onResults((results) => {
+                lastResults = results;
+                // 统计FPS
+                fpsCounter.frames++;
+                const now = performance.now();
+                if (now - fpsCounter.lastTime >= 1000) {
+                    fpsCounter.current = fpsCounter.frames;
+                    fpsCounter.frames = 0;
+                    fpsCounter.lastTime = now;
+                }
+                // 更新UI
+                const lmCount = results.poseLandmarks ? results.poseLandmarks.length : 0;
+                fpsDisplay.textContent = fpsCounter.current;
+                lmCountEl.textContent = lmCount;
+            });
+        }
+
+        // ==================== 绘制骨架到 Canvas ====================
+        function drawSkeleton() {
+            ctx.clearRect(0, 0, canvasEl.width, canvasEl.height);
+
+            // 半透明背景（可选，增强对比度）
+            ctx.fillStyle = 'rgba(26, 26, 46, 0.3)';
+            ctx.fillRect(0, 0, canvasEl.width, canvasEl.height);
+
+            if (!lastResults || !lastResults.poseLandmarks) return;
+
+            const landmarks = lastResults.poseLandmarks;
+
+            // ---- 镜像翻转（自拍模式：左右交换）----
+            ctx.save();
+            ctx.scale(-1, 1);                    // 水平翻转
+            ctx.translate(-canvasEl.width, 0);   // 平移回可视区域
+
+            // ---- 绘制连线 ----
+            for (const [i, j] of POSE_CONNECTIONS) {
+                const a = landmarks[i];
+                const b = landmarks[j];
+                // 只绘制两个端点都可见的连线
+                if (a.visibility < 0.5 || b.visibility < 0.5) continue;
+
+                const color = getPartColor(i, j);
+                ctx.beginPath();
+                ctx.moveTo(a.x * canvasEl.width, a.y * canvasEl.height);
+                ctx.lineTo(b.x * canvasEl.width, b.y * canvasEl.height);
+                ctx.strokeStyle = color;
+                ctx.lineWidth = 2.5;
+                ctx.lineCap = 'round';
+                ctx.stroke();
+            }
+
+            // ---- 绘制关键点 ----
+            for (const lm of landmarks) {
+                if (lm.visibility < 0.5) continue;
+                const x = lm.x * canvasEl.width;
+                const y = lm.y * canvasEl.height;
+
+                // 外圈光晕
+                ctx.beginPath();
+                ctx.arc(x, y, 6, 0, 2 * Math.PI);
+                ctx.fillStyle = 'rgba(0, 210, 255, 0.3)';
+                ctx.fill();
+
+                // 内圈实心点
+                ctx.beginPath();
+                ctx.arc(x, y, 3.5, 0, 2 * Math.PI);
+                ctx.fillStyle = '#00d2ff';
+                ctx.fill();
+                ctx.strokeStyle = '#fff';
+                ctx.lineWidth = 1;
+                ctx.stroke();
+            }
+
+            ctx.restore();  // 恢复变换
+        }
+
+        // ==================== 帧处理循环 ====================
+        async function processFrame() {
+            if (!stream || !poseInstance) return;
+
+            // 防止帧堆积：只有上一帧处理完才发送新帧
+            if (!processing && videoEl.readyState >= 2) {
+                processing = true;
+                try {
+                    await poseInstance.send({ image: videoEl });
+                } catch (e) {
+                    console.warn('推理出错:', e);
+                }
+                processing = false;
+            }
+
+            // 用最新的结果绘制（不等待推理完成）
+            drawSkeleton();
+
+            animFrameId = requestAnimationFrame(processFrame);
+        }
+
+
+
+
+        // ==================== 启动摄像头 ====================
+
+
+        async function getiPhoneDeviceId() {
+            // 请求权限以获取设备标签（部分浏览器需要用户交互后才能获取 label）
+            const devices = await navigator.mediaDevices.enumerateDevices();
+
+            // 过滤出视频输入设备
+            const videoDevices = devices.filter(device => device.kind === 'videoinput');
+
+            // 查找包含 "iPhone" 或你设备名称的设备
+            // 注意：在未授权前，label 可能为空字符串，建议先请求一次临时流或确保用户已授权
+            const iphoneDevice = videoDevices.find(device =>
+                device.label.toLowerCase().includes('iphone') ||
+                device.label.includes('Continuity Camera')
+            );
+
+            if (iphoneDevice) {
+                return iphoneDevice.deviceId;
+            } else {
+                return ""
+                // throw new Error("未检测到 iPhone 摄像头，请确保已通过连续互通相机连接并授权。");
+            }
+        }
+
+
+
+
+
+        async function startCapture() {
+            // 检查浏览器是否支持摄像头
+            if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+                alert('当前浏览器不支持摄像头访问，请使用 Chrome / Edge / Firefox 等现代浏览器。');
+                return;
+            }
+
+            // 检查是否 HTTPS 或 localhost
+            if (location.protocol !== 'https:' && location.hostname !== 'localhost') {
+                warningEl.style.display = 'block';
+            }
+
+            try {
+                const deviceId = await getiPhoneDeviceId();
+                stream = await navigator.mediaDevices.getUserMedia({
+                    video: {
+                        width: { ideal: VIDEO_W },
+                        height: { ideal: VIDEO_H },
+                        // deviceId: deviceId&& { exact: deviceId }||undefined
+                        facingMode: 'user',  // 前置摄像头（自拍模式）
+                    },
+                    audio: false,
+                });
+
+                videoEl.srcObject = stream;
+                videoEl.setAttribute('playsinline', '');
+                await videoEl.play();
+
+                // 等待视频元数据加载后设置 Canvas 尺寸
+                await new Promise(r => videoEl.onloadedmetadata = r);
+                canvasEl.width = videoEl.videoWidth || VIDEO_W;
+                canvasEl.height = videoEl.videoHeight || VIDEO_H;
+
+                // 初始化 Pose（如果还没初始化）
+                if (!poseInstance) initPose();
+
+                // 等待模型加载（给一点预热时间）
+                btnStart.textContent = '⏳ 加载模型中...';
+                btnStart.disabled = true;
+                await new Promise(r => setTimeout(r, 1500));
+                btnStart.textContent = '✅ 运行中';
+                btnStart.style.background = '#51cf66';
+
+                // 启动帧循环
+                fpsCounter = { frames: 0, lastTime: performance.now(), current: 0 };
+                animFrameId = requestAnimationFrame(processFrame);
+
+            } catch (err) {
+                console.error('摄像头启动失败:', err);
+                alert('无法访问摄像头: ' + err.message);
+                btnStart.textContent = '▶ 开始捕捉';
+                btnStart.disabled = false;
+                btnStart.style.background = '#00d2ff';
+            }
+        }
+
+        // ==================== 停止捕捉 ====================
+        function stopCapture() {
+            // 停止帧循环
+            if (animFrameId) {
+                cancelAnimationFrame(animFrameId);
+                animFrameId = null;
+            }
+
+            // 停止摄像头
+            if (stream) {
+                stream.getTracks().forEach(track => track.stop());
+                stream = null;
+            }
+            videoEl.srcObject = null;
+
+            // 清空 Canvas
+            ctx.clearRect(0, 0, canvasEl.width, canvasEl.height);
+
+            // 重置UI
+            lastResults = null;
+            fpsDisplay.textContent = '--';
+            lmCountEl.textContent = '0';
+            btnStart.textContent = '▶ 开始捕捉';
+            btnStart.disabled = false;
+            btnStart.style.background = '#00d2ff';
+        }
+
+        // ==================== 页面卸载时清理 ====================
+        window.addEventListener('beforeunload', () => {
+            stopCapture();
+            if (poseInstance) {
+                poseInstance.close();
+                poseInstance = null;
+            }
+        });
+
+        // ==================== 初始提示 ====================
+        console.log('🎯 MediaPipe Pose 实时动捕已就绪');
+        console.log('点击"开始捕捉"按钮，允许摄像头权限后即可看到效果');
+        console.log('33个关键点将通过彩色骨架实时显示在画面上');
+    </script>
+
+</body>
+
+</html>

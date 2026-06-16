@@ -1,0 +1,469 @@
+
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SAM 交互式图像分割</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        body { font-family: 'Inter', sans-serif; background-color: #f3f4f6; }
+        .canvas-container { position: relative; display: inline-block; box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1); border-radius: 0.5rem; overflow: hidden; background: white; }
+        canvas { display: block; max-width: 100%; height: auto; cursor: crosshair; }
+        .tool-btn { transition: all 0.2s; }
+        .tool-btn.active { background-color: #3b82f6; color: white; border-color: #3b82f6; }
+        .loading-overlay { position: absolute; top: 0; left: 0; right: 0; bottom: 0; background: rgba(255,255,255,0.8); display: flex; justify-content: center; align-items: center; z-index: 10; display: none; }
+    </style>
+</head>
+<body class="h-screen flex flex-col">
+
+    <!-- 头部导航 -->
+    <header class="bg-white shadow-sm z-10">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
+            <div class="flex items-center gap-2">
+                <i class="fa-solid fa-layer-group text-blue-600 text-xl"></i>
+                <h1 class="text-xl font-bold text-gray-800">SAM Web Segmentation</h1>
+            </div>
+            <div class="flex items-center gap-4">
+                <label for="imageUpload" class="cursor-pointer bg-gray-100 hover:bg-gray-200 text-gray-700 px-4 py-2 rounded-lg text-sm font-medium transition">
+                    <i class="fa-solid fa-upload mr-2"></i>上传图片
+                </label>
+                <input type="file" id="imageUpload" accept="image/*" class="hidden">
+                <button id="saveBtn" class="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-lg text-sm font-medium transition disabled:opacity-50 disabled:cursor-not-allowed" disabled>
+                    <i class="fa-solid fa-download mr-2">保存结果
+                </button>
+            </div>
+        </div>
+    </header>
+
+    <!-- 主内容区 -->
+    <main class="flex-1 flex overflow-hidden">
+        <!-- 左侧工具栏 -->
+        <aside class="w-64 bg-white border-r border-gray-200 flex flex-col p-4 gap-6 overflow-y-auto">
+            
+            <!-- 模式切换 -->
+            <div>
+                <h3 class="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-3">交互模式</h3>
+                <div class="grid grid-cols-2 gap-2">
+                    <button id="modePoint" class="tool-btn active border border-gray-300 rounded-lg py-2 px-3 text-sm font-medium text-gray-700 hover:bg-gray-50 flex flex-col items-center gap-1">
+                        <i class="fa-solid fa-location-dot"></i>
+                        <span>点选模式</span>
+                    </button>
+                    <button id="modeBox" class="tool-btn border border-gray-300 rounded-lg py-2 px-3 text-sm font-medium text-gray-700 hover:bg-gray-50 flex flex-col items-center gap-1">
+                        <i class="fa-regular fa-square"></i>
+                        <span>框选模式</span>
+                    </button>
+                </div>
+            </div>
+
+            <!-- 点选子选项 (仅在点选模式显示) -->
+            <div id="pointOptions">
+                <h3 class="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-3">点类型</h3>
+                <div class="flex gap-2">
+                    <button id="typePos" class="flex-1 bg-green-100 text-green-700 border border-green-200 rounded-lg py-2 text-sm font-medium hover:bg-green-200 transition active-type ring-2 ring-green-500">
+                        <i class="fa-solid fa-plus mr-1"></i> 前景
+                    </button>
+                    <button id="typeNeg" class="flex-1 bg-red-100 text-red-700 border border-red-200 rounded-lg py-2 text-sm font-medium hover:bg-red-200 transition">
+                        <i class="fa-solid fa-minus mr-1"></i> 背景
+                    </button>
+                </div>
+            </div>
+
+            <!-- 操作按钮 -->
+            <div>
+                <h3 class="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-3">操作</h3>
+                <button id="clearBtn" class="w-full bg-gray-100 hover:bg-gray-200 text-gray-700 border border-gray-300 rounded-lg py-2 px-4 text-sm font-medium transition mb-2">
+                    <i class="fa-solid fa-trash-can mr-2"></i>清除所有提示
+                </button>
+                <button id="undoBtn" class="w-full bg-gray-100 hover:bg-gray-200 text-gray-700 border border-gray-300 rounded-lg py-2 px-4 text-sm font-medium transition">
+                    <i class="fa-solid fa-rotate-left mr-2"></i>撤销上一步
+                </button>
+            </div>
+
+            <!-- 状态信息 -->
+            <div class="mt-auto bg-blue-50 p-3 rounded-lg border border-blue-100">
+                <h4 class="text-blue-800 text-sm font-semibold mb-1"><i class="fa-solid fa-circle-info mr-1"></i> 提示</h4>
+                <p class="text-blue-600 text-xs leading-relaxed" id="statusText">
+                    当前为点选模式。点击图像添加前景点，右键或切换为背景点添加排除区域。
+                </p>
+            </div>
+        </aside>
+
+        <!-- 画布区域 -->
+        <div class="flex-1 bg-gray-100 flex items-center justify-center p-8 overflow-auto relative" id="workspace">
+            <div class="canvas-container" id="canvasWrapper">
+                <canvas id="mainCanvas"></canvas>
+                <div class="loading-overlay" id="loadingOverlay">
+                    <div class="flex flex-col items-center">
+                        <i class="fa-solid fa-circle-notch fa-spin text-3xl text-blue-600 mb-2"></i>
+                        <span class="text-gray-600 font-medium">AI 处理中...</span>
+                    </div>
+                </div>
+                <div id="emptyState" class="absolute inset-0 flex flex-col items-center justify-center text-gray-400 bg-white">
+                    <i class="fa-regular fa-image text-4xl mb-2"></i>
+                    <p>请上传一张图片开始分割</p>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <script>
+
+
+/**
+ * SAM Web Segmentation Application Logic
+ * 注意：这是一个前端演示实现。真实的 SAM 模型推理通常需要后端支持或加载 ONNX 模型。
+ * 此处使用 Canvas API 模拟分割掩码生成，以展示完整的交互流程。
+ */
+
+class SAMApp {
+    constructor() {
+        this.canvas = document.getElementById('mainCanvas');
+        this.ctx = this.canvas.getContext('2d');
+        this.wrapper = document.getElementById('canvasWrapper');
+        this.image = null;
+        this.originalImage = null; // 保存原始图像数据用于重置
+        
+        // 状态
+        this.mode = 'point'; // 'point' or 'box'
+        this.pointType = 'positive'; // 'positive' or 'negative'
+        this.points = []; // {x, y, type}
+        this.box = null; // {x1, y1, x2, y2}
+        this.isDrawingBox = false;
+        this.boxStart = null;
+        this.maskData = null; // 模拟的掩码数据
+        
+        // DOM 元素
+        this.ui = {
+            modePoint: document.getElementById('modePoint'),
+            modeBox: document.getElementById('modeBox'),
+            pointOptions: document.getElementById('pointOptions'),
+            typePos: document.getElementById('typePos'),
+            typeNeg: document.getElementById('typeNeg'),
+            clearBtn: document.getElementById('clearBtn'),
+            undoBtn: document.getElementById('undoBtn'),
+            saveBtn: document.getElementById('saveBtn'),
+            upload: document.getElementById('imageUpload'),
+            loading: document.getElementById('loadingOverlay'),
+            emptyState: document.getElementById('emptyState'),
+            statusText: document.getElementById('statusText')
+        };
+
+        this.init();
+    }
+
+    init() {
+        this.bindEvents();
+        this.resizeCanvas();
+    }
+
+    bindEvents() {
+        // 文件上传
+        this.ui.upload.addEventListener('change', (e) => this.handleImageUpload(e));
+        
+        // 模式切换
+        this.ui.modePoint.addEventListener('click', () => this.setMode('point'));
+        this.ui.modeBox.addEventListener('click', () => this.setMode('box'));
+        
+        // 点类型切换
+        this.ui.typePos.addEventListener('click', () => this.setPointType('positive'));
+        this.ui.typeNeg.addEventListener('click', () => this.setPointType('negative'));
+        
+        // 操作按钮
+        this.ui.clearBtn.addEventListener('click', () => this.clearAll());
+        this.ui.undoBtn.addEventListener('click', () => this.undo());
+        this.ui.saveBtn.addEventListener('click', () => this.saveResult());
+        
+        // 画布交互
+        this.canvas.addEventListener('mousedown', (e) => this.handleMouseDown(e));
+        this.canvas.addEventListener('mousemove', (e) => this.handleMouseMove(e));
+        this.canvas.addEventListener('mouseup', (e) => this.handleMouseUp(e));
+        this.canvas.addEventListener('mouseleave', (e) => this.handleMouseUp(e));
+        
+        // 右键菜单阻止
+        this.canvas.addEventListener('contextmenu', e => e.preventDefault());
+    }
+
+    resizeCanvas() {
+        // 初始尺寸，加载图片后会调整
+        this.canvas.width = 800;
+        this.canvas.height = 600;
+    }
+
+    handleImageUpload(e) {
+        const file = e.target.files[0];
+        if (!file) return;
+
+        const reader = new FileReader();
+        reader.onload = (event) => {
+            const img = new Image();
+            img.onload = () => {
+                this.image = img;
+                this.originalImage = img;
+                
+                // 调整画布大小以适应图片，最大宽度限制
+                const maxWidth = 1200;
+                let width = img.width;
+                let height = img.height;
+                
+                if (width > maxWidth) {
+                    height = (maxWidth / width) * height;
+                    width = maxWidth;
+                }
+                
+                this.canvas.width = width;
+                this.canvas.height = height;
+                
+                this.ui.emptyState.style.display = 'none';
+                this.ui.saveBtn.disabled = false;
+                
+                this.clearAll(); // 重置状态
+                this.render();
+            };
+            img.src = event.target.result;
+        };
+        reader.readAsDataURL(file);
+    }
+
+    setMode(mode) {
+        this.mode = mode;
+        if (mode === 'point') {
+            this.ui.modePoint.classList.add('active');
+            this.ui.modeBox.classList.remove('active');
+            this.ui.pointOptions.style.display = 'block';
+            this.ui.statusText.textContent = "当前为点选模式。左键添加前景点，右键添加背景点。";
+        } else {
+            this.ui.modeBox.classList.add('active');
+            this.ui.modePoint.classList.remove('active');
+            this.ui.pointOptions.style.display = 'none';
+            this.ui.statusText.textContent = "当前为框选模式。按住鼠标左键拖拽绘制矩形框。";
+            // 切换模式时清除之前的点，因为混合输入逻辑较复杂，简化体验
+            this.points = []; 
+            this.box = null;
+        }
+        this.render();
+    }
+
+    setPointType(type) {
+        this.pointType = type;
+        if (type === 'positive') {
+            this.ui.typePos.classList.add('ring-2', 'ring-green-500');
+            this.ui.typeNeg.classList.remove('ring-2', 'ring-red-500');
+        } else {
+            this.ui.typeNeg.classList.add('ring-2', 'ring-red-500');
+            this.ui.typePos.classList.remove('ring-2', 'ring-green-500');
+        }
+    }
+
+    getMousePos(evt) {
+        const rect = this.canvas.getBoundingClientRect();
+        const scaleX = this.canvas.width / rect.width;
+        const scaleY = this.canvas.height / rect.height;
+        return {
+            x: (evt.clientX - rect.left) * scaleX,
+            y: (evt.clientY - rect.top) * scaleY
+        };
+    }
+
+    handleMouseDown(e) {
+        if (!this.image) return;
+        e.preventDefault();
+        const pos = this.getMousePos(e);
+
+        if (this.mode === 'point') {
+            // 左键或右键
+            const type = e.button === 2 ? 'negative' : 'positive';
+            this.points.push({ x: pos.x, y: pos.y, type: type });
+            this.triggerPrediction();
+        } else if (this.mode === 'box') {
+            if (e.button === 0) { // 仅左键
+                this.isDrawingBox = true;
+                this.boxStart = pos;
+                this.box = { x1: pos.x, y1: pos.y, x2: pos.x, y2: pos.y };
+            }
+        }
+        this.render();
+    }
+
+    handleMouseMove(e) {
+        if (!this.isDrawingBox || !this.boxStart) return;
+        const pos = this.getMousePos(e);
+        this.box = {
+            x1: this.boxStart.x,
+            y1: this.boxStart.y,
+            x2: pos.x,
+            y2: pos.y
+        };
+        this.render();
+    }
+
+    handleMouseUp(e) {
+        if (!this.isDrawingBox) return;
+        this.isDrawingBox = false;
+        // 确保 box 坐标规范 (x1 < x2, y1 < y2)
+        if (this.box) {
+            const minX = Math.min(this.box.x1, this.box.x2);
+            const maxX = Math.max(this.box.x1, this.box.x2);
+            const minY = Math.min(this.box.y1, this.box.y2);
+            const maxY = Math.max(this.box.y1, this.box.y2);
+            
+            // 忽略过小的框
+            if (maxX - minX > 5 && maxY - minY > 5) {
+                this.box = { x1: minX, y1: minY, x2: maxX, y2: maxY };
+                this.triggerPrediction();
+            } else {
+                this.box = null;
+            }
+        }
+        this.render();
+    }
+
+    async triggerPrediction() {
+        this.ui.loading.style.display = 'flex';
+        
+        // 模拟网络延迟和推理时间
+        await new Promise(resolve => setTimeout(resolve, 600));
+        
+        // 模拟生成掩码 (在实际应用中，这里会发送 points/box 到后端或运行 ONNX 模型)
+        this.generateMockMask();
+        
+        this.ui.loading.style.display = 'none';
+        this.render();
+    }
+
+    generateMockMask() {
+        // 创建一个临时的 canvas 来生成模拟的掩码数据
+        const tempCanvas = document.createElement('canvas');
+        tempCanvas.width = this.canvas.width;
+        tempCanvas.height = this.canvas.height;
+        const tCtx = tempCanvas.getContext('2d');
+        
+        tCtx.clearRect(0, 0, tempCanvas.width, tempCanvas.height);
+        tCtx.fillStyle = 'rgba(30, 144, 255, 0.5)'; // 蓝色半透明
+        
+        // 简单的模拟逻辑：根据最后一个提示的位置画一个椭圆或矩形
+        if (this.mode === 'point' && this.points.length > 0) {
+            const lastPoint = this.points[this.points.length - 1];
+            if (lastPoint.type === 'positive') {
+                tCtx.beginPath();
+                tCtx.ellipse(lastPoint.x, lastPoint.y, 100, 80, 0, 0, 2 * Math.PI);
+                tCtx.fill();
+            }
+        } else if (this.mode === 'box' && this.box) {
+            tCtx.fillRect(this.box.x1, this.box.y1, this.box.x2 - this.box.x1, this.box.y2 - this.box.y1);
+        }
+        
+        this.maskData = tempCanvas;
+    }
+
+    clearAll() {
+        this.points = [];
+        this.box = null;
+        this.maskData = null;
+        this.render();
+    }
+
+    undo() {
+        if (this.mode === 'point') {
+            this.points.pop();
+            // 如果没点了，清除掩码
+            if (this.points.length === 0) this.maskData = null;
+            else this.triggerPrediction(); // 重新预测
+        } else {
+            this.box = null;
+            this.maskData = null;
+        }
+        this.render();
+    }
+
+    saveResult() {
+        if (!this.image) return;
+        
+        // 创建一个新的 canvas 来合成最终结果
+        const saveCanvas = document.createElement('canvas');
+        saveCanvas.width = this.canvas.width;
+        saveCanvas.height = this.canvas.height;
+        const sCtx = saveCanvas.getContext('2d');
+        
+        // 1. 绘制原图
+        sCtx.drawImage(this.canvas, 0, 0);
+        
+        // 2. 如果有掩码，绘制掩码叠加层
+        if (this.maskData) {
+            sCtx.globalCompositeOperation = 'source-over';
+            sCtx.drawImage(this.maskData, 0, 0);
+        }
+        
+        // 3. 导出
+        const link = document.createElement('a');
+        link.download = 'sam-segmentation-result.png';
+        link.href = saveCanvas.toDataURL();
+        link.click();
+    }
+
+    render() {
+        if (!this.image) return;
+        
+        // 清空画布
+        this.ctx.clearRect(0, 0, this.canvas.width, this.canvas.height);
+        
+        // 1. 绘制原图
+        this.ctx.drawImage(this.image, 0, 0, this.canvas.width, this.canvas.height);
+        
+        // 2. 绘制掩码 (如果有)
+        if (this.maskData) {
+            this.ctx.drawImage(this.maskData, 0, 0);
+        }
+        
+        // 3. 绘制交互提示 (点和框)
+        
+        // 绘制点
+        this.points.forEach(p => {
+            this.ctx.beginPath();
+            this.ctx.arc(p.x, p.y, 6, 0, 2 * Math.PI);
+            this.ctx.fillStyle = p.type === 'positive' ? '#10B981' : '#EF4444'; // Green : Red
+            this.ctx.fill();
+            this.ctx.strokeStyle = 'white';
+            this.ctx.lineWidth = 2;
+            this.ctx.stroke();
+            
+            // 绘制标签
+            this.ctx.fillStyle = 'white';
+            this.ctx.font = '10px Arial';
+            this.ctx.textAlign = 'center';
+            this.ctx.textBaseline = 'middle';
+            this.ctx.fillText(p.type === 'positive' ? '+' : '-', p.x, p.y);
+        });
+        
+        // 绘制框
+        if (this.box) {
+            this.ctx.strokeStyle = '#3B82F6'; // Blue
+            this.ctx.lineWidth = 2;
+            this.ctx.setLineDash([5, 5]);
+            this.ctx.strokeRect(this.box.x1, this.box.y1, this.box.x2 - this.box.x1, this.box.y2 - this.box.y1);
+            this.ctx.setLineDash([]);
+            
+            // 填充半透明背景表示选中区域
+            this.ctx.fillStyle = 'rgba(59, 130, 246, 0.1)';
+            this.ctx.fillRect(this.box.x1, this.box.y1, this.box.x2 - this.box.x1, this.box.y2 - this.box.y1);
+        }
+    }
+}
+
+// 启动应用
+document.addEventListener('DOMContentLoaded', () => {
+    new SAMApp();
+});
+
+
+
+
+
+
+
+
+
+    </script>
+</body>
+</html>
