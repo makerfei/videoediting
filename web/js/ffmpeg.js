@@ -71,7 +71,6 @@ async function exportAllFramesAsUpload(inmyStage) {
     await myAudio.uploadFrame()
     axios.post('/api/script_api',{script_path:"../videotool/imagetovideo.py",input_value:{text:"视频合成服务调用"}})
         .then(response => {
-            debugger
             showToast(JSON.parse(response.data).state)
         })
         .catch(error => {
