@@ -28,7 +28,7 @@ function showToast(msg) {
 
 
 
-function cropImageByCoords(img, x1, y1, x2, y2) {
+function cropImageByCoords(img, x1, y1, x2, y2,rate=1) {
     return new Promise((resolve) => {
         let myimg = new Image()
         myimg.onload = () => {
@@ -40,13 +40,13 @@ function cropImageByCoords(img, x1, y1, x2, y2) {
 
             // 2. 创建临时 Canvas
             const canvas = document.createElement('canvas');
-            canvas.width = width;
-            canvas.height = height;
+            canvas.width =  Math.floor( width*rate) ;
+            canvas.height =Math.floor( height*rate);
             const ctx = canvas.getContext('2d');
 
             // 3. 执行切图 (源x, 源y, 源宽, 源高, 目标x, 目标y, 目标宽, 目标高)
-            ctx.drawImage(myimg, startX, startY, width, height, 0, 0, width, height);
-
+            ctx.drawImage(myimg, startX, startY, width, height, 0, 0, canvas.width, canvas.height);
+            
             resolve({
                 base64: canvas.toDataURL('image/png')
             });

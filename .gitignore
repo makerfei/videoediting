@@ -5,3 +5,4 @@ images.zip
 audio.wav
 admin/__pycache__
 web/image/st/
+web/source/*

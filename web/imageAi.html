@@ -913,7 +913,7 @@
                         <input type="text" id="rate" placeholder="例如：1">
                     </div>
                     <div>
-                        <label>标签名称
+                        <label>图片提示词
                             (Label)</label>
                         <textarea type="text" id="labelInput" placeholder="例如：Person, Car..."></textarea>
                     </div>
@@ -924,15 +924,27 @@
                         <textarea id="noteInput" rows="4" placeholder="添加关于此标注的详细说明..."></textarea>
                     </div>
 
+                     <div>
+                        <button onclick="app.tofULXApi()">
+                            <i></i> 请求图片服务
+                        </button>
+                    </div>
+
+
                     <div>
                         <button onclick="app.saveAnnotationDetails()">
-                            <i></i> 保存并请求后端
+                            <i></i> 保存
                         </button>
                     </div>
 
                     <div>
                         <button onclick="app.cropImageByCoordsImg()">
                             <i></i> 切图
+                        </button>
+                    </div>
+                    <div>
+                        <button onclick="app.resize()">
+                            <i></i> 重制大小
                         </button>
                     </div>
 
@@ -1079,7 +1091,9 @@
                                 name: file.name,
                                 width: img.width,
                                 height: img.height,
-                                rects: []
+                                rects: [],
+                                label: "",
+                                note: ""
                             };
                             this.images.push(newImage);
                             this.renderList();
@@ -1260,76 +1274,61 @@
                 this.updateRightPanelUI(rect);
             },
 
-            updateRightPanelUI(rect = null) {
+            updateRightPanelUI() {
                 const { inputContainer, noSelectionMsg, labelInput, noteInput, selectedRectIdDisplay } = this.dom;
-
+                const imgData = this.images.find(i => i.id === this.currentImageId);
+                const rect = imgData.rects.find(r => r.id === this.selectedRectId)
                 if (rect) {
-                    // 显示表单，隐藏提示
-                    inputContainer.classList.remove('opacity-50', 'pointer-events-none');
-                    noSelectionMsg.classList.add('hidden');
-
                     // 填充数据
                     selectedRectIdDisplay.innerText = rect.id;
                     labelInput.value = rect.label || '';
                     noteInput.value = rect.note || '';
-                } else {
-                    // 隐藏表单，显示提示
-                    inputContainer.classList.add('opacity-50', 'pointer-events-none');
-                    noSelectionMsg.classList.remove('hidden');
-                    selectedRectIdDisplay.innerText = '-';
-                    labelInput.value = '';
-                    noteInput.value = '';
+                } else if(imgData){
+                    selectedRectIdDisplay.innerText = imgData.id;
+                    labelInput.value =  imgData.label || '';
+                    noteInput.value = imgData.note || '';
                 }
             },
-            async toApi(imgData, rect) {
-                let x1 = Math.floor(imgData.width * rect.x)
-                let y1 = Math.floor(imgData.height * rect.y)
-                let x2 = Math.floor(imgData.width * (rect.x + rect.w))
-                let y2 = Math.floor(imgData.height * (rect.y + rect.h))
-                let { base64 } = await cropImageByCoords(imgData.src, x1, y1, x2, y2)
+
+            async tofULXApi() {
+                this.saveAnnotationDetails()
+                const imgData = this.images.find(i => i.id === this.currentImageId);
+                let rect = this.selectedRectId && imgData.rects.find(r => r.id === this.selectedRectId) || { x: 0, y: 0, w: 1, h: 1, label: this.dom.labelInput.value, note: this.dom.noteInput.value }
                 let rate = document.getElementById("rate").value
                 rate = rate && Number(rate) || 1
-
-                return axios.post('/api/script_api', {
-                    script_path: "../videotool/FLUXGetAIImg.py", input_value: {
-                        prompt: rect.label,
-                        rate,
-                        input_image_list: [base64]
-                    }
-                })
-            },
-            saveAnnotationDetails() {
-                if (!this.currentImageId) return;
-
-                const imgData = this.images.find(i => i.id === this.currentImageId);
-                let rect = imgData.rects.find(r => r.id === this.selectedRectId);
-
+                
                 // 视觉反馈
                 const btn = event.target.closest('button');
                 const originalContent = btn.innerHTML;
                 btn.innerHTML = '<i></i> 请求中...';
                 btn.classList.add('bg-green-600', 'hover:bg-green-700');
                 btn.classList.remove('bg-blue-600', 'hover:bg-blue-700');
-                if (rect) {
-                    rect.label = this.dom.labelInput.value;
-                    rect.note = this.dom.noteInput.value;
-                    this.saveToLocalStorage();
-                    this.showStatus('标注详情已保存');
 
+                let x1 = Math.floor(imgData.width * rect.x)
+                let y1 = Math.floor(imgData.height * rect.y)
+                let x2 = Math.floor(imgData.width * (rect.x + rect.w))
+                let y2 = Math.floor(imgData.height * (rect.y + rect.h))
+                let { base64 } = await cropImageByCoords(imgData.src, x1, y1, x2, y2)
+              
 
-
-                }
-                rect = rect || { x: 0, y: 0, w: 1, h:1,label:this.dom.labelInput.value,note:this.dom.noteInput.value }
-                this.toApi(imgData, rect).then(res => {
+                axios.post('/api/script_api', {
+                    script_path: "../videotool/FLUXGetAIImg.py", input_value: {
+                        prompt: rect.label,
+                        rate,
+                        input_image_list: [base64]
+                    }
+                }).then(res => {
                     let data = JSON.parse(res.data)
                     let { base64, width, height } = data
                     const newImage = {
-                        id: Date.now() + Math.random().toString(36).substr(2, 9),
+                        id:  Date.now() + Math.random().toString(36).substr(2, 9),
                         src: base64,
-                        name: Date.now() + Math.random().toString(36).substr(2, 9),
+                        name: imgData.name,
                         width: width,
                         height: height,
-                        rects: []
+                        rects: [],
+                        label: "",
+                        note: ""
                     };
                     this.images.push(newImage);
                     this.renderList();
@@ -1339,6 +1338,22 @@
                     btn.classList.remove('bg-green-600', 'hover:bg-green-700');
                     btn.classList.add('bg-blue-600', 'hover:bg-blue-700');
                 })
+            },
+            saveAnnotationDetails() {
+                if (!this.currentImageId) return;
+                const imgData = this.images.find(i => i.id === this.currentImageId);
+                let rect = imgData.rects.find(r => r.id === this.selectedRectId)
+                if (this.selectedRectId) {
+                    rect.label = this.dom.labelInput.value;
+                    rect.note = this.dom.noteInput.value;
+                    this.saveToLocalStorage();
+                    this.showStatus('rect已保存');
+                } else {
+                    imgData.label = this.dom.labelInput.value;
+                    imgData.note = this.dom.noteInput.value;
+                    this.saveToLocalStorage();
+                    this.showStatus('图片信息已保存');
+                }
             },
             async cropImageByCoordsImg() {
                 if (!this.selectedRectId || !this.currentImageId) return;
@@ -1357,14 +1372,44 @@
                     name: Date.now() + Math.random().toString(36).substr(2, 9),
                     width: x2 - x1,
                     height: y2 - y1,
-                    rects: []
+                    rects: [],
+                    label: "",
+                    note: ""
                 };
                 this.images.push(newImage);
                 this.renderList();
                 this.saveToLocalStorage();
 
-            },
+                btn.innerHTML = originalContent;
+                btn.classList.remove('bg-green-600', 'hover:bg-green-700');
+                btn.classList.add('bg-blue-600', 'hover:bg-blue-700');
 
+            },
+            async resize() {
+
+                if (!this.currentImageId) return;
+                let rate = document.getElementById("rate").value
+                rate = rate && Number(rate) || 1
+
+                const imgData = this.images.find(i => i.id === this.currentImageId);
+
+
+                let { base64 } = await cropImageByCoords(imgData.src, 0, 0, imgData.width, imgData.height, rate)
+
+                const newImage = {
+                    id: Date.now() + Math.random().toString(36).substr(2, 9),
+                    src: base64,
+                    name: Date.now() + Math.random().toString(36).substr(2, 9),
+                    width: Math.floor(imgData.width * rate),
+                    height: Math.floor(imgData.height * rate),
+                    rects: [],
+                    label: "",
+                    note: ""
+                };
+                this.images.push(newImage);
+                this.renderList();
+                this.saveToLocalStorage();
+            },
             deleteRect() {
                 let id = this.selectedRectId
                 const imgData = this.images.find(i => i.id === this.currentImageId);
