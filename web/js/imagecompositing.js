@@ -40,10 +40,10 @@ class Person {
         let headangle =  this.timeDifference
         let spineangle =this.timeDifference
         let lshangle =this.timeDifference
-        // this.ctx.strokeStyle = '#0f0';
-        // this.ctx.lineWidth = 1;
+        this.ctx.strokeStyle = '#0f0';
+        this.ctx.lineWidth = 1;
 
-        // this.ctx.strokeRect(0, 0, width, height);
+        this.ctx.strokeRect(0, 0, width, height);
         // -------- 搭建小人 --------
         const head = new Bone(null, 180, Math.PI / 180 * 90, "image/st/1.png");          // 头
 
@@ -139,6 +139,7 @@ class Person {
 
 // 基本绘画内容 canvas
 function getimage(width, height, c, s) {
+    
     const canvas = document.createElement('canvas');
     canvas.width = width;
     canvas.height = height;
