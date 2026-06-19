@@ -39,6 +39,13 @@ def load_base64_image(base64_str):
     image_data = base64.b64decode(base64_str[1])
     return Image.open(BytesIO(image_data))
 
+def base64_2_BytesIO(base64_str):
+    # 去除前缀
+    if "," in base64_str:
+        base64_str = base64_str.split(",")
+    image_data = base64.b64decode(base64_str[1])
+    return BytesIO(image_data).getvalue()
+
 
 def mask_to_base64(best_mask):
     """

@@ -253,7 +253,7 @@ class myStageClass {
                     if (data.src == "image/11.png") {
                         let fps = 24;
                         if (Math.floor((_this.state.currentTime * fps) % 1) == 0) {
-                            clip.image(getimage(width, height, _this.state.currentTime, startTime))
+                            clip.image(getimage(width, height, _this.state.currentTime, startTime,_this.imagePool))
                         }
                     }else if (data.src.toLowerCase().endsWith('.gif') && _this.state.currentTime > startTime) {
                         let fps = _this.imagePool.gifFpt(data.src)

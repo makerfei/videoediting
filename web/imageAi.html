@@ -7,6 +7,8 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <script src="js/cnd/axios.min.js"></script>
     <script src="js/tool.js"></script>
+    <script src="js/imagecompositing.js"></script>
+    <script src="js/imagePool.js"></script>
     <title>图片ai 对接</title>
     <!-- 引入 TailwindCSS -->
     <style>
@@ -153,11 +155,11 @@
 
         /*中间图片列表区域 */
         #imageList {
-            flex: 1;
             /* 占据剩余空间 */
             overflow-y: auto;
             /* 允许垂直滚动 */
             padding: 8px 0;
+            height: calc(100vh - 200px);
         }
 
         /* 自定义滚动条样式 (Webkit内核) */
@@ -184,7 +186,7 @@
             flex-direction: column;
             align-items: center;
             justify-content: center;
-            height: 100%;
+
             color: #9ca3af;
             text-align: center;
             padding: 20px;
@@ -483,7 +485,7 @@
         #drawingArea {
             position: relative;
             box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
-            background-color: white;
+
 
         }
 
@@ -856,6 +858,9 @@
                     <span id="modeDisplay">绘制矩形</span>
                 </div>
                 <div></div>
+                <button onclick="app.drawperson()" title="画人物图">
+                    清除当前所有标注
+                </button>
                 <button onclick="app.clearRects()" title="清除当前所有标注">
                     清除当前所有标注
                 </button>
@@ -885,6 +890,8 @@
                     <div id="overlayLayer"></div>
                 </div>
             </div>
+
+            <img  id="showMove" src="" alt="画布" />
 
             <!-- 底部状态栏 -->
             <footer>
@@ -924,7 +931,13 @@
                         <textarea id="noteInput" rows="4" placeholder="添加关于此标注的详细说明..."></textarea>
                     </div>
 
-                     <div>
+                    <div>
+                        <button onclick="app.toREMBGAI()">
+                            <i></i> 去除背景
+                        </button>
+                    </div>
+
+                    <div>
                         <button onclick="app.tofULXApi()">
                             <i></i> 请求图片服务
                         </button>
@@ -990,6 +1003,10 @@
             scale: 1,
             selectedRectId: null,
 
+            imagepool : new ImagePool(),
+
+            
+
             // DOM 元素缓存
             dom: {
                 canvas: document.getElementById('mainCanvas'),
@@ -1005,13 +1022,25 @@
                 noSelectionMsg: document.getElementById('noSelectionMsg'),
                 labelInput: document.getElementById('labelInput'),
                 noteInput: document.getElementById('noteInput'),
-                selectedRectIdDisplay: document.getElementById('selectedRectId')
+                selectedRectIdDisplay: document.getElementById('selectedRectId'),
+                showMove:document.getElementById('showMove')
+            
             },
 
             init() {
                 this.setupEventListeners();
                 this.loadFromLocalStorage();
             },
+
+            drawperson(){
+
+              this.dom.showMove.setAttribute("src", getimage(800, 800, 0, 0,this.imagePool))    
+
+
+
+
+            },
+
 
             setupEventListeners() {
                 const canvas = this.dom.canvas;
@@ -1149,6 +1178,7 @@
                         </div>
                     `;
                     this.dom.list.appendChild(item);
+                    this.imagepool.preload(img.src)
                 });
             },
 
@@ -1283,11 +1313,49 @@
                     selectedRectIdDisplay.innerText = rect.id;
                     labelInput.value = rect.label || '';
                     noteInput.value = rect.note || '';
-                } else if(imgData){
+                } else if (imgData) {
                     selectedRectIdDisplay.innerText = imgData.id;
-                    labelInput.value =  imgData.label || '';
+                    labelInput.value = imgData.label || '';
                     noteInput.value = imgData.note || '';
                 }
+            },
+
+            async toREMBGAI() {
+
+                const imgData = this.images.find(i => i.id === this.currentImageId);
+                let rect = this.selectedRectId && imgData.rects.find(r => r.id === this.selectedRectId) || { x: 0, y: 0, w: 1, h: 1, label: this.dom.labelInput.value, note: this.dom.noteInput.value }
+                let rate = document.getElementById("rate").value
+                rate = rate && Number(rate) || 1
+
+                let x1 = Math.floor(imgData.width * rect.x)
+                let y1 = Math.floor(imgData.height * rect.y)
+                let x2 = Math.floor(imgData.width * (rect.x + rect.w))
+                let y2 = Math.floor(imgData.height * (rect.y + rect.h))
+                let { base64 } = await cropImageByCoords(imgData.src, x1, y1, x2, y2)
+
+
+                await axios.post('/api/script_api', {
+                    script_path: "../videotool/REMBGAI.py", input_value: {
+                        image: base64
+                    }
+                }).then(res => {
+                    let data = JSON.parse(res.data)
+                    let { base64, width, height } = data
+                    const newImage = {
+                        id: Date.now() + Math.random().toString(36).substr(2, 9),
+                        src: base64,
+                        name: imgData.name,
+                        width: width,
+                        height: height,
+                        rects: [],
+                        label: "",
+                        note: ""
+                    };
+                    this.images.push(newImage);
+                    this.renderList();
+                    this.saveToLocalStorage();
+
+                })
             },
 
             async tofULXApi() {
@@ -1296,7 +1364,7 @@
                 let rect = this.selectedRectId && imgData.rects.find(r => r.id === this.selectedRectId) || { x: 0, y: 0, w: 1, h: 1, label: this.dom.labelInput.value, note: this.dom.noteInput.value }
                 let rate = document.getElementById("rate").value
                 rate = rate && Number(rate) || 1
-                
+
                 // 视觉反馈
                 const btn = event.target.closest('button');
                 const originalContent = btn.innerHTML;
@@ -1309,7 +1377,7 @@
                 let x2 = Math.floor(imgData.width * (rect.x + rect.w))
                 let y2 = Math.floor(imgData.height * (rect.y + rect.h))
                 let { base64 } = await cropImageByCoords(imgData.src, x1, y1, x2, y2)
-              
+
 
                 axios.post('/api/script_api', {
                     script_path: "../videotool/FLUXGetAIImg.py", input_value: {
@@ -1321,7 +1389,7 @@
                     let data = JSON.parse(res.data)
                     let { base64, width, height } = data
                     const newImage = {
-                        id:  Date.now() + Math.random().toString(36).substr(2, 9),
+                        id: Date.now() + Math.random().toString(36).substr(2, 9),
                         src: base64,
                         name: imgData.name,
                         width: width,
@@ -1432,6 +1500,7 @@
                 this.updateRightPanelUI(null);
                 this.showStatus('图片已删除');
             },
+           
 
             clearRects() {
                 if (!confirm('确定要清除当前图片的所有标注吗？')) return;

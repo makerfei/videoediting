@@ -30,10 +30,11 @@ class Bone {
 }
 
 class Person {
-    constructor(ctx, width, height, c, s) {
+    constructor(ctx, width, height, c, s,imagePool) {
         this.ctx = ctx
         this.c =c;
         this.s = s;
+        this.imagePool = imagePool
 
         this.timeDifference = this.c -this.s
         
@@ -45,7 +46,7 @@ class Person {
 
         this.ctx.strokeRect(0, 0, width, height);
         // -------- 搭建小人 --------
-        const head = new Bone(null, 180, Math.PI / 180 * 90, "image/st/1.png");          // 头
+        const head = new Bone(null, 180, Math.PI / 180 * 90);          // 头
 
        
 
@@ -59,14 +60,14 @@ class Person {
         const rfa = new Bone(rua, 160, -0.5);                  // 右前臂
 
 
-        const spine = new Bone(head, 250, 0+spineangle, "image/st/2.png");       // 脊椎（向上）
+        const spine = new Bone(head, 250, 0+spineangle);       // 脊椎（向上）
 
 
 
 
         const lbutt = new Bone(spine, 80, Math.PI / 180 * 90);                   // 左屁股
         const lth = new Bone(lbutt, 160, -Math.PI / 180 * 90);                   // 左大腿
-        const lsh = new Bone(lth, 160, 0.2+lshangle, "image/st/70.png");                  // 左小腿
+        const lsh = new Bone(lth, 160, 0.2+lshangle);                  // 左小腿
 
         const rbutt = new Bone(spine, 80, -Math.PI / 180 * 90);                   // 右屁股
         const rth = new Bone(rbutt, 160, Math.PI / 180 * 90);                   // 右大腿
@@ -86,7 +87,7 @@ class Person {
         const y2 = y1 + Math.sin(a.r) * bone.len;
         
         if (a.src) {
-            let img = myStage.imagePool.get(a.src)
+            let img = this.imagePool.get(a.src)
             let width = img.width / 4
             let height = img.height / 4
             this.ctx.save();
@@ -113,7 +114,7 @@ class Person {
     }
     drawAll(ox, oy) {
         // // 头部圆圈
-        // let bimg = myStage.imagePool.get("image/11.png")
+        // let bimg = this.imagePool.get("image/11.png")
         // let x1 = 0
         // let y1 = 0
         // this.ctx.drawImage(bimg, x1, y1, bimg.width, bimg.height);
@@ -138,16 +139,16 @@ class Person {
 
 
 // 基本绘画内容 canvas
-function getimage(width, height, c, s) {
+function getimage(width, height, c, s,imagePool) {
     
     const canvas = document.createElement('canvas');
     canvas.width = width;
     canvas.height = height;
     const ctx = canvas.getContext('2d'); // 假设画布大小 200x200
     // 填充白色背景（PNG 默认透明，如需白色需手动填充）
-    new Person(ctx, width, height, c, s).drawAll(width / 2, 0)
+    new Person(ctx, width, height, c, s,imagePool).drawAll(width / 2, 0)
 
-    return canvas
+    return canvas.toDataURL("image/png")
 
 }
 

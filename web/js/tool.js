@@ -52,7 +52,7 @@ function cropImageByCoords(img, x1, y1, x2, y2,rate=1) {
             });
             // canvas.toBlob((blob) => {
             //     resolve({
-            //         base64: canvas.toDataURL('image/png'),
+            //         base64: canvas.('image/png'),
             //         blob: blob
             //     });
             // }, 'image/png');
