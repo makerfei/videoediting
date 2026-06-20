@@ -1,5 +1,7 @@
 import os
 os.environ['MLXLM_USE_MODELSCOPE'] = 'True'
+# 必须在导入 mlx_lm 之前设置
+os.environ['HF_HUB_OFFLINE'] = '1' 
 from mlx_lm import load, generate
 import sys
 import json
@@ -46,7 +48,7 @@ def TranslateGemma(data):
 
     clean = response.split("<end_of_turn>")[0].strip()
     print("--完成--")
-    res = {"data": clean}
+    res = {"prompt": clean}
     print(json.dumps(res))
 
 input_data = sys.stdin.read()

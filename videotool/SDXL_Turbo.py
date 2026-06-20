@@ -14,24 +14,19 @@ def SDXLTurbo(data):
         load_in_4bit=True  # 运行时4-bit量化
     )
     pipe.to("mps") # Apple Silicon Mac 用户
-    imageList = []
     prompt = data.get('prompt')
     rate= data.get('rate')
-    input_image_list =  data.get('input_image_list') or []
-    if(input_image_list):
-        for item in input_image_list: 
-          imageList.append(load_image(load_base64_image(item)))  
-          
-
+    input_image =  load_image(load_base64_image(data.get('input_image')))     
+  
+        
     image = pipe(
-        prompt=prompt,
-        image=imageList,  # 图生图输入
-        height=256*rate,
-        width=256*rate,
-        prompt=prompt,
-        num_inference_steps=1,
+        prompt,
+        image=input_image,  # 图生图输入
+        num_inference_steps=2, 
+        strength=0.5,
         guidance_scale=0.0
     ).images
+    
 
     base64data = pil_to_base64(image[0])   
     print("--完成--")
