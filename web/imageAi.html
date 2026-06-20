@@ -9,6 +9,8 @@
     <script src="js/tool.js"></script>
     <script src="js/imagecompositing.js"></script>
     <script src="js/imagePool.js"></script>
+    <link rel="stylesheet" href="css/cropper.min.css">
+    <script src="js/cnd/cropper.min.js"></script>
     <title>图片ai 对接</title>
     <!-- 引入 TailwindCSS -->
     <style>
@@ -806,7 +808,7 @@
     </style>
 </head>
 
-<body>
+<body   oncontextmenu="return false;">
     <!-- 头部导航 -->
     <header>
         <div>
@@ -859,14 +861,9 @@
                 </div>
                 <div></div>
                 <button onclick="app.drawperson()" title="画人物图">
-                    清除当前所有标注
+                    人物骨骼生成
                 </button>
-                <button onclick="app.clearRects()" title="清除当前所有标注">
-                    清除当前所有标注
-                </button>
-                <button onclick="app.undo()" title="撤销上一步">
-                    上一步
-                </button>
+
 
                 <button onclick="app.deleteimg()" title="撤销上一步">
                     删除图片
@@ -884,14 +881,14 @@
                 </div>
 
                 <!-- 实际绘图区域 -->
-                <div id="drawingArea" class="hidden">
-                    <canvas id="mainCanvas"></canvas>
+                <div id="drawingArea"    class="hidden">
+                    <img id="mainCanvas"></img>
                     <!-- 标注层覆盖在 Canvas 上用于交互 -->
                     <div id="overlayLayer"></div>
                 </div>
             </div>
 
-            <img  id="showMove" src="" alt="画布" />
+            <img id="showMove" src="" alt="画布" />
 
             <!-- 底部状态栏 -->
             <footer>
@@ -996,21 +993,15 @@
         const app = {
             images: [], // 存储图片数据 { id, src, name, width, height, rects: [] }
             currentImageId: null,
-            isDrawing: false,
-            startX: 0,
-            startY: 0,
-            currentRect: null,
-            scale: 1,
-            selectedRectId: null,
-
-            imagepool : new ImagePool(),
-
-            
+            imagepool: new ImagePool(),
+            cropper: null,
+            isRotating : false,
+            startX:0,
+            startAngle:0,
 
             // DOM 元素缓存
             dom: {
                 canvas: document.getElementById('mainCanvas'),
-                ctx: document.getElementById('mainCanvas').getContext('2d'),
                 wrapper: document.getElementById('drawingArea'),
                 overlay: document.getElementById('overlayLayer'),
                 list: document.getElementById('imageList'),
@@ -1023,86 +1014,70 @@
                 labelInput: document.getElementById('labelInput'),
                 noteInput: document.getElementById('noteInput'),
                 selectedRectIdDisplay: document.getElementById('selectedRectId'),
-                showMove:document.getElementById('showMove')
-            
+                showMove: document.getElementById('showMove')
             },
 
             init() {
-                this.setupEventListeners();
+                this.cropper = this.cropper = new Cropper(this.dom.canvas, {
+                    viewMode: 1, // 限制裁剪框在画布内
+                    dragMode: 'move', // 默认移动模式
+                    autoCropArea: 1,
+                    rotatable: true,
+                    responsive: true,
+                    zoomable: false,    // 禁用缩放
+                    scalable: false     // 禁用触摸缩放
+                });
+
                 this.loadFromLocalStorage();
-            },
-
-            drawperson(){
-
-              this.dom.showMove.setAttribute("src", getimage(800, 800, 0, 0,this.imagePool))    
-
-
-
-
+                this.bindFreeRotateEvents();
             },
 
 
-            setupEventListeners() {
-                const canvas = this.dom.canvas;
-
-                // 鼠标按下：开始绘制
-                canvas.addEventListener('mousedown', (e) => {
-                    if (!this.currentImageId) return;
-                    this.isDrawing = true;
-                    const rect = canvas.getBoundingClientRect();
-                    this.startX = e.clientX - rect.left;
-                    this.startY = e.clientY - rect.top;
-
-                    // 创建临时矩形 DOM
-                    this.currentRect = document.createElement('div');
-                    this.currentRect.className = 'annotation-rect pointer-events-auto';
-                    this.currentRect.style.left = `${this.startX}px`;
-                    this.currentRect.style.top = `${this.startY}px`;
-                    this.currentRect.style.width = '0px';
-                    this.currentRect.style.height = '0px';
-                    this.dom.overlay.appendChild(this.currentRect);
-                });
-
-                // 鼠标移动：更新矩形大小
-                window.addEventListener('mousemove', (e) => {
-                    if (!this.isDrawing || !this.currentRect) return;
-                    const rect = canvas.getBoundingClientRect();
-                    const currentX = e.clientX - rect.left;
-                    const currentY = e.clientY - rect.top;
-
-                    const width = Math.abs(currentX - this.startX);
-                    const height = Math.abs(currentY - this.startY);
-                    const left = Math.min(currentX, this.startX);
-                    const top = Math.min(currentY, this.startY);
-
-                    this.currentRect.style.left = `${left}px`;
-                    this.currentRect.style.top = `${top}px`;
-                    this.currentRect.style.width = `${width}px`;
-                    this.currentRect.style.height = `${height}px`;
-
-                    this.updateCursorPos(e.clientX - rect.left, e.clientY - rect.top);
-                });
-
-                // 鼠标松开：完成绘制
-                window.addEventListener('mouseup', () => {
-                    if (!this.isDrawing) return;
-                    this.isDrawing = false;
-
-                    if (this.currentRect) {
-                        const width = parseInt(this.currentRect.style.width);
-                        const height = parseInt(this.currentRect.style.height);
-
-                        // 忽略过小的误触
-                        if (width > 5 && height > 5) {
-                            this.saveRectToData(this.currentRect);
-                            this.showStatus('标注已添加');
-                        } else {
-                            this.currentRect.remove();
+            bindFreeRotateEvents() {
+              
+                // 方案 B: 鼠标拖拽旋转 (更直观)
+                // 注意：Cropper 默认右下角手柄即可拖拽旋转，这里补充一个“按住空格+拖拽背景”的全局旋转
+                window.addEventListener('mousedown', (e) => {
+                    if (e.shiftKey && e.button === 2) {
+                        this.isRotating = true;
+                        this.startX = e.clientX;
+                        // 获取当前旋转角度 (Cropper 内部数据)
+                        const imageData = this.cropper.getImageData();
+                        this.startAngle = imageData.rotate || 0;
+                         this.dom.canvas.style.cursor = 'grabbing';
+                    } else if (e.button === 2) {
+                        event.preventDefault(); // 同样建议阻止默认菜单
+                        if (this.isRotating) {
+                            this.isRotating = false;
+                             this.dom.canvas.style.cursor = 'default';
                         }
-                        this.currentRect = null;
                     }
+                    // 当按住 Space 键且点击背景时，进入旋转模式
+                    e.preventDefault(); // 阻止浏览器默认滚动等行为
+                    e.stopPropagation(); // 阻止事件向父级框架传递
+
                 });
+
+                window.addEventListener('mousemove', (e) => {
+                    if (!this.isRotating) return;
+                    // 计算鼠标移动距离对应的角度变化
+                    // 这里简化为水平移动距离映射到角度
+                    const deltaX = e.clientX - this.startX;
+                    const sensitivity = 0.5; // 灵敏度
+                    const newAngle = this.startAngle + (deltaX * sensitivity);
+
+                    this.cropper.rotateTo(newAngle);
+                });
+
+
             },
+
+
+            // 画人物骨骼图
+            drawperson() {
+                this.dom.showMove.setAttribute("src", getimage(800, 800, 0, 0, this.imagePool))
+            },
+
 
             handleUpload(input) {
                 const files = Array.from(input.files);
@@ -1120,7 +1095,6 @@
                                 name: file.name,
                                 width: img.width,
                                 height: img.height,
-                                rects: [],
                                 label: "",
                                 note: ""
                             };
@@ -1169,7 +1143,7 @@
                             <img src="${img.src}" alt="${img.name}">
                             ${isActive ? '<div></div>' : ''}
                             <div>
-                                ${img.rects.length} 标注
+                               标注
                             </div>
                         </div>
                         <div>
@@ -1184,7 +1158,7 @@
 
             selectImage(id) {
                 this.currentImageId = id;
-                this.selectedRectId = null; // 切换图片时取消选中
+
                 this.updateRightPanelUI();
 
                 const imgData = this.images.find(i => i.id === id);
@@ -1198,15 +1172,7 @@
                 // 设置 Canvas 尺寸
                 this.dom.canvas.width = imgData.width;
                 this.dom.canvas.height = imgData.height;
-
-                // 绘制底图
-                const imgObj = new Image();
-                imgObj.src = imgData.src;
-                imgObj.onload = () => {
-                    this.dom.ctx.drawImage(imgObj, 0, 0);
-                    this.restoreRects();
-                };
-
+                this.cropper.replace(imgData.src)
                 // 适配屏幕大小 (简单缩放逻辑)
                 this.fitToScreen();
                 this.showStatus(`已加载: ${imgData.name}`);
@@ -1229,91 +1195,11 @@
                 document.getElementById('zoomLevel').innerText = `Zoom: ${Math.round(this.scale * 100)}%`;
             },
 
-            saveRectToData(rectElement) {
-                const imgData = this.images.find(i => i.id === this.currentImageId);
-                if (!imgData) return;
-
-                // 获取相对于 Canvas 的坐标
-                const left = parseFloat(rectElement.style.left);
-                const top = parseFloat(rectElement.style.top);
-                const width = parseFloat(rectElement.style.width);
-                const height = parseFloat(rectElement.style.height);
-
-                // 转换为百分比存储，以适应不同显示尺寸
-                const rectData = {
-                    id: Date.now(),
-                    x: left / this.dom.canvas.width,
-                    y: top / this.dom.canvas.height,
-                    w: width / this.dom.canvas.width,
-                    h: height / this.dom.canvas.height,
-                    label: '',
-                    note: ''
-                };
-
-                imgData.rects.push(rectData);
-
-                // 绑定点击事件到 DOM 元素以支持删除/编辑
-                rectElement.dataset.id = rectData.id;
-                rectElement.onclick = (e) => {
-
-                    e.stopPropagation();
-
-
-                    this.selectRect(rectData.id, rectElement);
-                };
-
-                this.saveToLocalStorage();
-                this.renderList(document.getElementById('searchInput').value); // 更新计数
-
-                // 自动选中新创建的矩形
-                this.selectRect(rectData.id, rectElement);
-            },
-
-            restoreRects() {
-                this.dom.overlay.innerHTML = ''; // 清空覆盖层
-                const imgData = this.images.find(i => i.id === this.currentImageId);
-                if (!imgData) return;
-
-                imgData.rects.forEach(r => {
-                    const div = document.createElement('div');
-                    div.className = 'annotation-rect pointer-events-auto';
-                    div.style.left = `${r.x * this.dom.canvas.width}px`;
-                    div.style.top = `${r.y * this.dom.canvas.height}px`;
-                    div.style.width = `${r.w * this.dom.canvas.width}px`;
-                    div.style.height = `${r.h * this.dom.canvas.height}px`;
-                    div.dataset.id = r.id;
-
-                    div.onclick = (e) => {
-                        e.stopPropagation();
-                        this.selectRect(r.id, div);
-                    };
-
-                    this.dom.overlay.appendChild(div);
-                });
-            },
-
-            selectRect(id, element) {
-                // 移除其他选中状态
-                document.querySelectorAll('.annotation-rect').forEach(el => el.classList.remove('selected'));
-                element.classList.add('selected');
-
-                this.selectedRectId = id;
-                const imgData = this.images.find(i => i.id === this.currentImageId);
-                const rect = imgData.rects.find(r => r.id === id);
-
-                this.updateRightPanelUI(rect);
-            },
 
             updateRightPanelUI() {
                 const { inputContainer, noSelectionMsg, labelInput, noteInput, selectedRectIdDisplay } = this.dom;
                 const imgData = this.images.find(i => i.id === this.currentImageId);
-                const rect = imgData.rects.find(r => r.id === this.selectedRectId)
-                if (rect) {
-                    // 填充数据
-                    selectedRectIdDisplay.innerText = rect.id;
-                    labelInput.value = rect.label || '';
-                    noteInput.value = rect.note || '';
-                } else if (imgData) {
+                if (imgData) {
                     selectedRectIdDisplay.innerText = imgData.id;
                     labelInput.value = imgData.label || '';
                     noteInput.value = imgData.note || '';
@@ -1323,7 +1209,7 @@
             async toREMBGAI() {
 
                 const imgData = this.images.find(i => i.id === this.currentImageId);
-                let rect = this.selectedRectId && imgData.rects.find(r => r.id === this.selectedRectId) || { x: 0, y: 0, w: 1, h: 1, label: this.dom.labelInput.value, note: this.dom.noteInput.value }
+                let rect = { x: 0, y: 0, w: 1, h: 1, label: this.dom.labelInput.value, note: this.dom.noteInput.value }
                 let rate = document.getElementById("rate").value
                 rate = rate && Number(rate) || 1
 
@@ -1347,7 +1233,6 @@
                         name: imgData.name,
                         width: width,
                         height: height,
-                        rects: [],
                         label: "",
                         note: ""
                     };
@@ -1361,7 +1246,7 @@
             async tofULXApi() {
                 this.saveAnnotationDetails()
                 const imgData = this.images.find(i => i.id === this.currentImageId);
-                let rect = this.selectedRectId && imgData.rects.find(r => r.id === this.selectedRectId) || { x: 0, y: 0, w: 1, h: 1, label: this.dom.labelInput.value, note: this.dom.noteInput.value }
+                let rect = { x: 0, y: 0, w: 1, h: 1, label: this.dom.labelInput.value, note: this.dom.noteInput.value }
                 let rate = document.getElementById("rate").value
                 rate = rate && Number(rate) || 1
 
@@ -1378,7 +1263,6 @@
                 let y2 = Math.floor(imgData.height * (rect.y + rect.h))
                 let { base64 } = await cropImageByCoords(imgData.src, x1, y1, x2, y2)
 
-
                 axios.post('/api/script_api', {
                     script_path: "../videotool/FLUXGetAIImg.py", input_value: {
                         prompt: rect.label,
@@ -1394,7 +1278,6 @@
                         name: imgData.name,
                         width: width,
                         height: height,
-                        rects: [],
                         label: "",
                         note: ""
                     };
@@ -1410,37 +1293,29 @@
             saveAnnotationDetails() {
                 if (!this.currentImageId) return;
                 const imgData = this.images.find(i => i.id === this.currentImageId);
-                let rect = imgData.rects.find(r => r.id === this.selectedRectId)
-                if (this.selectedRectId) {
-                    rect.label = this.dom.labelInput.value;
-                    rect.note = this.dom.noteInput.value;
-                    this.saveToLocalStorage();
-                    this.showStatus('rect已保存');
-                } else {
-                    imgData.label = this.dom.labelInput.value;
-                    imgData.note = this.dom.noteInput.value;
-                    this.saveToLocalStorage();
-                    this.showStatus('图片信息已保存');
-                }
+                imgData.label = this.dom.labelInput.value;
+                imgData.note = this.dom.noteInput.value;
+                this.saveToLocalStorage();
+                this.showStatus('图片信息已保存');
+
             },
+            // 切图
             async cropImageByCoordsImg() {
-                if (!this.selectedRectId || !this.currentImageId) return;
+                if (!this.currentImageId) return;
 
-                const imgData = this.images.find(i => i.id === this.currentImageId);
-                const rect = imgData.rects.find(r => r.id === this.selectedRectId);
-                let x1 = Math.floor(imgData.width * rect.x)
-                let y1 = Math.floor(imgData.height * rect.y)
-                let x2 = Math.floor(imgData.width * (rect.x + rect.w))
-                let y2 = Math.floor(imgData.height * (rect.y + rect.h))
-                let { base64 } = await cropImageByCoords(imgData.src, x1, y1, x2, y2)
+                // 获取裁剪后的 Canvas 对象
+                const croppedCanvas = this.cropper.getCroppedCanvas();
+                let { width, height } = this.cropper.getData()
+                const base64 = croppedCanvas.toDataURL('image/png');
 
+                
                 const newImage = {
                     id: Date.now() + Math.random().toString(36).substr(2, 9),
                     src: base64,
                     name: Date.now() + Math.random().toString(36).substr(2, 9),
-                    width: x2 - x1,
-                    height: y2 - y1,
-                    rects: [],
+                    width: Math.floor(width),
+                    height: Math.floor(height),
+
                     label: "",
                     note: ""
                 };
@@ -1454,23 +1329,18 @@
 
             },
             async resize() {
-
                 if (!this.currentImageId) return;
                 let rate = document.getElementById("rate").value
                 rate = rate && Number(rate) || 1
-
                 const imgData = this.images.find(i => i.id === this.currentImageId);
-
-
                 let { base64 } = await cropImageByCoords(imgData.src, 0, 0, imgData.width, imgData.height, rate)
-
                 const newImage = {
                     id: Date.now() + Math.random().toString(36).substr(2, 9),
                     src: base64,
                     name: Date.now() + Math.random().toString(36).substr(2, 9),
                     width: Math.floor(imgData.width * rate),
                     height: Math.floor(imgData.height * rate),
-                    rects: [],
+
                     label: "",
                     note: ""
                 };
@@ -1478,55 +1348,19 @@
                 this.renderList();
                 this.saveToLocalStorage();
             },
-            deleteRect() {
-                let id = this.selectedRectId
-                const imgData = this.images.find(i => i.id === this.currentImageId);
-                if (!imgData) return;
 
-                imgData.rects = imgData.rects.filter(r => r.id !== id);
-                this.restoreRects();
-                this.saveToLocalStorage();
-                this.renderList(document.getElementById('searchInput').value);
-                this.updateRightPanelUI(null);
-                this.showStatus('标注已删除');
-            },
             deleteimg() {
                 if (!confirm('确定要删除当前图片吗？')) return;
                 let id = this.currentImageId
                 this.images = this.images.filter(r => r.id !== id);
-                this.restoreRects();
+
                 this.saveToLocalStorage();
                 this.renderList(document.getElementById('searchInput').value);
                 this.updateRightPanelUI(null);
                 this.showStatus('图片已删除');
             },
-           
 
-            clearRects() {
-                if (!confirm('确定要清除当前图片的所有标注吗？')) return;
-                const imgData = this.images.find(i => i.id === this.currentImageId);
-                if (imgData) {
-                    imgData.rects = [];
-                    this.restoreRects();
-                    this.saveToLocalStorage();
-                    this.renderList(document.getElementById('searchInput').value);
-                    this.updateRightPanelUI(null);
-                    this.showStatus('所有标注已清除');
-                }
-            },
 
-            undo() {
-                // 简单实现：删除最后一个标注
-                const imgData = this.images.find(i => i.id === this.currentImageId);
-                if (imgData && imgData.rects.length > 0) {
-                    imgData.rects.pop();
-                    this.restoreRects();
-                    this.saveToLocalStorage();
-                    this.renderList(document.getElementById('searchInput').value);
-                    this.updateRightPanelUI(null);
-                    this.showStatus('已撤销');
-                }
-            },
 
             filterList(text) {
                 this.renderList(text);
