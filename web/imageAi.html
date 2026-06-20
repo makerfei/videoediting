@@ -7,6 +7,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <script src="js/cnd/axios.min.js"></script>
     <script src="js/tool.js"></script>
+
     <script src="js/imagecompositing.js"></script>
     <script src="js/imagePool.js"></script>
     <link rel="stylesheet" href="css/cropper.min.css">
@@ -645,6 +646,7 @@
 
         /* 输入框与文本域样式 */
         #inputFormContainer input,
+        .myinput,
         #inputFormContainer textarea {
             width: 100%;
             padding: 8px 12px;
@@ -805,25 +807,44 @@
         .selected {
             border: 1px solid #e34b13;
         }
+
+
+        .canvaserase {
+            max-width: calc(100vw - 600px);
+            overflow: scroll;
+            padding: 30px;
+        }
+
+        #erase {}
     </style>
 </head>
 
-<body   oncontextmenu="return false;">
+<body>
     <!-- 头部导航 -->
     <header>
         <div>
             <button onclick="document.getElementById('fileInput').click()">
                 上传图片
             </button>
-            <input type="file" id="fileInput" multiple accept="image/*" onchange="app.handleUpload(this)">
+            <input type="file" id="fileInput" multiple accept="image/*" onchange="app.handleUpload(this)" />
         </div>
         <div>
-            <button onclick="app.inportData()">
+            <div>
+                <input type="text" id="filename" class="myinput" placeholder="文件名称" />
+            </div>
+            <div>
+                <button onclick="app.changeFillName()">确认</button>
+            </div>
+
+            <button onclick="document.getElementById('jsonInput').click()">
                 导入 JSON
             </button>
+            <input type="file" id="jsonInput" style="display: none;" multiple accept=".json,application/json"
+                onchange="app.importData(this)" />
             <button onclick="app.exportData()">
                 导出 JSON
             </button>
+
         </div>
     </header>
     <!-- 主体内容 -->
@@ -856,22 +877,26 @@
             <!-- 工具栏 -->
             <div>
                 <div>
-                    <span>当前模式:</span>
-                    <span id="modeDisplay">绘制矩形</span>
+                    <button onclick="app.drawType(1)" title="画人物图">
+                        剪切模式
+                    </button>
+
+                    <button onclick="app.drawType(2)" title="画人物图">
+                        擦除模式
+                    </button>
+                    <button onclick="app.drawType(3)" title="画人物图">
+                        骨骼模式
+                    </button>
                 </div>
                 <div></div>
-                <button onclick="app.drawperson()" title="画人物图">
-                    人物骨骼生成
-                </button>
 
-
-                <button onclick="app.deleteimg()" title="撤销上一步">
+                <button onclick="app.deleteimg()">
                     删除图片
                 </button>
             </div>
 
             <!-- 画布容器 -->
-            <div id="canvasWrapper">
+            <div id="canvasWrapper" oncontextmenu="return false;">
                 <div id="emptyState">
                     <div>
                         <i></i>
@@ -881,14 +906,18 @@
                 </div>
 
                 <!-- 实际绘图区域 -->
-                <div id="drawingArea"    class="hidden">
+                <div id="drawingArea" class="hidden">
                     <img id="mainCanvas"></img>
-                    <!-- 标注层覆盖在 Canvas 上用于交互 -->
-                    <div id="overlayLayer"></div>
+
                 </div>
             </div>
+            <div class="canvaserase">
 
-            <img id="showMove" src="" alt="画布" />
+
+                <canvas id="erase" style="display: none;"></canvas>
+
+                <img id="showMove" style="display: none;" src="" alt="画布" />
+            </div>
 
             <!-- 底部状态栏 -->
             <footer>
@@ -920,6 +949,11 @@
                         <label>图片提示词
                             (Label)</label>
                         <textarea type="text" id="labelInput" placeholder="例如：Person, Car..."></textarea>
+                    </div>
+                    <div>
+                        <label>名称
+                            (name)</label>
+                        <input id="nameInput" placeholder="名称..." />
                     </div>
 
                     <div>
@@ -958,11 +992,7 @@
                         </button>
                     </div>
 
-                    <div>
-                        <button onclick="app.deleteRect()">
-                            <i></i> 删除
-                        </button>
-                    </div>
+
                 </div>
 
                 <!-- 未选中状态提示 -->
@@ -974,15 +1004,7 @@
                 </div>
             </div>
 
-            <!-- 底部帮助信息 -->
-            <div>
-                <p><i></i> 提示：</p>
-                <ul>
-                    <li>拖动鼠标绘制矩形</li>
-                    <li>点击矩形选中并编辑</li>
-                    <li>数据自动保存至本地</li>
-                </ul>
-            </div>
+
         </aside>
     </main>
 
@@ -990,19 +1012,28 @@
         /**
          * 应用核心逻辑
          */
+        UPLOAD_API_URL = '/api/upload/frame';
         const app = {
             images: [], // 存储图片数据 { id, src, name, width, height, rects: [] }
             currentImageId: null,
             imagepool: new ImagePool(),
             cropper: null,
-            isRotating : false,
-            startX:0,
-            startAngle:0,
+            isRotating: false,
+            startX: 0,
+            startAngle: 0,
 
+            filename: "",
+            showType: 1,
+            isDrawing: false,
             // DOM 元素缓存
             dom: {
                 canvas: document.getElementById('mainCanvas'),
+                canvasWrapper: document.getElementById('canvasWrapper'),
                 wrapper: document.getElementById('drawingArea'),
+
+                showMove: document.getElementById('showMove'),
+                erase: document.getElementById('erase'),
+                eraseCtx: document.getElementById('erase').getContext('2d'),
                 overlay: document.getElementById('overlayLayer'),
                 list: document.getElementById('imageList'),
                 emptyState: document.getElementById('emptyState'),
@@ -1012,9 +1043,11 @@
                 inputContainer: document.getElementById('inputFormContainer'),
                 noSelectionMsg: document.getElementById('noSelectionMsg'),
                 labelInput: document.getElementById('labelInput'),
+                nameInput: document.getElementById('nameInput'),
                 noteInput: document.getElementById('noteInput'),
                 selectedRectIdDisplay: document.getElementById('selectedRectId'),
-                showMove: document.getElementById('showMove')
+                showMove: document.getElementById('showMove'),
+                filename: document.getElementById('filename')
             },
 
             init() {
@@ -1024,7 +1057,7 @@
                     autoCropArea: 1,
                     rotatable: true,
                     responsive: true,
-                    zoomable: false,    // 禁用缩放
+                    zoomable: true,    // 禁用缩放
                     scalable: false     // 禁用触摸缩放
                 });
 
@@ -1032,30 +1065,84 @@
                 this.bindFreeRotateEvents();
             },
 
+            changeFillName() {
+                this.filename = this.dom.filename.value
+                this.showStatus("名称修改完成")
+            },
 
             bindFreeRotateEvents() {
-              
+                // 2. 获取坐标工具函数
+                let getPos = (e) => {
+                    const rect = this.dom.erase.getBoundingClientRect();
+                    const clientX = e.touches ? e.touches.clientX : e.clientX;
+                    const clientY = e.touches ? e.touches.clientY : e.clientY;
+                    return {
+                        x: clientX - rect.left,
+                        y: clientY - rect.top
+                    };
+                }
+
+                // 3. 开始擦除
+                let startDraw = (e) => {
+                    this.isDrawing = true;
+                    const pos = getPos(e);
+                    this.dom.eraseCtx.beginPath();
+                    this.dom.eraseCtx.moveTo(pos.x, pos.y);
+                }
+
+                // 4. 移动擦除（核心逻辑）
+                let draw = (e) => {
+                    if (!this.isDrawing) return;
+                    e.preventDefault(); // 防止移动端滚动
+
+                    const pos = getPos(e);
+
+                    // 关键设置： destination-out 表示新绘制的图形会使目标图像变透明
+                    this.dom.eraseCtx.globalCompositeOperation = 'destination-out';
+
+                    this.dom.eraseCtx.lineWidth = 20;       // 橡皮擦大小
+                    this.dom.eraseCtx.lineCap = 'round';    // 圆头笔触
+                    this.dom.eraseCtx.lineJoin = 'round';
+
+                    this.dom.eraseCtx.lineTo(pos.x, pos.y);
+                    this.dom.eraseCtx.stroke();
+                }
+
+                // 5. 结束擦除
+                let endDraw = () => {
+                    this.isDrawing = false;
+                    this.dom.eraseCtx.closePath();
+                    // 可选：恢复默认混合模式，以便后续进行其他非擦除绘制
+                    this.dom.eraseCtx.globalCompositeOperation = 'source-over';
+                }
+
+                this.dom.erase.addEventListener('mousedown', startDraw);
+                this.dom.erase.addEventListener('mousemove', draw);
+                this.dom.erase.addEventListener('mouseup', endDraw);
+                this.dom.erase.addEventListener('mouseout', endDraw);
+
+
                 // 方案 B: 鼠标拖拽旋转 (更直观)
                 // 注意：Cropper 默认右下角手柄即可拖拽旋转，这里补充一个“按住空格+拖拽背景”的全局旋转
-                window.addEventListener('mousedown', (e) => {
+                this.dom.canvasWrapper.addEventListener('mousedown', (e) => {
+
+                    // 获取 坐标位置
+                    this.updateCursorPos(e.layerX, e.layerY)
+
                     if (e.shiftKey && e.button === 2) {
                         this.isRotating = true;
                         this.startX = e.clientX;
                         // 获取当前旋转角度 (Cropper 内部数据)
                         const imageData = this.cropper.getImageData();
                         this.startAngle = imageData.rotate || 0;
-                         this.dom.canvas.style.cursor = 'grabbing';
+                        this.dom.canvas.style.cursor = 'grabbing';
                     } else if (e.button === 2) {
                         event.preventDefault(); // 同样建议阻止默认菜单
                         if (this.isRotating) {
                             this.isRotating = false;
-                             this.dom.canvas.style.cursor = 'default';
+                            this.dom.canvas.style.cursor = 'default';
                         }
                     }
-                    // 当按住 Space 键且点击背景时，进入旋转模式
-                    e.preventDefault(); // 阻止浏览器默认滚动等行为
-                    e.stopPropagation(); // 阻止事件向父级框架传递
-
                 });
 
                 window.addEventListener('mousemove', (e) => {
@@ -1068,16 +1155,40 @@
 
                     this.cropper.rotateTo(newAngle);
                 });
-
-
             },
 
 
             // 画人物骨骼图
-            drawperson() {
-                this.dom.showMove.setAttribute("src", getimage(800, 800, 0, 0, this.imagePool))
-            },
+            drawType(type) {
+                if (this.showType == type)
+                    return
+                this.showType = type
 
+                if (this.showType == 1) {
+                    this.dom.canvasWrapper.attributes.removeNamedItem("style")
+                    this.dom.erase.style.display = "none"
+                    this.dom.showMove.style.display = "none";
+
+                }
+                else if (this.showType == 2) {
+                    this.dom.canvasWrapper.style.display = "none"
+                    this.dom.erase.attributes.removeNamedItem("style")
+                    this.dom.showMove.style.display = "none";
+
+                } else if (this.showType == 3) {
+                    this.dom.canvasWrapper.style.display = "none"
+                    this.dom.erase.style.display = "none"
+                    this.dom.showMove.attributes.removeNamedItem("style")
+
+                   
+                }
+                this.selectImage(this.currentImageId)
+
+            },
+            // 重新加载骨骼图
+            reloadMove(){
+                 this.dom.showMove.setAttribute("src", getimage(800, 800, 0, 0, this.imagePool))
+            },
 
             handleUpload(input) {
                 const files = Array.from(input.files);
@@ -1117,6 +1228,8 @@
 
             renderList(filterText = '') {
                 this.dom.list.innerHTML = '';
+                this.dom.filename.value = this.filename;
+
                 const filtered = this.images.filter(img =>
                     img.name.toLowerCase().includes(filterText.toLowerCase())
                 );
@@ -1153,6 +1266,7 @@
                     `;
                     this.dom.list.appendChild(item);
                     this.imagepool.preload(img.src)
+                    this.reloadMove()
                 });
             },
 
@@ -1176,10 +1290,24 @@
                 // 适配屏幕大小 (简单缩放逻辑)
                 this.fitToScreen();
                 this.showStatus(`已加载: ${imgData.name}`);
-            },
 
+                let img = new Image()
+                img.onload = () => {
+                    // 设置 Canvas 尺寸
+                    this.dom.erase.width = imgData.width * 4
+                    this.dom.erase.height = imgData.height * 4
+
+                    this.dom.erase.style.width = imgData.width * 4 + "px"
+                    this.dom.erase.style.height = imgData.height * 4 + "px"
+
+                    this.dom.eraseCtx.clearRect(0, 0, this.dom.erase.width, this.dom.erase.height);
+                    this.dom.eraseCtx.drawImage(img, 0, 0, this.dom.erase.width, this.dom.erase.height);
+                }
+                img.src = imgData.src
+            },
+            
             fitToScreen() {
-                const container = document.getElementById('canvasWrapper');
+                const container = this.dom.canvasWrapper;
                 const padding = 60;
                 const availW = container.clientWidth - padding;
                 const availH = container.clientHeight - padding;
@@ -1197,12 +1325,13 @@
 
 
             updateRightPanelUI() {
-                const { inputContainer, noSelectionMsg, labelInput, noteInput, selectedRectIdDisplay } = this.dom;
+                const { inputContainer, noSelectionMsg, labelInput, noteInput, nameInput, selectedRectIdDisplay } = this.dom;
                 const imgData = this.images.find(i => i.id === this.currentImageId);
                 if (imgData) {
                     selectedRectIdDisplay.innerText = imgData.id;
                     labelInput.value = imgData.label || '';
                     noteInput.value = imgData.note || '';
+                    nameInput.value = imgData.name || '';
                 }
             },
 
@@ -1294,8 +1423,15 @@
                 if (!this.currentImageId) return;
                 const imgData = this.images.find(i => i.id === this.currentImageId);
                 imgData.label = this.dom.labelInput.value;
+                imgData.name = this.dom.nameInput.value;
                 imgData.note = this.dom.noteInput.value;
+                if (this.showType == 2) {
+                    imgData.src = this.dom.erase.toDataURL('image/png', { pixelRatio: 0.25 })
+                }
+
+
                 this.saveToLocalStorage();
+                this.renderList()
                 this.showStatus('图片信息已保存');
 
             },
@@ -1308,7 +1444,7 @@
                 let { width, height } = this.cropper.getData()
                 const base64 = croppedCanvas.toDataURL('image/png');
 
-                
+
                 const newImage = {
                     id: Date.now() + Math.random().toString(36).substr(2, 9),
                     src: base64,
@@ -1323,9 +1459,7 @@
                 this.renderList();
                 this.saveToLocalStorage();
 
-                btn.innerHTML = originalContent;
-                btn.classList.remove('bg-green-600', 'hover:bg-green-700');
-                btn.classList.add('bg-blue-600', 'hover:bg-blue-700');
+
 
             },
             async resize() {
@@ -1360,8 +1494,6 @@
                 this.showStatus('图片已删除');
             },
 
-
-
             filterList(text) {
                 this.renderList(text);
             },
@@ -1377,26 +1509,87 @@
                 }, 3000);
             },
 
-            // 模拟后端保存
-            exportData() {
-                const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(this.images, null, 2));
-                const downloadAnchorNode = document.createElement('a');
-                downloadAnchorNode.setAttribute("href", dataStr);
-                downloadAnchorNode.setAttribute("download", "annotations_data.json");
-                document.body.appendChild(downloadAnchorNode);
-                downloadAnchorNode.click();
-                downloadAnchorNode.remove();
+            //后端保存
+            async exportData() {
+                // 上传json
+                let data = {
+                    filename: this.filename,
+                    images: this.images
+                }
+
+
+                // 大商场
+                let fullname = `web/source/人物/${this.filename}`
+                const blobTxt = new Blob([JSON.stringify(data)], { type: "application/json" });
+                const formDataTxt = new FormData();
+                formDataTxt.append('file', blobTxt, fullname + ".json"); // 'file' 是后端接收文件的字段名，需与后端约定
+                formDataTxt.append('index', '00000');
+                // 5. 发送请求到后端接口
+                const responseTxt = await fetch(UPLOAD_API_URL, { method: 'POST', body: formDataTxt });
+                if (!responseTxt.ok || !responseTxt.ok) {
+                    this.showStatus(`上传失败`)
+                    throw new Error(`HTTP error! status: ${response.status}`);
+                } else {
+                    this.showStatus(`上传成功`)
+                }
+
+                // 上传第一张图
+                const dataURL = this.images.find(i => i.name == "封面").src;
+                const base64Data = dataURL.split(',');
+                const blobImg = base64ToBlob(base64Data, 'image/png');
+
+                const formDataImg = new FormData();
+                formDataImg.append('file', blobImg, fullname + ".png"); // 'file' 是后端接收文件的字段名，需与后端约定
+                formDataImg.append('index', '00000');
+                const responseImg = await fetch(UPLOAD_API_URL, { method: 'POST', body: formDataImg });
+
                 this.showStatus('数据已导出');
             },
-            inportData() {
+            importData(inputElement) {
+                const files = inputElement.files;
+                if (!files || files.length === 0) return;
+                Array.from(files).forEach(file => {
+                    // 验证文件类型
+                    if (file.type !== 'application/json' && !file.name.endsWith('.json')) {
+                        console.warn('跳过非JSON文件:', file.name);
+                        return;
+                    }
 
+                    const reader = new FileReader();
+                    reader.onload = (e) => {
+                        try {
+                            const jsonData = JSON.parse(e.target.result);
+                            console.log('解析成功:', jsonData);
 
+                            this.images = jsonData.images
+                            this.filename = jsonData.filename
+                            this.renderList();
+                            if (this.images.length > 0) {
+                                this.selectImage(this.images[0].id);
+                            }
+                            this.saveToLocalStorage()
+
+                            // 在此处处理数据
+                        } catch (err) {
+                            console.error('JSON解析失败:', err);
+                        }
+                    };
+                    reader.readAsText(file);
+                });
+
+                // 注意：input.value 无法获取真实路径，仅包含文件名
+                // 若需重置输入框以便再次选择同一文件，可清空 value
+                // inputElement.value = ''; 
             },
 
             // 本地持久化
             saveToLocalStorage() {
                 try {
-                    localStorage.setItem('annotatePro_data_v2', JSON.stringify(this.images));
+                    let data = {
+                        filename: this.filename,
+                        images: this.images
+                    }
+                    localStorage.setItem('annotatePro_data_v2', JSON.stringify(data));
                 } catch (e) {
                     console.warn('LocalStorage 空间不足，仅会话有效');
                 }
@@ -1405,7 +1598,11 @@
             loadFromLocalStorage() {
                 const data = localStorage.getItem('annotatePro_data_v2');
                 if (data) {
-                    this.images = JSON.parse(data);
+                    let { filename, images } = JSON.parse(data);
+                    this.images = images;
+                    this.filename = filename;
+
+
                     this.renderList();
                     if (this.images.length > 0) {
                         this.selectImage(this.images[0].id);

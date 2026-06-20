@@ -1,18 +1,5 @@
 
-/**
- * 辅助函数：将 base64 字符串转换为 Blob 对象
- */
-function base64ToBlob(base64, mimeType) {
 
-
-    const byteCharacters = atob(base64[1]);
-    const byteNumbers = new Array(byteCharacters.length);
-    for (let i = 0; i < byteCharacters.length; i++) {
-        byteNumbers[i] = byteCharacters.charCodeAt(i);
-    }
-    const byteArray = new Uint8Array(byteNumbers);
-    return new Blob([byteArray], { type: mimeType });
-}
 
 async function exportAllFramesAsUpload(inmyStage) {
     const timestamp = Date.now();
