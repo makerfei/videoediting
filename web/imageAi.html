@@ -9,7 +9,6 @@
     <script src="js/tool.js"></script>
 
     <script src="js/imagecompositing.js"></script>
-    <script src="js/imagePool.js"></script>
     <link rel="stylesheet" href="css/cropper.min.css">
     <script src="js/cnd/cropper.min.js"></script>
     <title>图片ai 对接</title>
@@ -923,7 +922,7 @@
             <footer>
                 <div id="statusMsg">就绪</div>
                 <div>
-                    <span id="cursorPos">X: 0, Y: 0</span>
+                    <span id="cursorPos">{"X": 0, "Y": 0}</span>
                     <span id="zoomLevel">Zoom: 100%</span>
                 </div>
             </footer>
@@ -1016,7 +1015,6 @@
         const app = {
             images: [], // 存储图片数据 { id, src, name, width, height, rects: [] }
             currentImageId: null,
-            imagepool: new ImagePool(),
             cropper: null,
             isRotating: false,
             startX: 0,
@@ -1063,6 +1061,7 @@
 
                 this.loadFromLocalStorage();
                 this.bindFreeRotateEvents();
+                this.drawType(3)
             },
 
             changeFillName() {
@@ -1180,14 +1179,29 @@
                     this.dom.erase.style.display = "none"
                     this.dom.showMove.attributes.removeNamedItem("style")
 
-                   
+
                 }
                 this.selectImage(this.currentImageId)
 
             },
             // 重新加载骨骼图
-            reloadMove(){
-                 this.dom.showMove.setAttribute("src", getimage(800, 800, 0, 0, this.imagePool))
+            async reloadMove() {
+
+                let PromiseList = []
+                this.images.forEach(item => {
+                    let p = new Promise((resolve, reject) => {
+                        item.img = new Image()
+                        item.img.onload = () => {
+                            resolve()
+                        }
+                        item.img.src = item.src
+                    })
+                    PromiseList.push(p)
+
+                })
+                await Promise.all(PromiseList)
+
+                this.dom.showMove.setAttribute("src", getimage(800, 800, 0, 0, this.images))
             },
 
             handleUpload(input) {
@@ -1265,9 +1279,10 @@
                         </div>
                     `;
                     this.dom.list.appendChild(item);
-                    this.imagepool.preload(img.src)
-                    this.reloadMove()
+
+
                 });
+                this.reloadMove()
             },
 
             selectImage(id) {
@@ -1291,6 +1306,7 @@
                 this.fitToScreen();
                 this.showStatus(`已加载: ${imgData.name}`);
 
+                // 设置擦除画布
                 let img = new Image()
                 img.onload = () => {
                     // 设置 Canvas 尺寸
@@ -1305,7 +1321,23 @@
                 }
                 img.src = imgData.src
             },
-            
+            // 此处图片需要缩小
+            saveEraseToBase64() {
+                return new Promise((resolve, reject) => {
+                    let base64 = this.dom.erase.toDataURL("image/png")
+                    let img = new Image()
+
+                    img.onload = () => {
+                        let canvas = document.createElement("canvas")
+                        let ctx = canvas.getContext("2d")
+                        canvas.width = Math.floor(img.width / 4)
+                        canvas.height = Math.floor(img.height / 4)
+                        ctx.drawImage(img, 0, 0, canvas.width, canvas.height)
+                        resolve(canvas.toDataURL())
+                    }
+                    img.src = base64
+                })
+            },
             fitToScreen() {
                 const container = this.dom.canvasWrapper;
                 const padding = 60;
@@ -1419,14 +1451,14 @@
                     btn.classList.add('bg-blue-600', 'hover:bg-blue-700');
                 })
             },
-            saveAnnotationDetails() {
+            async saveAnnotationDetails() {
                 if (!this.currentImageId) return;
                 const imgData = this.images.find(i => i.id === this.currentImageId);
                 imgData.label = this.dom.labelInput.value;
                 imgData.name = this.dom.nameInput.value;
                 imgData.note = this.dom.noteInput.value;
                 if (this.showType == 2) {
-                    imgData.src = this.dom.erase.toDataURL('image/png', { pixelRatio: 0.25 })
+                    imgData.src = await this.saveEraseToBase64()
                 }
 
 
@@ -1499,7 +1531,7 @@
             },
 
             updateCursorPos(x, y) {
-                this.dom.cursorPos.innerText = `X: ${Math.round(x)}, Y: ${Math.round(y)}`;
+                this.dom.cursorPos.innerText = `{"X": ${Math.round(x)}, "Y": ${Math.round(y)}}`;
             },
 
             showStatus(msg) {
