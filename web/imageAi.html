@@ -1049,19 +1049,29 @@
             },
 
             init() {
-                this.cropper = this.cropper = new Cropper(this.dom.canvas, {
+                this.creatCropper()
+
+                this.loadFromLocalStorage();
+                this.bindFreeRotateEvents();
+                this.drawType(3)
+            },
+            creatCropper() {
+                if (this.cropper) {
+                    this.cropper.destroy();
+                }
+
+                this.cropper = new Cropper(this.dom.canvas, {
                     viewMode: 1, // 限制裁剪框在画布内
                     dragMode: 'move', // 默认移动模式
                     autoCropArea: 1,
                     rotatable: true,
                     responsive: true,
                     zoomable: true,    // 禁用缩放
-                    scalable: false     // 禁用触摸缩放
+                    scalable: false,   // 禁用触摸缩放
+                    minCropBoxWidth: 1,   // 关键：设为 0
+                    minCropBoxHeight: 1   // 关键：设为 0
                 });
 
-                this.loadFromLocalStorage();
-                this.bindFreeRotateEvents();
-                this.drawType(3)
             },
 
             changeFillName() {
@@ -1301,7 +1311,10 @@
                 // 设置 Canvas 尺寸
                 this.dom.canvas.width = imgData.width;
                 this.dom.canvas.height = imgData.height;
-                this.cropper.replace(imgData.src)
+                this.dom.canvas.src = imgData.src
+
+                this.creatCropper()
+                // this.cropper.replace(imgData.src)
                 // 适配屏幕大小 (简单缩放逻辑)
                 this.fitToScreen();
                 this.showStatus(`已加载: ${imgData.name}`);
