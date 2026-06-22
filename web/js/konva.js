@@ -27,7 +27,9 @@ class myStageClass {
             ...instate,
             tracks: instate.tracks.filter(f => f.type === "video")
         }
+        // 获取
         await this.imagePool.preloadAll(getTracksImage(this.state.tracks))
+        
         this.tr = null;
         this.selectedNode = null;
         this.selectedclipId = null;
@@ -175,22 +177,33 @@ class myStageClass {
             let clip = this.shape[currItem.clipid]
             // 获取其插入的关键帧
             let inSertkey = this.insetkeyframes.find(k => k.clipid == currItem.clipid)
+            
             let startTime = currItem.key[0].time
             let endTime = currItem.key[currItem.key.length - 1].time;
             let newCurrtimeKey = []
-            newCurrtimeKey.push(currItem.key[0])
+
+            // 找出当前的人物属性
+            let stateTrack =  this.state.tracks.find(i=>i.id == currItem.trackid)
+            let stateClip = stateTrack.clips.find(i=>i.id==currItem.clipid)
+
+
+            newCurrtimeKey.push({...currItem.key[0],data:{...currItem.key[0].data,jsonSrc:stateClip.jsonSrc,categorize:stateClip.categorize}})
+            
             if (inSertkey) {
                 inSertkey.key.forEach(k => {
                     if ((startTime + k.time) < endTime) {
                         newCurrtimeKey.push({
-                            ...k,
-                            time: startTime + k.time
+                            ...k,data:{...k.data,jsonSrc:stateClip.jsonSrc,categorize:stateClip.categorize},
+                            time: startTime + k.time,
                         })
                     }
                 })
             }
-            newCurrtimeKey.push(currItem.key[1])
+
+            newCurrtimeKey.push({...currItem.key[1],data:{...currItem.key[1].data,jsonSrc:stateClip.jsonSrc,categorize:stateClip.categorize}})
+
             for (let j = 0; j < newCurrtimeKey.length; j++) {
+                
                 const curr = newCurrtimeKey[j];
                 const prev = j > 0 ? newCurrtimeKey[j - 1] : null;
                 // 计算开始时间：如果是第一帧，时间为0；否则为上一帧的时间
@@ -198,7 +211,6 @@ class myStageClass {
 
                 const prevImage = prev ? prev.data.src : null;
                 const currImage = curr.data.src;
-                const isImageChange = prevImage != currImage
                 // 计算持续时间：如果是第一帧，无需duration；否则为当前帧与上一帧的时间差
                 const duration = prev ? (curr.time - prev.time) : 0;
 
@@ -208,10 +220,8 @@ class myStageClass {
                     duration: duration,
                     startTime: prev.time,
 
-                    isImageChange
                 }) : finalkeyframes.push({
                     clip,
-                    isImageChange,
                     data: curr.data,
                     startTime: curr.time,
                 })
@@ -226,7 +236,6 @@ class myStageClass {
             let startTime = finalkeyframesItem.startTime
             let data = finalkeyframesItem.data
 
-            let isImageChange = finalkeyframesItem.isImageChange
             const { x, y, scaleX,scaleY, rotation, opacity ,width,height} = data;
             
             clip ? duration ? this.masterTimeline.to(clip, {
@@ -234,10 +243,7 @@ class myStageClass {
                 duration: duration,
                 ease: "power1.inOut",
                 onStart: () => {
-                    if (isImageChange) {
-                        clip.image(_this.imagePool.get(data.src))
-                        clip.getLayer().batchDraw();
-                    }
+                   
                     console.log("onStart动画显示开始")
                     clip.visible(true); // 确保动画开始时元素是可见的
                     clip.opacity(1);    // 确保起始透明度正确（如果 curr.data 不包含 opacity 起始值）
@@ -248,12 +254,13 @@ class myStageClass {
                 },
                 onUpdate: () => {
                     // 展示图片全凭逻辑画
-
+                    
                     //需要合成标识
-                    if (data.src == "image/11.png") {
+                    if (data.categorize == "person") {
                         let fps = 24;
                         if (Math.floor((_this.state.currentTime * fps) % 1) == 0) {
-                            clip.image(getimage(width, height, _this.state.currentTime, startTime,_this.imagePool))
+                            // 图片人物的逻辑
+                            // clip.image(getimage(width, height,_this.imagePool))
                         }
                     }else if (data.src.toLowerCase().endsWith('.gif') && _this.state.currentTime > startTime) {
                         let fps = _this.imagePool.gifFpt(data.src)

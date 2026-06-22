@@ -231,7 +231,7 @@ function changeSelectedClipOrTrack(Arrow) { //ArrowUp ArrowDown
 // 添加新片段
 function addPersonToSelected({ imgSrc, jsonSrc }) {
     let track = state.selectedTrackId && state.tracks.find(i => i.id == state.selectedTrackId)
-    debugger
+    
     if (!track || !track.type == "video") {
         showToast("请选择视频轨道")
         return
