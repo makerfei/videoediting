@@ -28,10 +28,7 @@ function renderTracks() {
     }
     updateVideoPreview()
 }
-// ==================== 查找辅助 ====================
-function findTrack(id) {
-    return state.tracks.find(t => t.id === id);
-}
+
 
 
 

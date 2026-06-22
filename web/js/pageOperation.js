@@ -90,7 +90,7 @@ class myPageOperationClass {
         this.fillList.forEach(e => {
             let img = document.createElement("img")
             img.src = `${this.sourcePath}/${this.typeSelect}/${this.categorizationSelect}/${e}`
-            img.onclick = this.fillListClick
+            img.onclick = () => { this.fillListClick({ source: this.sourcePath, type: this.typeSelect, categorization: this.categorizationSelect, name: e }) }
             fillListUIEL.appendChild(img)
         })
     }
@@ -114,7 +114,13 @@ class myPageOperationClass {
         })
     }
     // 图片点击
-    fillListClick(e) {
+    fillListClick({ source, type, categorization, name }) {
+        let jsonName = name.split(".")[0]+".json"
+        if (type == "人物") {
+            let imgSrc = `${this.sourcePath}/${this.typeSelect}/${this.categorizationSelect}/${name}`
+            let jsonSrc = `${this.sourcePath}/${this.typeSelect}/${this.categorizationSelect}/${jsonName}`
+            addPersonToSelected({ imgSrc,jsonSrc})
+        }
 
 
     }
@@ -134,8 +140,8 @@ class myPageOperationClass {
         }
 
         let fullname = `${this.topSurcePath}/${this.sourcePath}/${this.typeSelect}/${this.categorizationSelect}/${filename}`
-      
-      
+
+
 
 
 
@@ -156,7 +162,7 @@ class myPageOperationClass {
         // 5. 发送请求到后端接口
         const responseTxt = await fetch(UPLOAD_API_URL, { method: 'POST', body: formDataTxt });
         const responseImg = await fetch(UPLOAD_API_URL, { method: 'POST', body: formDataImg });
-        if (!responseTxt.ok||!responseTxt.ok) {
+        if (!responseTxt.ok || !responseTxt.ok) {
             showToast(`上传失败`)
             throw new Error(`HTTP error! status: ${response.status}`);
         } else {

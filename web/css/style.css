@@ -460,6 +460,8 @@ body {
 
 #showtimedata {
     display: block;
+    width: 234px;
+    overflow: scroll;
 }
 
 #rebuildTimeline.hide {

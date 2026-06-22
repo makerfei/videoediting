@@ -11,7 +11,7 @@ function createClipElement(clip, type) {
     if (clip.type == "image") {
         el.style.backgroundImage = `url('${clip.src}')`
     }
-    
+
     const leftHandle = document.createElement('div');
     leftHandle.className = 'handle left';
     el.appendChild(leftHandle);
@@ -228,27 +228,30 @@ function changeSelectedClipOrTrack(Arrow) { //ArrowUp ArrowDown
 }
 
 
-function addClipToSelected() {
-    console.log("添加片段")
-    const targetTrack = state.selectedTrackId
-        ? findTrack(state.selectedTrackId)
-        : state.tracks[state.tracks.length - 1];
-    if (!targetTrack) return;
+// 添加新片段
+function addPersonToSelected({ imgSrc, jsonSrc }) {
+    let track = state.selectedTrackId && state.tracks.find(i => i.id == state.selectedTrackId)
+    debugger
+    if (!track || !track.type == "video") {
+        showToast("请选择视频轨道")
+        return
+    }
 
     const newClip = {
         id: 'c' + Date.now(),
-        start: 0,
+        categorize: "person",
+        start: state.currentTime,
         duration: 3,
         name: '新片段',
-        videoSrc: null
+        src: imgSrc,
+        jsonSrc,
+        type: "image",
+        width: 600,
+        height: 600,
+        x: 0,
+        y: 0
     };
-
-    const lastClip = [...targetTrack.clips].sort((a, b) => (a.start + a.duration) - (b.start + b.duration)).pop();
-    if (lastClip) {
-        newClip.start = lastClip.start + lastClip.duration //+ 0.5;
-    }
-
-    targetTrack.clips.push(newClip);
+    track.clips.push(newClip);
     updateMaxTime();
     renderRuler();
     renderTracks();

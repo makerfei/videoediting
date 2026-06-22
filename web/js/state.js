@@ -10,12 +10,12 @@ class myStateClass {
             this.state = indata;
         } else {
             // 先获取本地的数据
-            
+
             let StorageState = localStorage.getItem("state")
             StorageState = StorageState ? JSON.parse(StorageState) : null
-            this.state =StorageState || this.defData()
+            this.state = StorageState || this.defData()
         }
-        
+
 
         document.getElementById("fillName").value = this.state.name
     }
@@ -53,7 +53,7 @@ class myStateClass {
                 //     id: 'vtid', type: 'video', name: '图像轨道 1',
                 //     clips: [
                 //         {
-                //             id: 'c21', type: "image", categorize: "persion", start: 0, duration: 10, x: 0, y: 0, width: 1920, height: 1080, name: '张三', src: "image/1.jpg"
+                //             id: 'c21', type: "image", categorize: "person", start: 0, duration: 10, x: 0, y: 0, width: 1920, height: 1080, name: '张三', src: "image/1.jpg"
                 //         }
                 //     ]
                 // },
@@ -79,4 +79,10 @@ class myStateClass {
     get() {
         return this.state
     }
+
+    
+
+
+
+
 }
