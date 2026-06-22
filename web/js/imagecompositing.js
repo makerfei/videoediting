@@ -153,7 +153,7 @@ class Person {
 }
 
 // 基本绘画内容 canvas
-function getimage(width, height, c, s, images) {
+function getimage(width, height, c, s, images,returnTpe="canvas") {
 
     const canvas = document.createElement('canvas');
     canvas.width = width;
@@ -161,8 +161,7 @@ function getimage(width, height, c, s, images) {
     const ctx = canvas.getContext('2d'); // 假设画布大小 200x200
     // 填充白色背景（PNG 默认透明，如需白色需手动填充）
     new Person(ctx, width, height, c, s, images).drawAll(width / 2, height / 2)
-
-    return canvas.toDataURL("image/png")
+    return returnTpe=="canvas" ?canvas:canvas.toDataURL("image/png")
 
 }
 

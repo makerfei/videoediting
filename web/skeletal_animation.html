@@ -622,7 +622,7 @@
                         })
                     }
                 })
-                this.canvas.setAttribute("src", getimage(this.width, this.height, 0, 0, images))
+                this.canvas.setAttribute("src", getimage(this.width, this.height, 0, 0, images,returnTpe="base64"))
             },
 
             resize() {
@@ -776,7 +776,7 @@
 
             },
             loop() {
-                let time = (new Date().getTime() - this.timeTime)*3;
+                let time = (new Date().getTime() - this.timeTime)*2;
                 document.getElementById("playtime").innerText =Number(time / 1000).toFixed(3) 
                 document.getElementById("playhead").style = `left: ${time / 100}%;`
 
@@ -821,7 +821,7 @@
                 let forget = this.action.find(i => i.name == name)
                 this.allBonesList = structuredClone(forget.Bones)
                 this.selectedaction = name
-                this.selectBone('身体');
+                this.selectBone(this.selectedBoneId);
                 this.renderAction()
                 this.reloadMove()
             },
