@@ -2,10 +2,11 @@
 // -------- 骨骼类 --------
 class Bone {
     constructor(parent, angle, imageData = "", isUp = true) {
+        let rotation = imageData && imageData.rotation || 0
         this.parent = parent;
         this.len = 0;
-        this.angle = angle;
-        this.restAngle = angle;
+        this.angle = angle + rotation;
+        this.restAngle = angle + rotation;
         this.children = [];
         this.img = null;
         this.origin = { x: 0, y: 0 }
@@ -21,10 +22,19 @@ class Bone {
 
             if (imageData.note) {
                 let { X, Y } = JSON.parse(imageData.note)
-                this.origin = { x: X, y: Y }
+                this.origin = { x: X , y: Y  }
             }
+
+            // 设置偏移量
+            let offsetX = Number(imageData && imageData.offsetX || 0)
+            let offsetY = Number(imageData && imageData.offsetY || 0)
+            this.origin.x+=offsetX
+            this.origin.y+=offsetY
+
             if (isUp) {
-                this.len = this.origin.y
+                this.len =  Math.hypot((this.origin.y), (this.origin.x-this.img.width / 2))
+                let r = Math.atan((this.origin.x-this.img.width / 2)/(this.origin.y))
+                this.restAngle = this.angle -r;
             } else { //算 偏移量
                 this.len = Math.hypot((this.img.height - this.origin.y), (this.img.width / 2 - this.origin.x))
                 let r = Math.atan((this.img.width / 2 - this.origin.x) / (this.img.height - this.origin.y))
@@ -69,20 +79,20 @@ class Person {
         const root = new Bone(null, 0);          // 头
         const body = new Bone(root, -Math.PI / 2, images.find(i => i.name == "身体"), true);
         const head = new Bone(body, 0, images.find(i => i.name == "头"), true);
-        const face = new Bone(head, 0, images.find(i => i.name == "表情"), true);
-        const hair = new Bone(head, 0, images.find(i => i.name == "头发"), true);
+        const face = new Bone(head,  -Math.PI, images.find(i => i.name == "表情"), false);
+        const hair = new Bone(head,  -Math.PI, images.find(i => i.name == "头发"), false);
 
         const lua = new Bone(body, -Math.PI / 2 * 1.5, images.find(i => i.name == "左上臂"), false);                  // 右上臂
-        const lfa = new Bone(lua, 0, images.find(i => i.name == "左下臂"), false);  
+        const lfa = new Bone(lua, 0, images.find(i => i.name == "左下臂"), false);
         const lhand = new Bone(lfa, 0, images.find(i => i.name == "左手"), false);                   // 右前臂
 
         const rua = new Bone(body, Math.PI / 2 * 1.5, images.find(i => i.name == "右上臂"), false);                  // 右上臂
-        const rfa = new Bone(rua, 0, images.find(i => i.name == "右下臂"), false);  
-        const rhand = new Bone(rfa, 0, images.find(i => i.name == "右手"), false);    
+        const rfa = new Bone(rua, 0, images.find(i => i.name == "右下臂"), false);
+        const rhand = new Bone(rfa, 0, images.find(i => i.name == "右手"), false);
 
         const lth = new Bone(root, Math.PI / 2 * 1, images.find(i => i.name == "左大腿"), false);                   // 右大腿
-        const lsh = new Bone(lth, Math.PI / 2 * 0, images.find(i => i.name == "右小腿"), false);
-        const lf = new Bone(lsh, Math.PI / 2 * 0, images.find(i => i.name == "右脚"), false);                // 右小腿
+        const lsh = new Bone(lth, Math.PI / 2 * 0, images.find(i => i.name == "左小腿"), false);
+        const lf = new Bone(lsh, Math.PI / 2 * 0, images.find(i => i.name == "左脚"), false);                // 右小腿
 
         const rth = new Bone(root, Math.PI / 2 * 1, images.find(i => i.name == "右大腿"), false);                   // 右大腿
         const rsh = new Bone(rth, Math.PI / 2 * 0, images.find(i => i.name == "右小腿"), false);
@@ -90,11 +100,11 @@ class Person {
 
         // / -------- 收集所有骨骼 --------
         this.allBones = [root,
-            lhand,lfa,lua, 
-            rhand,rfa,rua, 
+            lhand, lfa, lua,
+            rhand, rfa, rua,
             lth, lsh, lf,
             rth, rsh, rf,
-            body, head,face, hair,
+            body, head, face, hair,
         ];
     }
     drawBone(bone, ox, oy) {
