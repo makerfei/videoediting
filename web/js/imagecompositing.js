@@ -60,16 +60,11 @@ class Bone {
 }
 
 class Person {
-    constructor(ctx, width, height, c, s, images) {
+    constructor(ctx, width, height, images) {
         this.ctx = ctx
-        this.c = c;
-        this.s = s;
-
+       
         this.timeDifference = this.c - this.s
 
-        let headangle = this.timeDifference
-        let spineangle = this.timeDifference
-        let lshangle = this.timeDifference
         this.ctx.strokeStyle = '#0f0';
         this.ctx.lineWidth = 1;
 
@@ -153,14 +148,14 @@ class Person {
 }
 
 // 基本绘画内容 canvas
-function getimage(width, height, c, s, images,returnTpe="canvas") {
+function getimage(width, height,  images,returnTpe="canvas") {
 
     const canvas = document.createElement('canvas');
     canvas.width = width;
     canvas.height = height;
     const ctx = canvas.getContext('2d'); // 假设画布大小 200x200
     // 填充白色背景（PNG 默认透明，如需白色需手动填充）
-    new Person(ctx, width, height, c, s, images).drawAll(width / 2, height / 2)
+    new Person(ctx, width, height, images).drawAll(width / 2, height / 2)
     return returnTpe=="canvas" ?canvas:canvas.toDataURL("image/png")
 
 }
