@@ -22,6 +22,7 @@ class myAudioClass {
 
 
         this.getAllVideo(this.state.tracks)
+       
         this.syntheticVoice(this.allAudio, this.state.maxTime)
     }
 
@@ -36,6 +37,7 @@ class myAudioClass {
 
 
     async syntheticVoice(audioConfigs, masterDuration = null) {
+       
         // 1. 创建 AudioContext
         const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
 
@@ -240,20 +242,18 @@ class myAudioClass {
  * @param {string} fileName - 文件名
  */
     uploadFrame() {
-        if(!this.mergedBuffer||!this.mergedBuffer.length){
-            return
-        }
+       
         const formData = new FormData();
         const wavBlob = this.bufferToWave(this.mergedBuffer, this.mergedBuffer.length);
         // 字段名必须与后端解析的 name == 'file' 和 name == 'index' 一致
-        formData.append('file',wavBlob, 'audio.wav');
+        formData.append('file', wavBlob, 'audio.wav');
         formData.append('index', '00000');
         return fetch(UPLOAD_API_URL, {
             method: 'POST',
             body: formData
             // 不要手动设置 Content-Type，浏览器会自动设置 boundary
         }).then(response => {
-            const result =  response.json();
+            const result = response.json();
             if (response.ok) {
                 console.log('上传成功:', result);
             } else {
@@ -261,20 +261,19 @@ class myAudioClass {
             }
             return response
         })
-
-
-
-
     }
 
 
     startPlayback(time) {
-        // 8. 播放合并后的音频
-        this.audioCtx = new (window.AudioContext || window.webkitAudioContext)();
-        this.source = this.audioCtx.createBufferSource();
-        this.source.buffer = this.mergedBuffer;
-        this.source.connect(this.audioCtx.destination);
-        this.source.start(0, time);
+       
+            // 8. 播放合并后的音频
+            this.audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+            this.source = this.audioCtx.createBufferSource();
+            this.source.buffer = this.mergedBuffer;
+            this.source.connect(this.audioCtx.destination);
+            this.source.start(0, time);
+       
+
     }
     stopPlayback() {
         this.source && this.source.stop();

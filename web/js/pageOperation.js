@@ -94,31 +94,56 @@ class myPageOperationClass {
             if (this.typeSelect == "动作") {
                 let fullname = `${this.sourcePath}/${this.typeSelect}/${this.categorizationSelect}/${e.split(".")[0]}.json`
                 let { data } = await axios(fullname)
-                this.action = data.action
-                this.keyMoveList = data.keyMoveList
-                fillListUIEL.insertAdjacentHTML('beforeend', `<div>姿态</div>`);
-
-                this.action.forEach(e => {
-                    fillListUIEL.insertAdjacentHTML('beforeend', `<div>${e.name}</div>`);
-
+                this.action[this.categorizationSelect] = data.action
+                this.keyMoveList[this.categorizationSelect] = data.keyMoveList
+                let zdEl = document.createElement("div")
+                zdEl.innerText = "姿态: "
+                zdEl.className = "zdel"
+                fillListUIEL.append(zdEl)
+                data.action.forEach(item => {
+                    let zdElItem = document.createElement("span")
+                    zdElItem.innerText = item.name
+                    zdElItem.onclick = () => { this.fillListClick({ actionName: item.name, source: this.sourcePath, type: this.typeSelect, categorization: this.categorizationSelect, name: e }) }
+                    zdEl.append(zdElItem)
                 })
-                fillListUIEL.insertAdjacentHTML('beforeend', `<div>动作</div>`);
+                let ddEl = document.createElement("div")
+                ddEl.innerText = "动画: "
+                ddEl.className = "zdel"
+                fillListUIEL.append(ddEl)
 
-                this.keyMoveList.forEach(e => {
-                    fillListUIEL.insertAdjacentHTML('beforeend', `<div>${e.name}</div>`);
+                data.keyMoveList.forEach(item => {
+                    let ddElItem = document.createElement("span")
+                    ddElItem.onclick = () => { this.fillListClick({ moveName: item.name, source: this.sourcePath, type: this.typeSelect, categorization: this.categorizationSelect, name: e }) }
+                    ddElItem.innerText = item.name
+                    ddEl.append(ddElItem)
                 })
 
+            } else if (this.typeSelect == "人物") {
 
-
-
-
-            } else if (this.typeSelect == "人物" || 1) {
+                let img = document.createElement("img")
+                img.src = `${this.sourcePath}/${this.typeSelect}/${this.categorizationSelect}/${e}`
+                img.onclick = () => { this.fillListClick({ source: this.sourcePath, type: this.typeSelect, categorization: this.categorizationSelect, name: e }) }
+                fillListUIEL.appendChild(img)
+            } else if (this.typeSelect == "表情") {
 
                 let img = document.createElement("img")
                 img.src = `${this.sourcePath}/${this.typeSelect}/${this.categorizationSelect}/${e}`
                 img.onclick = () => { this.fillListClick({ source: this.sourcePath, type: this.typeSelect, categorization: this.categorizationSelect, name: e }) }
                 fillListUIEL.appendChild(img)
 
+            } else if (this.typeSelect == "音效") {
+
+                let span = document.createElement("span")
+                span.innerHTML = `${e}`
+                span.className ="music"
+                span.onclick = () => { this.fillListClick({ source: this.sourcePath, type: this.typeSelect, categorization: this.categorizationSelect, name: e }) }
+                fillListUIEL.appendChild(span)
+
+            } else {
+                let img = document.createElement("img")
+                img.src = `${this.sourcePath}/${this.typeSelect}/${this.categorizationSelect}/${e}`
+                img.onclick = () => { this.fillListClick({ source: this.sourcePath, type: this.typeSelect, categorization: this.categorizationSelect, name: e }) }
+                fillListUIEL.appendChild(img)
             }
         })
     }
@@ -142,15 +167,28 @@ class myPageOperationClass {
         })
     }
     // 图片点击
-    fillListClick({ source, type, categorization, name }) {
+    fillListClick({ source, type, categorization, name, actionName = "", moveName = "" }) {
         let jsonName = name.split(".")[0] + ".json"
         if (type == "人物") {
             let imgSrc = `${this.sourcePath}/${this.typeSelect}/${this.categorizationSelect}/${name}`
             let jsonSrc = `${this.sourcePath}/${this.typeSelect}/${this.categorizationSelect}/${jsonName}`
-            addPersonToSelected({ imgSrc, jsonSrc })
+            addPersonToClip({ imgSrc, jsonSrc })
+        } else if (type == "动作") {
+            if (actionName) {
+                addActionToClip({ categorization, name, actionName })
+            } else if (moveName) {
+                addMoveToClip({ categorization, name, moveName })
+            }
+        } else if (type == "表情") {
+            let imgSrc = `${this.sourcePath}/${this.typeSelect}/${this.categorizationSelect}/${name}`
+            addFaceClip({ imgSrc, name: name.split(".")[0] })
+        } else if (type == "音效") {
+            let src = `${this.sourcePath}/${this.typeSelect}/${this.categorizationSelect}/${name}`
+            addAudioClip({ src, name: name.split(".")[0] })
+        }else{
+             let src = `${this.sourcePath}/${this.typeSelect}/${this.categorizationSelect}/${name}`
+            addImgtoClip({ src, name: name.split(".")[0] })
         }
-
-
     }
 
     // 保存当前工作区

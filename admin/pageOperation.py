@@ -17,7 +17,7 @@ def getSourceData(handler, params):
         path_str = p.as_posix()
         if p.is_dir():
             files.append(path_str)
-        elif p.is_file  and (p.suffix.lower() == '.png' or p.suffix.lower() == '.jpg'):
+        elif p.is_file  and (p.suffix.lower() == '.png' or p.suffix.lower() == '.jpg' or p.suffix.lower() == '.gif'or p.suffix.lower() == '.mp3' or p.suffix.lower() == '.wav'):
             files.append(path_str)
 
     status_code = 200

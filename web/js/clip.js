@@ -86,6 +86,13 @@ function closeContextMenu() {
     DOM.contextMenu.style.display = 'none';
 }
 
+function updataAllUI() {
+    updateMaxTime();
+    renderRuler();
+    renderTracks();
+    updatePlayheadPosition();
+    closeContextMenu();
+}
 // 复制操作
 function duplicateSelectedClip() {
     if (!state.selectedClipId) return;
@@ -99,11 +106,7 @@ function duplicateSelectedClip() {
         name: clip.name + ' (副本)'
     };
     track.clips.push(newClip);
-    updateMaxTime();
-    renderRuler();
-    renderTracks();
-    updatePlayheadPosition();
-    closeContextMenu();
+    updataAllUI()
     showToast('片段已复制');
 }
 
@@ -120,11 +123,7 @@ function deleteSelectedClipOrTrack() {
     }
     state.selectedClipId = null;
     state.selectedTrackId = null;
-    updateMaxTime();
-    renderRuler();
-    renderTracks();
-    updatePlayheadPosition();
-    closeContextMenu();
+    updataAllUI()
     showToast('片段已删除');
 }
 
@@ -229,20 +228,20 @@ function changeSelectedClipOrTrack(Arrow) { //ArrowUp ArrowDown
 
 
 // 添加新片段
-function addPersonToSelected({ imgSrc, jsonSrc }) {
+function addPersonToClip({ imgSrc, jsonSrc }) {
     let track = state.selectedTrackId && state.tracks.find(i => i.id == state.selectedTrackId)
-    
     if (!track || !track.type == "video") {
         showToast("请选择视频轨道")
         return
     }
-
+    let pathList = jsonSrc.split("/")
+    let id = pathList[pathList.length - 1].split(".")[0]
     const newClip = {
-        id: 'c' + Date.now(),
+        id: id + "-" + new Date().getTime(),
         categorize: "person",
         start: state.currentTime,
         duration: 3,
-        name: '新片段',
+        name: id,
         src: imgSrc,
         jsonSrc,
         type: "image",
@@ -252,9 +251,135 @@ function addPersonToSelected({ imgSrc, jsonSrc }) {
         y: 0
     };
     track.clips.push(newClip);
-    updateMaxTime();
-    renderRuler();
-    renderTracks();
-    updatePlayheadPosition();
+    updataAllUI()
     showToast('片段已添加，点击预览区加载视频');
+}
+
+function addActionToClip({ categorization, name, actionName }) {
+    let track = state.selectedTrackId && state.tracks.find(i => i.id == state.selectedTrackId)
+    if (!track || !track.type == "action") {
+        showToast("请选择视频轨道")
+        return
+    }
+    let id = name.split(".")[0]
+    const newClip = {
+        id: id + "-" + new Date().getTime(),
+        categorize: "action",
+        start: state.currentTime,
+        duration: 3,
+        name: "姿态-" + actionName + "-" + categorization,
+        categorization,
+        actionName
+    };
+    track.clips.push(newClip);
+    updataAllUI()
+    showToast('片段已添加，点击预览区加载视频');
+}
+
+function addMoveToClip({ categorization, name, moveName }) {
+    let track = state.selectedTrackId && state.tracks.find(i => i.id == state.selectedTrackId)
+    if (!track || !track.type == "action") {
+        showToast("请选择视频轨道")
+        return
+    }
+    let id = name.split(".")[0]
+    const newClip = {
+        id: id + "-" + new Date().getTime(),
+        categorize: "action",
+        start: state.currentTime,
+        duration: 3,
+        name: "动画-" + moveName + "-" + categorization,
+        categorization,
+        moveName
+    };
+    track.clips.push(newClip);
+    updataAllUI()
+    showToast('片段已添加，点击预览区加载视频');
+}
+
+
+
+function addFaceClip({ imgSrc, name }) {
+    let track = state.selectedTrackId && state.tracks.find(i => i.id == state.selectedTrackId)
+    if (!track || !track.type == "face") {
+        showToast("请选择视频轨道")
+        return
+    }
+
+    let id = name.split(".")[0]
+    const newClip = {
+        id: id + "-" + new Date().getTime(),
+        categorize: "face",
+        start: state.currentTime,
+        duration: 3,
+        name: name,
+        src: imgSrc,
+        type: "image",
+    };
+    track.clips.push(newClip);
+    updataAllUI()
+    showToast('片段已添加，点击预览区加载视频');
+
+}
+
+
+function addAudioClip({ src, name }) {
+
+    let track = state.selectedTrackId && state.tracks.find(i => i.id == state.selectedTrackId)
+    if (!track || !track.type == "auido") {
+        showToast("请选择audio轨道")
+        return
+    }
+
+    let id = name.split(".")[0]
+    const newClip = {
+        id: id + "-" + new Date().getTime(),
+        categorize: "auido",
+        start: state.currentTime,
+        duration: 3,
+        name: name,
+        src: src,
+    };
+    track.clips.push(newClip);
+    updataAllUI()
+    showToast('片段已添加，点击预览区加载视频');
+
+}
+
+
+
+function addImgtoClip({ src, name }) {
+    
+    let track = state.selectedTrackId && state.tracks.find(i => i.id == state.selectedTrackId)
+    if (!track || !track.type == "video") {
+        showToast("请选择视频轨道")
+        return
+    }
+
+    // let img = new Image()
+    // img.onload = () => {
+       
+    //     const newClip = {
+    //         id: name + "-" + new Date().getTime(),
+    //         categorize: "video",
+    //         start: state.currentTime,
+    //         duration: 3,
+    //         name: name,
+    //         src: src,
+    //         type: "image",
+    //         width: img.width,
+    //         height: img.height,
+    //         x: 0,
+    //         y: 0
+    //     };
+    //     track.clips.push(newClip);
+    //     updataAllUI()
+    //     showToast('片段已添加，点击预览区加载视频');
+
+    // }
+
+    // img.src = src
+
+
+
 }

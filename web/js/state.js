@@ -27,10 +27,11 @@ class myStateClass {
         });
     }
     async dataToKonva(callback) {
+        
         await this.autoAllLoadPersonImageData()
         this.updataStateTracks();
         this.saveStorage();
-        console.log("--------???????????????--------")
+       
         if (this.updataKonvaTimer) {
             clearTimeout(this.updataKonvaTimer);
         }

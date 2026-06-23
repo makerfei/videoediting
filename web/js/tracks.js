@@ -33,7 +33,17 @@ function renderTracks() {
 
 
 // ==================== 轨道与片段管理 ====================
-function trackHasTheSameId(id) {
+
+function getTextByTpye(type) {
+    let typeTxt = type == "video" ? "📹 图像" :
+        type == "audio" ? "🎵 音频" :
+            type == "action" ? "🏃‍♂️ 动作" :
+                type == "face" ? "🫥  表情" : "未分类"
+    return typeTxt
+}
+
+
+function trackHasTheSameId(id,type) {
     let hasThisId = false
     state.tracks.forEach(t => {
         if (id === t.id) {
@@ -48,20 +58,19 @@ function trackHasTheSameId(id) {
 
 
 function changeTrackId() {
-    let value = document.getElementById("trackInputId").value
-    if (trackHasTheSameId(value)) {
-        return
-    }
     if (state.selectedTrackId) {
+        let value = document.getElementById("trackInputId").value
         let selectedTrack = state.tracks.find((t) => t.id == state.selectedTrackId)
-        selectedTrack.name =(selectedTrack.type === 'video' ? '📹 图像 ' : '🎵 音频 ') + "ID :" + (value),
+
+        if (trackHasTheSameId(value, selectedTrack.type)) {
+            return
+        }
+        selectedTrack.name = getTextByTpye(selectedTrack.type) + (value),
         selectedTrack.id = value
         state.selectedTrackId = value
+        renderTracks();
     }
-    renderTracks();
 }
-
-
 
 function addTrack(type) {
     console.log("轨道与片段管理")
@@ -70,17 +79,18 @@ function addTrack(type) {
         showToast("没有填ID")
         return
     }
-    if (trackHasTheSameId(value)) {
+    if (trackHasTheSameId(value, type)) {
         return
     }
+
     state.tracks.push({
         id: value,
         type,
-        name: (type === 'video' ? '📹 图像 ' : '🎵 音频 ') + "ID :" + (value),
+        name: getTextByTpye(type) + (value),
         clips: []
     });
     renderTracks();
     updatePlayheadPosition();
     DOM.scrollContainer.scrollTop = DOM.scrollContainer.scrollHeight;
-    showToast(`${type === 'video' ? '视频' : '音频'}轨道已添加`);
+    showToast(`${getTextByTpye(type)}轨道已添加`);
 }

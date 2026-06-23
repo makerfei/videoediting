@@ -3,7 +3,7 @@
 
 <head>
   <meta charset="UTF-8">
-  <link rel="icon" href="gif/2.gif">
+  <link rel="icon" href="icon.gif">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>视频剪辑时间线 + 实时预览</title>
   <link href="css/style.css" rel="stylesheet" type="text/css">
@@ -67,9 +67,11 @@
       <button class="play-btn paused" id="play-btn" onclick="togglePlay()" title="播放/暂停 (空格键)"></button>
       <span style="font-size:12px; color:#888;">空格键控制播放</span>
       <input type="text" id="trackInputId" class="playbackinput" />
-      <button class="btn" onclick="changeTrackId()">修改id</button>
+      <button class="btn" onclick="changeTrackId()">修改轨道ID</button>
       <button class="btn" onclick="addTrack('video')">📹 视频轨道</button>
       <button class="btn" onclick="addTrack('audio')">🎵 音频轨道</button>
+      <button class="btn" onclick="addTrack('action')">🏃‍♂️ 动作轨道</button>
+      <button class="btn" onclick="addTrack('face')">🫥 表情轨道</button>
      
       <input type="text" class="playbackinput" id="fillName" />
       <button class="btn btn-primary" onclick="saveCurrentWorkspaceClick()">保存</button>
