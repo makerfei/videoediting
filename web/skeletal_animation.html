@@ -7,6 +7,7 @@
     <title>Pro Motion - 骨骼动作调节器</title>
     <script src="js/imagecompositing.js"></script>
     <link rel="icon" href="gif/2.gif">
+     <script src="js/tool.js"></script>
     <style>
         :root {
             --bg-dark: #0f172a;
@@ -124,9 +125,18 @@
         }
 
         .preset-list {
+
+            max-height: 200px;
+            overflow: scroll;
             display: flex;
-            flex-direction: column;
+            flex-direction: row;
             gap: 8px;
+            max-height: 200px;
+            overflow: scroll;
+            flex-wrap: wrap;
+            align-content: flex-start;
+            justify-content: flex-start;
+            align-items: flex-start;
         }
 
         .preset-item {
@@ -154,6 +164,14 @@
             flex: 1;
             overflow-y: auto;
             padding: 16px;
+
+
+
+            display: flex;
+            flex-direction: row;
+            flex-wrap: wrap;
+            align-content: flex-start;
+            justify-content: flex-start;
         }
 
         .bone-node {
@@ -165,7 +183,7 @@
             color: var(--text-secondary);
             display: flex;
             align-items: center;
-            gap: 8px;
+
         }
 
         .bone-node:hover {
@@ -266,6 +284,7 @@
             border-radius: 50%;
             transform: translate(-50%, -50%);
             cursor: pointer;
+            font-size: 12px;
         }
 
         /* 右侧属性面板 */
@@ -371,7 +390,8 @@
             }
         }
 
-        #filename {
+        #filename,
+        #movename {
             width: 100%;
             padding: 8px 12px;
             border: 1px solid #d1d5db;
@@ -382,6 +402,19 @@
             transition: all 0.2s ease;
             outline: none;
             box-sizing: border-box;
+        }
+
+        #fillpath {
+            padding: 8px 12px;
+            border: 1px solid #d1d5db;
+            border-radius: 6px;
+            font-size: 14px;
+            color: #1f2937;
+            background-color: #fff;
+            transition: all 0.2s ease;
+            outline: none;
+            box-sizing: border-box;
+            margin-left: 30px;
         }
 
         .mybutt {
@@ -416,7 +449,17 @@
         </div>
         <div class="header-actions">
             <button onclick="app.resetPose()">重置姿态</button>
-            <button onclick="app.exportData()">导出 JSON</button>
+            <input id="fillpath" placeholder="请填写文件路径" />
+            <button onclick="app.exportData()">导出动作</button>
+
+
+
+            <button onclick="document.getElementById('jsonInput').click()">导入动作</button>
+            <input type="file" id="jsonInput" style="display: none;" multiple accept=".json,application/json"
+                onchange="app.importData(this)" />
+
+
+            <button onclick="app.exportData()">导入人物</button>
             <button class="primary" onclick="app.play()">▶ 播放预览</button>
         </div>
     </header>
@@ -432,6 +475,14 @@
                 </div>
             </div>
 
+            <div class="panel-section">
+                <div class="panel-title">动画预设库</div>
+                <div id="keymoveList" class="preset-list">
+
+
+                </div>
+            </div>
+
             <div class="panel-title" style="padding: 16px 16px 0;">骨骼层级</div>
             <div class="bone-tree" id="bone-tree">
                 <!-- JS 动态生成 -->
@@ -440,10 +491,10 @@
 
         <!-- 中间：可视化视窗 -->
         <section class="viewport">
-            <div class="viewport-overlay">
+            <!-- <div class="viewport-overlay">
                 <div>FPS: <span id="fps-counter">60</span></div>
                 <div>Nodes: 12</div>
-            </div>
+            </div> -->
             <img id="motionCanvas"></img>
 
             <!-- 底部时间轴 -->
@@ -465,9 +516,6 @@
                     <div class="track-line"></div>
                     <div id="playhead" class="playhead" style="left: 00%;"></div>
                     <div id="keylist"></div>
-
-
-
                 </div>
             </div>
         </section>
@@ -475,15 +523,10 @@
         <!-- 右侧：属性调节面板 -->
         <aside class="right-sidebar">
             <div class="property-group">
-                <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom: 4px;">
+                <div>
                     <h3 id="selected-bone-name" style="font-size: 1rem;">Root Node</h3>
-                    <span
-                        style="font-size: 0.7rem; background: rgba(56, 189, 248, 0.1); color: var(--accent); padding: 2px 6px; border-radius: 4px;">FK
-                        Mode</span>
                 </div>
-                <p style="font-size: 0.8rem; color: var(--text-secondary); margin-top: 4px;">调整局部旋转角度以改变姿态</p>
             </div>
-
             <div class="property-group" id="controls-container">
                 <div class="control-row">
                     <div class="control-label">
@@ -521,11 +564,25 @@
 
             <div style="padding: 20px; margin-top: auto;">
                 <button onclick="app.addkey()"
-                    style="width: 100%; padding: 10px; background: var(--bg-dark); border: 1px solid var(--border-color); color: var(--text-secondary); border-radius: 6px; cursor: pointer; font-size: 0.85rem;"
+                    style="width: 40%; padding: 10px; background: var(--bg-dark); border: 1px solid var(--border-color); color: var(--text-secondary); border-radius: 6px; cursor: pointer; font-size: 0.85rem;"
                     onmouseover="this.style.borderColor='var(--accent)'"
                     onmouseout="this.style.borderColor='var(--border-color)'">
-                    添加关键帧 (K)
+                    添加关键帧
                 </button>
+                <button onclick="app.clearkey()"
+                    style="width: 30%; padding: 10px; background: var(--bg-dark); border: 1px solid var(--border-color); color: var(--text-secondary); border-radius: 6px; cursor: pointer; font-size: 0.85rem;"
+                    onmouseover="this.style.borderColor='var(--accent)'"
+                    onmouseout="this.style.borderColor='var(--border-color)'">
+                    清空
+                </button>
+                <div class="panel-title"></div>
+                <div class="panel-title">动画名称</div>
+                <input id="movename" value="" placeholder="请输入动画名称" />
+                <div class="panel-title"></div>
+                <button class="mybutt" onclick="app.addkeyMove()">确定</button>
+                <div class="panel-title"></div>
+                <button class="del mybutt" onclick="app.delkeyMove()">删除</button>
+
             </div>
         </aside>
     </main>
@@ -535,6 +592,7 @@
          * 简易 2D 骨骼引擎与 UI 控制器
          * 纯原生 JS 实现，无外部依赖
          */
+        UPLOAD_API_URL = '/api/upload/frame';
         const app = {
             canvas: null,
             ctx: null,
@@ -543,16 +601,24 @@
             bones: [],
             selectedBoneId: '',
             selectedaction: '',
+
             animationFrame: null,
             allBones: ["身体", "头", "表情", "头发", "左上臂", "左下臂", "左手", "右上臂", "右下臂", "右手", "左大腿", "左小腿", "左脚", "右大腿", "右小腿", "右脚"],
 
-            allBonesList: {}, //root:{rotation:12,x:10,y:10}
+            // 展示的事实数据
+            allBonesList: {}, //身体:{rotation:12,x:10,y:10}
+
+            // 保存的姿态列表
             action: [
-                // {name:"",Bones:{root:{rotation:12,x:10,y:10}}}
+                // {name:"",Bones:{身体:{rotation:12,x:10,y:10}}}
             ],
             images: null,
+
             filename: "",
-            keyList: [],
+            keyList: [],//["动作1"，"动作2"]
+
+            keyMoveList: [],//[{name:"动画",list:["动作1"，"动作2"]}]
+            selectkeyMoveList: null,
             timeTime: 0,
             isplay: false,
 
@@ -566,7 +632,8 @@
 
                 await this.reloadMove()
                 this.renderBoneTree();
-                this.renderAction()
+                this.renderAction();
+                this.renderKeyMove()
                 this.setupControls();
 
                 // 默认选中 Root
@@ -580,16 +647,33 @@
                     this.images = images;
                     this.filename = filename;
                 }
+
+
                 const action = localStorage.getItem('action');
                 if (action) {
                     this.action = JSON.parse(action)
                 }
+                const keyMoveList = localStorage.getItem('keyMoveList');
+                if (keyMoveList) {
+                    this.keyMoveList = JSON.parse(keyMoveList)
+                }
+
+                const skeletal_animation_path = localStorage.getItem('skeletal_animation_path');
+                if (skeletal_animation_path) {
+                    document.getElementById("fillpath").value = skeletal_animation_path
+                }
+
+
+
             },
 
             // 本地持久化
             saveToLocalStorage() {
                 try {
+
+                    localStorage.setItem('skeletal_animation_path', document.getElementById("fillpath").value);
                     localStorage.setItem('action', JSON.stringify(this.action));
+                    localStorage.setItem('keyMoveList', JSON.stringify(this.keyMoveList));
                 } catch (e) {
                     console.warn('LocalStorage 空间不足，仅会话有效');
                 }
@@ -622,7 +706,7 @@
                         })
                     }
                 })
-                this.canvas.setAttribute("src", getimage(this.width, this.height, images,returnTpe="base64"))
+                this.canvas.setAttribute("src", getimage(this.width, this.height, images, returnTpe = "base64"))
             },
 
             resize() {
@@ -706,23 +790,47 @@
 
                 let filename = document.getElementById("filename").value
 
-                let forget = this.action.find(i => i.name == filename)
+                let torget = this.action.find(i => i.name == filename)
 
-                if (forget) {
-                    forget.Bones = structuredClone(this.allBonesList)
+                if (torget) {
+                    torget.Bones = structuredClone(this.allBonesList)
                 } else {
                     this.action.push({
                         name: filename,
                         Bones: structuredClone(this.allBonesList)
                     })
                 }
+                this.selectedaction = filename
                 this.renderAction()
+                this.saveToLocalStorage()
+            },
+            addkeyMove() {
+                let movename = document.getElementById("movename").value
+
+                let torget = this.keyMoveList.find(i => i.name == movename)
+
+                if (torget) {
+                    torget.list = structuredClone(this.keyList)
+                } else {
+                    this.keyMoveList.push({
+                        name: movename,
+                        list: structuredClone(this.keyList)
+                    })
+                }
+                this.selectkeyMoveList = movename
+                this.renderKeyMove()
                 this.saveToLocalStorage()
             },
             delAction() {
                 let filename = document.getElementById("filename").value
                 this.action = this.action.filter(i => i.name !== filename)
                 this.renderAction()
+                this.saveToLocalStorage()
+            },
+            delkeyMove() {
+                let movename = document.getElementById("movename").value
+                this.keyMoveList = this.keyMoveList.filter(i => i.name !== movename)
+                this.renderKeyMove()
                 this.saveToLocalStorage()
             },
             renderAction() {
@@ -738,24 +846,42 @@
                     t.onclick = () => { this.selectedactionClick(item.name) }
                     actionList.append(t)
                 })
+            },
 
+            renderKeyMove() {
+                let keyMoveList = document.getElementById("keymoveList")
 
+                keyMoveList.innerHTML = ""
+                this.keyMoveList.forEach(item => {
+                    let t = document.createElement("div")
+
+                    t.className = this.selectkeyMoveList == item.name ? "preset-item active" : "preset-item"
+
+                    t.innerText = item.name
+                    t.onclick = () => { this.selectedKeyListClick(item.name) }
+                    keyMoveList.append(t)
+                })
             },
 
 
             addkey() {
+                if (!this.selectedaction) {
+                    alert("请选择关键帧")
+                    return
+                }
                 this.keyList.push(this.selectedaction)
                 this.renderKeyList()
 
+            },
+            clearkey() {
+                this.keyList = []
+                this.renderKeyList()
             },
             renderKeyList() {
                 let keylist = document.getElementById("keylist")
                 keylist.innerHTML = ""
                 let long = this.keyList.length
-
                 document.getElementById("allkeyLong").innerText = long
-
-
                 this.keyList.forEach((item, i) => {
                     let d = document.createElement("div")
                     d.className = "keyframe"
@@ -776,22 +902,20 @@
 
             },
             loop() {
-                let time = (new Date().getTime() - this.timeTime)*2;
-                document.getElementById("playtime").innerText =Number(time / 1000).toFixed(3) 
+                let time = (new Date().getTime() - this.timeTime) * 2;
+                document.getElementById("playtime").innerText = Number(time / 1000).toFixed(3)
                 document.getElementById("playhead").style = `left: ${time / 100}%;`
 
                 let startKeyIndex = Math.floor(time / 1000)
                 let endKeyIndex = startKeyIndex + 1;
                 let keyTime = (time / 1000 - startKeyIndex);
 
-                if (startKeyIndex >= this.keyList.length-1) {
+                if (startKeyIndex >= this.keyList.length - 1) {
                     this.timeTime = new Date().getTime()
 
                 } else {
                     let startaction = this.action.find(i => i.name == this.keyList[startKeyIndex])
                     let endaction = this.action.find(i => i.name == this.keyList[endKeyIndex])
-
-
                     this.allBones.forEach(BoneName => {
                         let rotation = endaction.Bones[BoneName].rotation * keyTime + (1 - keyTime) * startaction.Bones[BoneName].rotation
                         let x = endaction.Bones[BoneName].x * keyTime + (1 - keyTime) * startaction.Bones[BoneName].x
@@ -801,9 +925,6 @@
 
                     this.reloadMove()
                 }
-
-
-
                 if (this.isplay) {
                     requestAnimationFrame(() => this.loop());
                 }
@@ -818,17 +939,99 @@
 
             selectedactionClick(name) {
                 document.getElementById("filename").value = name
-                let forget = this.action.find(i => i.name == name)
-                this.allBonesList = structuredClone(forget.Bones)
+                let torget = this.action.find(i => i.name == name)
+                this.allBonesList = structuredClone(torget.Bones)
                 this.selectedaction = name
                 this.selectBone(this.selectedBoneId);
                 this.renderAction()
                 this.reloadMove()
             },
 
-            exportData() {
+            selectedKeyListClick(name) {
+                document.getElementById("movename").value = name
+                let torget = this.keyMoveList.find(i => i.name == name)
+                this.keyList = structuredClone(torget.list)
+                this.selectkeyMoveList = name
+                this.renderKeyList()
+                this.renderKeyMove()
+            },
 
-            }
+            async exportData() {
+                let fillpath = document.getElementById("fillpath").value
+                // 上传json
+                let data = {
+                    action: this.action,
+                    keyMoveList: this.keyMoveList,
+                    name: fillpath
+                }
+
+                let fullname = `web/source/动作/${fillpath}`
+
+                const blobTxt = new Blob([JSON.stringify(data)], { type: "application/json" });
+                const formDataTxt = new FormData();
+                formDataTxt.append('file', blobTxt, fullname + ".json"); // 'file' 是后端接收文件的字段名，需与后端约定
+                formDataTxt.append('index', '00000');
+                // 5. 发送请求到后端接口
+                const responseTxt = await fetch(UPLOAD_API_URL, { method: 'POST', body: formDataTxt });
+                if (!responseTxt.ok || !responseTxt.ok) {
+                    alert("上传失败")
+                    throw new Error(`HTTP error! status: ${response.status}`);
+                } else {
+                    alert("上传成功")
+                }
+
+
+                  // 上传第一张图
+                const dataURL = document.getElementById("motionCanvas").src
+                const base64Data = dataURL.split(',');
+                const blobImg = base64ToBlob(base64Data, 'image/png');
+
+                const formDataImg = new FormData();
+                formDataImg.append('file', blobImg, fullname + ".png"); // 'file' 是后端接收文件的字段名，需与后端约定
+                formDataImg.append('index', '00000');
+                const responseImg = await fetch(UPLOAD_API_URL, { method: 'POST', body: formDataImg });
+
+
+
+
+
+
+            },
+
+            importData(inputElement) {
+                const files = inputElement.files;
+                if (!files || files.length === 0) return;
+                Array.from(files).forEach(file => {
+                    // 验证文件类型
+                    if (file.type !== 'application/json' && !file.name.endsWith('.json')) {
+                        console.warn('跳过非JSON文件:', file.name);
+                        return;
+                    }
+
+                    const reader = new FileReader();
+                    reader.onload = (e) => {
+                        try {
+                            const jsonData = JSON.parse(e.target.result);
+                            console.log('解析成功:', jsonData);
+
+                            document.getElementById("fillpath").value = jsonData.name;
+                            this.action = jsonData.action;
+                            this.keyMoveList = jsonData.keyMoveList;
+                            this.saveToLocalStorage()
+                            this.init()
+                            // 在此处处理数据
+                        } catch (err) {
+                            console.error('JSON解析失败:', err);
+                        }
+                    };
+                    reader.readAsText(file);
+                });
+            },
+
+
+
+
+
         };
 
         // 启动应用

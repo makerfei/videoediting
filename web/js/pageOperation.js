@@ -10,6 +10,9 @@ class myPageOperationClass {
         this.categorizationList = []
         this.fillList = []
 
+        this.action = []
+        this.keyMoveList = []
+
         this.getTypeListData().then(async () => {
             await this.getCategorizationListData();
             await this.getFillListData()
@@ -87,11 +90,36 @@ class myPageOperationClass {
                 span.classList.add("btn-primary")
             }
         })
-        this.fillList.forEach(e => {
-            let img = document.createElement("img")
-            img.src = `${this.sourcePath}/${this.typeSelect}/${this.categorizationSelect}/${e}`
-            img.onclick = () => { this.fillListClick({ source: this.sourcePath, type: this.typeSelect, categorization: this.categorizationSelect, name: e }) }
-            fillListUIEL.appendChild(img)
+        this.fillList.forEach(async e => {
+            if (this.typeSelect == "动作") {
+                let fullname = `${this.sourcePath}/${this.typeSelect}/${this.categorizationSelect}/${e.split(".")[0]}.json`
+                let { data } = await axios(fullname)
+                this.action = data.action
+                this.keyMoveList = data.keyMoveList
+                fillListUIEL.insertAdjacentHTML('beforeend', `<div>姿态</div>`);
+
+                this.action.forEach(e => {
+                    fillListUIEL.insertAdjacentHTML('beforeend', `<div>${e.name}</div>`);
+
+                })
+                fillListUIEL.insertAdjacentHTML('beforeend', `<div>动作</div>`);
+
+                this.keyMoveList.forEach(e => {
+                    fillListUIEL.insertAdjacentHTML('beforeend', `<div>${e.name}</div>`);
+                })
+
+
+
+
+
+            } else if (this.typeSelect == "人物" || 1) {
+
+                let img = document.createElement("img")
+                img.src = `${this.sourcePath}/${this.typeSelect}/${this.categorizationSelect}/${e}`
+                img.onclick = () => { this.fillListClick({ source: this.sourcePath, type: this.typeSelect, categorization: this.categorizationSelect, name: e }) }
+                fillListUIEL.appendChild(img)
+
+            }
         })
     }
     // 主类点击
@@ -115,11 +143,11 @@ class myPageOperationClass {
     }
     // 图片点击
     fillListClick({ source, type, categorization, name }) {
-        let jsonName = name.split(".")[0]+".json"
+        let jsonName = name.split(".")[0] + ".json"
         if (type == "人物") {
             let imgSrc = `${this.sourcePath}/${this.typeSelect}/${this.categorizationSelect}/${name}`
             let jsonSrc = `${this.sourcePath}/${this.typeSelect}/${this.categorizationSelect}/${jsonName}`
-            addPersonToSelected({ imgSrc,jsonSrc})
+            addPersonToSelected({ imgSrc, jsonSrc })
         }
 
 
@@ -132,19 +160,12 @@ class myPageOperationClass {
             showToast("请填写名字")
             return
         }
-
         let saveData = {
             state: { ...state, name: filename },
             keyframes: myStage.keyframes,
             insetkeyframes: myStage.insetkeyframes
         }
-
         let fullname = `${this.topSurcePath}/${this.sourcePath}/${this.typeSelect}/${this.categorizationSelect}/${filename}`
-
-
-
-
-
 
         const dataURL = myStage.stage.toDataURL({ pixelRatio: 1 });
         const base64Data = dataURL.split(',');

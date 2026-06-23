@@ -29,7 +29,7 @@ class myStageClass {
         }
         // 获取
         await this.imagePool.preloadAll(getTracksImage(this.state.tracks))
-        
+
         this.tr = null;
         this.selectedNode = null;
         this.selectedclipId = null;
@@ -187,20 +187,20 @@ class myStageClass {
             let stateClip = stateTrack.clips.find(i=>i.id==currItem.clipid)
 
 
-            newCurrtimeKey.push({...currItem.key[0],data:{...currItem.key[0].data,jsonSrc:stateClip.jsonSrc,categorize:stateClip.categorize}})
+            newCurrtimeKey.push({...currItem.key[0],data:{...currItem.key[0].data,images:stateClip.images,categorize:stateClip.categorize}})
             
             if (inSertkey) {
                 inSertkey.key.forEach(k => {
                     if ((startTime + k.time) < endTime) {
                         newCurrtimeKey.push({
-                            ...k,data:{...k.data,jsonSrc:stateClip.jsonSrc,categorize:stateClip.categorize},
+                            ...k,data:{...k.data,images:stateClip.images,categorize:stateClip.categorize},
                             time: startTime + k.time,
                         })
                     }
                 })
             }
 
-            newCurrtimeKey.push({...currItem.key[1],data:{...currItem.key[1].data,jsonSrc:stateClip.jsonSrc,categorize:stateClip.categorize}})
+            newCurrtimeKey.push({...currItem.key[1],data:{...currItem.key[1].data,images:stateClip.images,categorize:stateClip.categorize}})
 
             for (let j = 0; j < newCurrtimeKey.length; j++) {
                 
@@ -260,7 +260,7 @@ class myStageClass {
                         let fps = 24;
                         if (Math.floor((_this.state.currentTime * fps) % 1) == 0) {
                             // 图片人物的逻辑
-                            // clip.image(getimage(width, height,_this.imagePool))
+                            clip.image(getimage(width, height,data.images))
                         }
                     }else if (data.src.toLowerCase().endsWith('.gif') && _this.state.currentTime > startTime) {
                         let fps = _this.imagePool.gifFpt(data.src)

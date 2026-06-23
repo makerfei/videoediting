@@ -240,6 +240,9 @@ class myAudioClass {
  * @param {string} fileName - 文件名
  */
     uploadFrame() {
+        if(!this.mergedBuffer||!this.mergedBuffer.length){
+            return
+        }
         const formData = new FormData();
         const wavBlob = this.bufferToWave(this.mergedBuffer, this.mergedBuffer.length);
         // 字段名必须与后端解析的 name == 'file' 和 name == 'index' 一致

@@ -114,10 +114,18 @@ function setupEventListeners() {
     // 右键菜单
     document.addEventListener('contextmenu', (e) => {
         const clipEl = e.target.closest('.clip');
-        if (clipEl) {
-            e.preventDefault();
-            selectClip(clipEl.dataset.id);
+        const trackEl =  e.target.closest('.track');
+        
+        if (clipEl||trackEl) {
+            if(!clipEl){
+                state.selectedTrackId = trackEl.dataset.id
+                state.selectedClipId = null
+                renderTracks();
+            }else{
+                selectClip(clipEl.dataset.id);
+            }
             showContextMenu(e.clientX, e.clientY);
+            e.preventDefault();
         } else {
             closeContextMenu();
         }
@@ -142,18 +150,12 @@ function setupEventListeners() {
             e.preventDefault();
             togglePlay();
         }
-        if (e.code === 'Backspace' && state.selectedTrackId) {
-            deleteSelectedClipOrTrack();
-        }
-
+        // if (e.code === 'Backspace' && state.selectedTrackId) {
+        //     deleteSelectedClipOrTrack();
+        // }
         if ((e.code === 'ArrowUp' || e.code === 'ArrowDown' || e.code === 'KeyW' || e.code === 'KeyS') && state.selectedTrackId) {
             changeSelectedClipOrTrack(e.code);
         }
-
-
-
-
-
     });
     // -----------------视频播放放反传代码设置
     // 视频时间更新时同步播放头

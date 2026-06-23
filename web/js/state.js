@@ -26,10 +26,11 @@ class myStateClass {
             t.clips.sort((a, b) => a.start - b.start);
         });
     }
-
-    dataToKonva(callback) {
+    async dataToKonva(callback) {
+        await this.autoAllLoadPersonImageData()
         this.updataStateTracks();
         this.saveStorage();
+        console.log("--------???????????????--------")
         if (this.updataKonvaTimer) {
             clearTimeout(this.updataKonvaTimer);
         }
@@ -37,7 +38,6 @@ class myStateClass {
             callback(this.state)
         }, 1000);
     }
-
     saveStorage() {
         localStorage.setItem("state", JSON.stringify(this.state))
     }
@@ -80,9 +80,50 @@ class myStateClass {
         return this.state
     }
 
-    
+    // 自动加载人物图片的imagepool
+    autoAllLoadPersonImageData() {
+        return new Promise(async (resolvemain, reject) => {
+            
+            let loadList = []
+            // 获取所有需要加载的列表
+            this.state.tracks.forEach((track) => {
+                track.clips.forEach(clip => {
+                    if (clip.categorize == "person") {
+                        loadList.push(clip)
+                    }
+                })
+            })
+            let awaitFile = []
+            for (let i = 0; i < loadList.length; i++) {
+                let clip = loadList[i]
+                let file = new Promise((resolve, reject) => {
+                    axios(clip.jsonSrc).then(res => {
+                        clip.images = res.data.images
+                        resolve()
+                    })
+                })
+                awaitFile.push(file)
+            }
+            await Promise.all(awaitFile)
+            let awaitImg = []
+            for (let i = 0; i < loadList.length; i++) {
+                let clip = loadList[i]
+                clip.images.forEach(item => {
+                    let p = new Promise((resolve, reject) => {
+                        item.img = new Image()
+                        item.img.onload = () => {
+                         
+                            resolve()
+                        }
+                        item.img.src = item.src
+                    })
+                    awaitImg.push(p)
+                })
+            }
+            await Promise.all(awaitImg)
 
-
-
-
+           
+            resolvemain()
+        })
+    }
 }

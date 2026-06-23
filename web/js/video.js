@@ -10,14 +10,3 @@ function updateVideoPreview() {
   })
 
 }
-
-function getActiveClipAtTime(time) {
-  for (const track of state.tracks) {
-    for (const clip of track.clips) {
-      if (time >= clip.start && time < clip.start + clip.duration) {
-        return { ...clip, type: track.type };
-      }
-    }
-  }
-  return null;
-}
