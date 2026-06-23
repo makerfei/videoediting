@@ -356,29 +356,29 @@ function addImgtoClip({ src, name }) {
         return
     }
 
-    // let img = new Image()
-    // img.onload = () => {
+    let img = new Image()
+    img.onload = () => {
        
-    //     const newClip = {
-    //         id: name + "-" + new Date().getTime(),
-    //         categorize: "video",
-    //         start: state.currentTime,
-    //         duration: 3,
-    //         name: name,
-    //         src: src,
-    //         type: "image",
-    //         width: img.width,
-    //         height: img.height,
-    //         x: 0,
-    //         y: 0
-    //     };
-    //     track.clips.push(newClip);
-    //     updataAllUI()
-    //     showToast('片段已添加，点击预览区加载视频');
+        const newClip = {
+            id: name + "-" + new Date().getTime(),
+            categorize: "video",
+            start: state.currentTime,
+            duration: 3,
+            name: name,
+            src: src,
+            type: "image",
+            width: img.width,
+            height: img.height,
+            x: 0,
+            y: 0
+        };
+        track.clips.push(newClip);
+        updataAllUI()
+        showToast('片段已添加，点击预览区加载视频');
 
-    // }
+    }
 
-    // img.src = src
+    img.src = src
 
 
 
