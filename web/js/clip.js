@@ -327,7 +327,7 @@ function addFaceClip({ imgSrc, name }) {
 function addAudioClip({ src, name }) {
 
     let track = state.selectedTrackId && state.tracks.find(i => i.id == state.selectedTrackId)
-    if (!track || !(track.type == "auido")) {
+    if (!track || !(track.type == "audio")) {
         showToast("请选择audio轨道")
         return
     }
@@ -335,7 +335,7 @@ function addAudioClip({ src, name }) {
     let id = name.split(".")[0]
     const newClip = {
         id: id + "-" + new Date().getTime(),
-        categorize: "auido",
+        categorize: "audio",
         start: state.currentTime,
         duration: 3,
         name: name,

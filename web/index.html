@@ -48,35 +48,9 @@
         <div>
           <textarea id ="soundInput"></textarea>
           <div class="soundSumbitPart"><button id = "soundSumbit">确定</button></div>
-         
-
         </div>
 
-        <div id="soundList">
-          <div>
-            <span>谁谁谁</span>
-
-            <span>生气</span>
-            <span>开心</span>
-
-            <span>生气</span>
-            <span>开心</span>
-
-            <span>生气</span>
-            <span>开心</span>
-
-            <span>生气</span>
-            <span>开心</span>
-
-          </div>
-
-          
-
-        </div>
-
-
-
-
+        <div id="soundList"></div>
       </div>
 
       <div class="altcon hide" id="altcon">
@@ -208,7 +182,7 @@
       myAudio = new myAudioClass(state)
 
       myPageOperation = new myPageOperationClass()
-
+      new Sound()
 
       upDataAllUI()
     }
