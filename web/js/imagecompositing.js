@@ -63,12 +63,12 @@ class Person {
     constructor(ctx, width, height, images) {
         this.ctx = ctx
        
-        this.timeDifference = this.c - this.s
+        // this.timeDifference = this.c - this.s
 
-        this.ctx.strokeStyle = '#0f0';
-        this.ctx.lineWidth = 1;
+        // this.ctx.strokeStyle = '#0f0';
+        // this.ctx.lineWidth = 1;
 
-        this.ctx.strokeRect(0, 0, width, height);
+        // this.ctx.strokeRect(0, 0, width, height);
         // -------- 搭建小人 --------
 
         const root = new Bone(null, 0);          // 头

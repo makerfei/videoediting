@@ -19,9 +19,6 @@
 
     <div id="typeUI"> </div>
 
-
-
-
     <div style="flex:1"></div>
     <span class="time-display" id="time-display">00:00.0</span>
     <button class="btn" onclick="zoomTimeline(-10)">🔍-</button>
@@ -45,21 +42,63 @@
       <div class="preview-placeholder">
         <div id="preview-placeholder"></div>
       </div>
-      <div class="altcon" id="altcon">
+
+
+      <div id="sound" >
+        <div>
+          <textarea id ="soundInput"></textarea>
+          <div class="soundSumbitPart"><button id = "soundSumbit">确定</button></div>
+         
+
+        </div>
+
+        <div id="soundList">
+          <div>
+            <span>谁谁谁</span>
+
+            <span>生气</span>
+            <span>开心</span>
+
+            <span>生气</span>
+            <span>开心</span>
+
+            <span>生气</span>
+            <span>开心</span>
+
+            <span>生气</span>
+            <span>开心</span>
+
+          </div>
+
+          
+
+        </div>
+
+
+
+
+      </div>
+
+      <div class="altcon hide" id="altcon">
 
         <!-- konva内容属性 -->
-        <div id="rebuildTimeline" class="rebuildTimeline hide">
+        <div id="rebuildTimeline" class="rebuildTimeline">
           <div>
             <div><span id="addkeyFrame" class="btn-modern">插帧</span></div>
             <div class="timelist" id="keyframelist">
             </div>
           </div>
         </div>
-        <div id="showtimedata" class="showtimedata hide">
+        <div id="showtimedata" class="showtimedata">
           <pre id="json-preview">
         </pre>
         </div>
       </div>
+
+
+
+
+
     </div>
 
     <!-- 播放控制栏 -->
@@ -135,6 +174,7 @@
   <script src="js/imagePool.js"></script>
   <script src="js/audio.js"></script>
   <script src="js/altcon.js"></script>
+  <script src="js/sound.js"></script>
   <script src="js/pageOperation.js"></script>
   <script src="js/imagecompositing.js"></script>
 

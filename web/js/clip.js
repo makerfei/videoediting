@@ -257,7 +257,8 @@ function addPersonToClip({ imgSrc, jsonSrc }) {
 
 function addActionToClip({ categorization, name, actionName }) {
     let track = state.selectedTrackId && state.tracks.find(i => i.id == state.selectedTrackId)
-    if (!track || !track.type == "action") {
+    
+    if (!track || !(track.type == "action")) {
         showToast("请选择视频轨道")
         return
     }
@@ -278,7 +279,7 @@ function addActionToClip({ categorization, name, actionName }) {
 
 function addMoveToClip({ categorization, name, moveName }) {
     let track = state.selectedTrackId && state.tracks.find(i => i.id == state.selectedTrackId)
-    if (!track || !track.type == "action") {
+    if (!track || !(track.type == "action")) {
         showToast("请选择视频轨道")
         return
     }
@@ -301,7 +302,7 @@ function addMoveToClip({ categorization, name, moveName }) {
 
 function addFaceClip({ imgSrc, name }) {
     let track = state.selectedTrackId && state.tracks.find(i => i.id == state.selectedTrackId)
-    if (!track || !track.type == "face") {
+    if (!track || !(track.type == "face")) {
         showToast("请选择视频轨道")
         return
     }
@@ -326,7 +327,7 @@ function addFaceClip({ imgSrc, name }) {
 function addAudioClip({ src, name }) {
 
     let track = state.selectedTrackId && state.tracks.find(i => i.id == state.selectedTrackId)
-    if (!track || !track.type == "auido") {
+    if (!track || !(track.type == "auido")) {
         showToast("请选择audio轨道")
         return
     }
@@ -351,7 +352,7 @@ function addAudioClip({ src, name }) {
 function addImgtoClip({ src, name }) {
     
     let track = state.selectedTrackId && state.tracks.find(i => i.id == state.selectedTrackId)
-    if (!track || !track.type == "video") {
+    if (!track || !(track.type == "video")) {
         showToast("请选择视频轨道")
         return
     }
