@@ -24,7 +24,7 @@ class Sound {
                 input_value: {
                     text: "我真的太开心了",
                     emo_text:"很生气",
-                    spk_audio_prompt: "web/sound/voice_01.wav"
+                    spk_audio_prompt: "sound/voice_01.wav"
                 },
                 venv_python_path: "/Users/zhangfei/miniconda3/envs/indextts_clean/bin/python"
             }).then(res=>{

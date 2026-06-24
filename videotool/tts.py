@@ -17,16 +17,16 @@ def tts(data):
     tts.infer(
         text=text,
         spk_audio_prompt=spk_audio_prompt,  # 音色参考音频
-        output_path="web/"+output_path,
+        output_path=output_path,
         emo_text=emo_text,       # 传入情感描述文本
         use_emo_text=True,      # 【关键】必须显式启用文本情感分析
         emo_alpha=0.8,           # 情感描述对最终结果的影响权重 (0.0-1.0)
         verbose=True
     )
     # load 返回波形数据和采样率
-    waveform, sample_rate = torchaudio.load("web/"+output_path)
+    waveform, sample_rate = torchaudio.load(output_path)
     # 时长 = 总样本数 / 采样率
-    duration = waveform.shape / sample_rate
+    duration = waveform.shape[1] / sample_rate
    
     print("--完成--")
     res = {"src":output_path,"duration":duration}
