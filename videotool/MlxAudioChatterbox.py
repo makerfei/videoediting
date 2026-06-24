@@ -11,6 +11,7 @@ def MlxAudioChatterbox(data):
     # 加载模型
     model = load_model("mlx-community/chatterbox-4bit")
     # 生成音频并保存为MP3
+    print("--完成--")
     generate_audio(
         volume=1.6,
         text=data.get("text"),
@@ -21,13 +22,9 @@ def MlxAudioChatterbox(data):
         lang_code="zh",          # 指定中文语言
         audio_format="mp3",
         bitrate="192k", 
-        file_path = "aa.mp3"
-        # file_prefix="csm_emotional_output"
+        # file_path = "aa.mp3"
+        file_prefix="web/csm_emotional_output"
     )
-
-
-
-
 
 
 # input_data = sys.stdin.read()

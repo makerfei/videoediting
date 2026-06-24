@@ -708,18 +708,9 @@ body {
 
 
 }
-#soundList>div{
-
-}
-#soundList>div>span:first-child{
-    color: #42b350;
-}
-
-#soundList>div>span{
+#soundList>div:first-child>span{
     font-size: 12px;
     cursor: pointer;
-  
     margin-left: 10px;
-   
-   
+    color: #10ee87;
 }
