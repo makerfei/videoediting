@@ -330,6 +330,8 @@ function addAudioClip({ src, name }) {
         showToast("请选择audio轨道")
         return
     }
+   
+
     let id = name.split(".")[0]
     const newClip = {
         id: id + "-" + new Date().getTime(),
@@ -345,7 +347,7 @@ function addAudioClip({ src, name }) {
 
 }
 function addEmo_audio_prompt({ src, name }) {
-    
+   
     let soundInputEl = document.getElementById("soundInput")
     soundInputEl.value += `emo_audio_prompt>${src}:`
 }

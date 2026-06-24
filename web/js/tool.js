@@ -77,3 +77,21 @@ function base64ToBlob(base64, mimeType) {
     return new Blob([byteArray], { type: mimeType });
 }
 
+
+
+// 但双击绑定
+function bindClickEvents(el, onSingle, onDouble, delay = 250) {
+  let timer = null;
+  el.addEventListener('click', () => {
+    if (timer) {
+      clearTimeout(timer);
+      timer = null;
+      onDouble && onDouble();
+    } else {
+      timer = setTimeout(() => {
+        onSingle && onSingle();
+        timer = null;
+      }, delay);
+    }
+  });
+}

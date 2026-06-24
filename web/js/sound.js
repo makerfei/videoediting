@@ -22,11 +22,9 @@ class Sound {
             let [name, type] = element.split("/")[1].split(".")
             this.soundList.push({ name, type })
         });
-
         this.listeners()
         this.render()
     }
-
     listeners() {
         let soundSumbitEl = document.getElementById("soundSumbit")
         soundSumbit.onclick = async () => {
@@ -44,24 +42,21 @@ class Sound {
             soundList.forEach(soundItem => {
                 if (soundItem) {
                     let [soundPerson, SoundTxt] = soundItem.split(":")
-                    let [track, soundPath,type, value] = soundPerson.split(">")
-                   
+                    let [track, soundPath, type, value] = soundPerson.split(">")
+
                     let emo_audio_prompt = ""
                     let emo_text = ""
-                    if(type=="emo_audio_prompt"){
+                    if (type == "emo_audio_prompt") {
                         emo_audio_prompt = value
-                    }else if(type=="emo_text"){
+                    } else if (type == "emo_text") {
                         emo_text = value
                     }
-
-
-
                     soundjsonList.push({
                         text: SoundTxt,
                         emo_text: emo_text,
                         spk_audio_prompt: "sound/" + soundPath,
                         track: track,
-                        emo_audio_prompt:emo_audio_prompt
+                        emo_audio_prompt: emo_audio_prompt
                     })
                 }
 
@@ -87,13 +82,8 @@ class Sound {
                     })
                     currTime += duration
                 })
-
-
-
             })
-
             this.isRunAi = false
-
         }
     }
     render() {
@@ -101,19 +91,22 @@ class Sound {
         let soundInputEl = document.getElementById("soundInput")
         let dEl = document.createElement("div")
 
-        // 加载人物
+        // 加载人物声音
         this.soundList.forEach(p => {
             let sEl = document.createElement("span")
-
             sEl.innerText = p.name
-            sEl.onclick = () => {
+            bindClickEvents(sEl, () => {
+                
+                const sound = new Audio(`sound/${p.name}.${p.type}`);
+                sound.play();
+            }, () => {
                 let track = state.selectedTrackId && state.tracks.find(i => i.id == state.selectedTrackId)
                 if (!track || !(track.type == "audio")) {
                     showToast("请选择audio轨道")
                     return
                 }
                 soundInputEl.value += `\n${track.id}>${p.name}.${p.type}>`
-            }
+            })
             dEl.append(sEl)
         })
         soundListEl.append(dEl)
@@ -137,9 +130,6 @@ class Sound {
             EEl.append(sEl)
         })
         soundListEl.append(EEl)
-
-
-
     }
 }
 
