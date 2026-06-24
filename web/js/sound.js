@@ -27,7 +27,7 @@ class Sound {
         this.render()
     }
 
-     listeners() {
+    listeners() {
         let soundSumbitEl = document.getElementById("soundSumbit")
         soundSumbit.onclick = async () => {
             if (this.isRunAi) {
@@ -44,34 +44,55 @@ class Sound {
             soundList.forEach(soundItem => {
                 if (soundItem) {
                     let [soundPerson, SoundTxt] = soundItem.split(":")
-                    let [track, soundPath, emo_txt] = soundPerson.split(">")
+                    let [track, soundPath,type, value] = soundPerson.split(">")
+                   
+                    let emo_audio_prompt = ""
+                    let emo_text = ""
+                    if(type=="emo_audio_prompt"){
+                        emo_audio_prompt = value
+                    }else if(type=="emo_text"){
+                        emo_text = value
+                    }
+
+
+
                     soundjsonList.push({
                         text: SoundTxt,
-                        emo_text: emo_txt,
+                        emo_text: emo_text,
                         spk_audio_prompt: "sound/" + soundPath,
-                        track: track
+                        track: track,
+                        emo_audio_prompt:emo_audio_prompt
                     })
                 }
 
             })
 
-            for (let i = 0; i < soundjsonList.length; i++) {
-                let soundData = soundjsonList[i]
-                await axios.post('/api/script_api', {
-                    script_path: "../videotool/tts.py",
-                    input_value: {
-                        ...soundData
-                    },
-                    venv_python_path: "/Users/zhangfei/miniconda3/envs/indextts_clean/bin/python"
-                }).then(res => {
-                    let data = JSON.parse(res.data)
-                    let { src, duration } = data;
-                    addSoundClip({ src, duration,spk:soundData.spk_audio_prompt, text:soundData.text, start: currTime, trackId: soundData.track })
-                    currTime +=  duration
-                    
+            await axios.post('/api/script_api', {
+                script_path: "../videotool/ttsList.py",
+                input_value: {
+                    list: soundjsonList
+                },
+                venv_python_path: "/Users/zhangfei/miniconda3/envs/indextts_clean/bin/python"
+            }).then(res => {
+                let list = JSON.parse(res.data)
+                list.forEach(item => {
+                    let { text, emo_text, spk_audio_prompt, track, duration, output_path } = item
+                    addSoundClip({
+                        src: output_path,
+                        duration,
+                        spk: spk_audio_prompt,
+                        text: text,
+                        start: currTime,
+                        trackId: track
+                    })
+                    currTime += duration
                 })
-            }
-             this.isRunAi = false
+
+
+
+            })
+
+            this.isRunAi = false
 
         }
     }
@@ -107,7 +128,7 @@ class Sound {
                 let TEL = document.createElement("span")
                 TEL.innerHTML = t
                 TEL.onclick = () => {
-                    soundInputEl.value += `${t}:`
+                    soundInputEl.value += `emo_text>${t}:`
                 }
 
                 sEl.append(TEL)

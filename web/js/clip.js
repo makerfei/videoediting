@@ -257,7 +257,7 @@ function addPersonToClip({ imgSrc, jsonSrc }) {
 
 function addActionToClip({ categorization, name, actionName }) {
     let track = state.selectedTrackId && state.tracks.find(i => i.id == state.selectedTrackId)
-    
+
     if (!track || !(track.type == "action")) {
         showToast("请选择视频轨道")
         return
@@ -325,13 +325,11 @@ function addFaceClip({ imgSrc, name }) {
 
 
 function addAudioClip({ src, name }) {
-
     let track = state.selectedTrackId && state.tracks.find(i => i.id == state.selectedTrackId)
     if (!track || !(track.type == "audio")) {
         showToast("请选择audio轨道")
         return
     }
-
     let id = name.split(".")[0]
     const newClip = {
         id: id + "-" + new Date().getTime(),
@@ -346,12 +344,18 @@ function addAudioClip({ src, name }) {
     showToast('片段已添加，点击预览区加载视频');
 
 }
+function addEmo_audio_prompt({ src, name }) {
+    
+    let soundInputEl = document.getElementById("soundInput")
+    soundInputEl.value += `emo_audio_prompt>${src}:`
+}
+
 
 // ai返回声音显示
-function addSoundClip({ src, text,trackId, start,duration,spk}) {
+function addSoundClip({ src, text, trackId, start, duration, spk }) {
     let track = state.tracks.find(i => i.id == trackId)
     const newClip = {
-        id: spk.split(".")[0].split("/")[1]+ new Date().getTime(),
+        id: src.split(".")[0].replace("/", "_"),
         categorize: "audio",
         start: start,
         duration: duration,
@@ -364,7 +368,7 @@ function addSoundClip({ src, text,trackId, start,duration,spk}) {
 }
 
 function addImgtoClip({ src, name }) {
-    
+
     let track = state.selectedTrackId && state.tracks.find(i => i.id == state.selectedTrackId)
     if (!track || !(track.type == "video")) {
         showToast("请选择视频轨道")

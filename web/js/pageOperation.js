@@ -132,7 +132,12 @@ class myPageOperationClass {
                 fillListUIEL.appendChild(img)
 
             } else if (this.typeSelect == "音效") {
-
+                let span = document.createElement("span")
+                span.innerHTML = `${e}`
+                span.className ="music"
+                span.onclick = () => { this.fillListClick({ source: this.sourcePath, type: this.typeSelect, categorization: this.categorizationSelect, name: e }) }
+                fillListUIEL.appendChild(span)
+            } else if (this.typeSelect == "语调") {
                 let span = document.createElement("span")
                 span.innerHTML = `${e}`
                 span.className ="music"
@@ -185,6 +190,10 @@ class myPageOperationClass {
         } else if (type == "音效") {
             let src = `${this.sourcePath}/${this.typeSelect}/${this.categorizationSelect}/${name}`
             addAudioClip({ src, name: name.split(".")[0] })
+        } else if (type == "语调") {
+            
+            let src = `${this.sourcePath}/${this.typeSelect}/${this.categorizationSelect}/${name}`
+            addEmo_audio_prompt({ src, name: name.split(".")[0] })
         }else{
              let src = `${this.sourcePath}/${this.typeSelect}/${this.categorizationSelect}/${name}`
             addImgtoClip({ src, name: name.split(".")[0] })

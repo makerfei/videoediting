@@ -67,9 +67,9 @@ def script_api(handler, params):
     received_json = json.loads(post_data.decode('utf-8'))
     script_path = received_json["script_path"]
     input_value = received_json["input_value"]
-    venv_python_path ="/Users/zhangfei/miniconda3/bin/python" 
-    if received_json["venv_python_path"] is not None:
-        venv_python_path = received_json["venv_python_path"]
+
+    # 若 key 不存在，返回默认路径，不会报错
+    venv_python_path = received_json.get("venv_python_path", "/Users/zhangfei/miniconda3/bin/python")
 
     run_external_script(script_path,input_value,venv_python_path,handler,callback)
 
