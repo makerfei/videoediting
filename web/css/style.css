@@ -651,9 +651,7 @@ body {
     display: inline-block;
 }
 
-
 /* 声音 */
-
 #sound {
     flex: 1;
     display: flex;
@@ -664,6 +662,9 @@ body {
     justify-content: space-between;
     align-items: flex-start;
     height: 324px;
+}
+#sound.hide{
+    display: none;
 }
 
 #sound>div {
@@ -705,12 +706,38 @@ body {
 #soundList{
 
     padding: 10px;
-
-
+   
 }
 #soundList>div:first-child>span{
+    font-size: 14px;
+    cursor: pointer;
+    margin-left: 10px;
+    color: #eeddcc;
+}
+
+#soundList>div:nth-child(2)>div{
+    margin-top: 20px;
     font-size: 12px;
     cursor: pointer;
     margin-left: 10px;
-    color: #10ee87;
+   
+    margin-bottom: 5px;
+    text-shadow:  0 -0 1px #fff;
+}
+
+
+
+#soundList>div:nth-child(2)>div:nth-child(1){ color: #FFDD67;}
+#soundList>div:nth-child(2)>div:nth-child(2){ color:#5A6B87;}
+#soundList>div:nth-child(2)>div:nth-child(3){ color: #E63946;}
+#soundList>div:nth-child(2)>div:nth-child(4){ color: #7B5E7B;}
+#soundList>div:nth-child(2)>div:nth-child(5){ color: #A8B6BF;}
+#soundList>div:nth-child(2)>div:nth-child(6){ color: #D4E2D4;}
+#soundList>div:nth-child(2)>div:nth-child(7){ color: #F0EAE4;}
+#soundList>div:nth-child(2)>div:nth-child(8){ color: #FF7A00;}
+#soundList>div:nth-child(2)>div>span{
+   
+     margin-left: 10px;
+     cursor: pointer;
+
 }

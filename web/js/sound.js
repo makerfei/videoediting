@@ -1,6 +1,17 @@
 class Sound {
     constructor() {
         this.soundList = []; //{"name","ee","type":"mp3"}
+        this.isRunAi = false
+        this.soundEmoList = [
+            { name: "开心愉悦", list: ["非常开心地笑着说", "语气轻快愉悦", "带着笑意说话"] },
+            { name: "悲伤低落", list: ["语气哽咽难过", "带着哭腔悲伤地说", "情绪很低落"] },
+            { name: "愤怒激动", list: ["生气地大声质问", "语气愤怒暴躁", "带着怒火说话"] },
+            { name: "害怕慌张", list: ["非常害怕，声音发抖", "慌张急促地说", "吓得声音发颤"] },
+            { name: "平静中性", list: ["语气平稳自然", "用平常的语速平静讲述", "不带明显情绪"] },
+            { name: "旁白讲解", list: ["用温和舒缓的语气讲解", "专业沉稳的播音腔"] },
+            { name: "日常对话", list: ["像朋友聊天一样轻松自然", "生活化的口语语气"] },
+            { name: "紧急提示", list: ["语速急促，语气紧张", "急切地大声提醒"] }
+        ]
         this.getSoundContent()
     }
     async getSoundContent() {
@@ -16,26 +27,51 @@ class Sound {
         this.render()
     }
 
-    listeners() {
+     listeners() {
         let soundSumbitEl = document.getElementById("soundSumbit")
-        soundSumbit.onclick = () => {
-            axios.post('/api/script_api', {
-                script_path: "../videotool/tts.py",
-                input_value: {
-                    text: "我真的太开心了",
-                    emo_text:"很生气",
-                    spk_audio_prompt: "sound/voice_01.wav"
-                },
-                venv_python_path: "/Users/zhangfei/miniconda3/envs/indextts_clean/bin/python"
-            }).then(res=>{
-                 let data = JSON.parse(res.data)
-                 let{src,duration} = data
-                 debugger
+        soundSumbit.onclick = async () => {
+            if (this.isRunAi) {
+                showToast("正在运行中")
+                return
+            }
+            this.isRunAi = true
+            let currTime = state.currentTime
+
+            // 解析获取
+            let soundInputEl = document.getElementById("soundInput").value
+            let soundList = soundInputEl.split("\n")
+            let soundjsonList = []
+            soundList.forEach(soundItem => {
+                if (soundItem) {
+                    let [soundPerson, SoundTxt] = soundItem.split(":")
+                    let [track, soundPath, emo_txt] = soundPerson.split(">")
+                    soundjsonList.push({
+                        text: SoundTxt,
+                        emo_text: emo_txt,
+                        spk_audio_prompt: "sound/" + soundPath,
+                        track: track
+                    })
+                }
+
             })
 
-
-
-
+            for (let i = 0; i < soundjsonList.length; i++) {
+                let soundData = soundjsonList[i]
+                await axios.post('/api/script_api', {
+                    script_path: "../videotool/tts.py",
+                    input_value: {
+                        ...soundData
+                    },
+                    venv_python_path: "/Users/zhangfei/miniconda3/envs/indextts_clean/bin/python"
+                }).then(res => {
+                    let data = JSON.parse(res.data)
+                    let { src, duration } = data;
+                    addSoundClip({ src, duration,spk:soundData.spk_audio_prompt, text:soundData.text, start: currTime, trackId: soundData.track })
+                    currTime +=  duration
+                    
+                })
+            }
+             this.isRunAi = false
 
         }
     }
@@ -44,8 +80,10 @@ class Sound {
         let soundInputEl = document.getElementById("soundInput")
         let dEl = document.createElement("div")
 
+        // 加载人物
         this.soundList.forEach(p => {
             let sEl = document.createElement("span")
+
             sEl.innerText = p.name
             sEl.onclick = () => {
                 let track = state.selectedTrackId && state.tracks.find(i => i.id == state.selectedTrackId)
@@ -58,6 +96,28 @@ class Sound {
             dEl.append(sEl)
         })
         soundListEl.append(dEl)
+
+        let EEl = document.createElement("div")
+        // 加载情绪
+        this.soundEmoList.forEach(p => {
+            let sEl = document.createElement("div")
+
+            sEl.innerText = p.name
+            p.list.forEach(t => {
+                let TEL = document.createElement("span")
+                TEL.innerHTML = t
+                TEL.onclick = () => {
+                    soundInputEl.value += `${t}:`
+                }
+
+                sEl.append(TEL)
+            })
+
+            EEl.append(sEl)
+        })
+        soundListEl.append(EEl)
+
+
 
     }
 }

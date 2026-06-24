@@ -45,18 +45,9 @@ def trim_silence(audio_data, threshold_ratio=0.02):
     
     return trimmed_audio, (start_idx, end_idx)
 
-
-def tts(data):
-    # 初始化模型
-    tts = IndexTTS2(cfg_path="/Users/zhangfei/Desktop/videoediting/index-tts/checkpoints/config.yaml", model_dir="/Users/zhangfei/Desktop/videoediting/index-tts/checkpoints")
-    # 待合成的文本
-    text = data.get("text")
-    # 情感描述提示词：用自然语言描述说话人的心理状态或语气
-    # 这里描述一种极度恐惧和惊慌的状态
-    emo_text =data.get("emo_text")
-    spk_audio_prompt = data.get("spk_audio_prompt")
+def getTTSdata(text,emo_text,spk_audio_prompt,track,tts):
     output_path = f"AiSound/{int(time.time() * 1000)}.wav"
-    # 生成语音
+     # 生成语音
     tts.infer(
         text=text,
         spk_audio_prompt=spk_audio_prompt,  # 音色参考音频
@@ -66,14 +57,24 @@ def tts(data):
         emo_alpha=0.8,           # 情感描述对最终结果的影响权重 (0.0-1.0)
         verbose=True
     )
-
     audio_data, sr = sf.read(output_path)
     trimmed_audio, (start, end) = trim_silence(audio_data, threshold_ratio=0.02)
     sf.write(output_path, trimmed_audio, sr)
     duration = len(trimmed_audio) / sr
-        
+
+    return {text,emo_text,spk_audio_prompt,track,duration,output_path}
+
+
+
+def tts(data):
+    # 初始化模型
+    res = []
+    tts = IndexTTS2(cfg_path="/Users/zhangfei/Desktop/videoediting/index-tts/checkpoints/config.yaml", model_dir="/Users/zhangfei/Desktop/videoediting/index-tts/checkpoints")
+    list = data.get("list")
+    for item in list:
+        res.append(getTTSdata())
+
     print("--完成--")
-    res = {"src":output_path,"duration":duration}
     print(json.dumps(res))
 
 input_data = sys.stdin.read()

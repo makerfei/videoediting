@@ -347,7 +347,21 @@ function addAudioClip({ src, name }) {
 
 }
 
-
+// ai返回声音显示
+function addSoundClip({ src, text,trackId, start,duration,spk}) {
+    let track = state.tracks.find(i => i.id == trackId)
+    const newClip = {
+        id: spk.split(".")[0].split("/")[1]+ new Date().getTime(),
+        categorize: "audio",
+        start: start,
+        duration: duration,
+        name: text,
+        src: src,
+    };
+    track.clips.push(newClip);
+    updataAllUI()
+    showToast('片段已添加，点击预览区加载视频');
+}
 
 function addImgtoClip({ src, name }) {
     
@@ -359,7 +373,6 @@ function addImgtoClip({ src, name }) {
 
     let img = new Image()
     img.onload = () => {
-       
         const newClip = {
             id: name + "-" + new Date().getTime(),
             categorize: "video",
@@ -376,11 +389,6 @@ function addImgtoClip({ src, name }) {
         track.clips.push(newClip);
         updataAllUI()
         showToast('片段已添加，点击预览区加载视频');
-
     }
-
     img.src = src
-
-
-
 }
