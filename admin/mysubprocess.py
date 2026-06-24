@@ -26,10 +26,11 @@ def write_input(process, inputs):
     except Exception as e:
         print(f"写入错误: {e}")
 
-def run_external_script(script_path, input_value="",handler=None,callback=None):
+def run_external_script(script_path, input_value="",venv_python_path="/Users/zhangfei/miniconda3/bin/python" ,handler=None,callback=None):
+   
     # 启动进程
     process = subprocess.Popen(
-        ["python", "-u", script_path],
+        [venv_python_path, "-u", script_path],
         stdin=subprocess.PIPE,   # 必须开启 stdin 管道
         stdout=subprocess.PIPE,
         stderr=subprocess.STDOUT, # 将错误合并到标准输出，避免遗漏
@@ -66,7 +67,11 @@ def script_api(handler, params):
     received_json = json.loads(post_data.decode('utf-8'))
     script_path = received_json["script_path"]
     input_value = received_json["input_value"]
-    run_external_script(script_path,input_value,handler,callback)
+    venv_python_path ="/Users/zhangfei/miniconda3/bin/python" 
+    if received_json["venv_python_path"] is not None:
+        venv_python_path = received_json["venv_python_path"]
+
+    run_external_script(script_path,input_value,venv_python_path,handler,callback)
 
    
 
