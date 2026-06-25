@@ -1,7 +1,6 @@
 // 1. 初始化舞台
 class myStageClass {
     constructor() {
-
         this.stage = new Konva.Stage({ container: 'preview-placeholder', width: 1920, height: 1080 });
         this.masterTimeline = null
         let localkeyframes = localStorage.getItem("keyframes")
@@ -12,7 +11,6 @@ class myStageClass {
         this.stage.on('click', (e) => {
             this.stageClick(e)
         });
-
         this.stage.on('wheel', (e) => {
             e.evt.preventDefault();
             this.wheel(e)
@@ -29,7 +27,7 @@ class myStageClass {
         };
 
         // 2. 计算新缩放比例
-        const delta = e.evt.deltaY > 0 ? 1.1 : 0.9;
+        const delta = e.evt.deltaY < 0 ? 1.1 : 0.9;
         let newScale = oldScale * delta;
 
         // 设置缩放范围
@@ -119,7 +117,8 @@ class myStageClass {
         this.state = {
             ...instate,
             tracks: instate.tracks.filter(f => f.type === "video"),
-            scale: instate.tracks.find(s => s.type == "scale")
+            scale: instate.tracks.find(s => s.type == "scale"),
+            show:instate.tracks.find(s => s.type == "show"),
         }
         // 获取
         await this.imagePool.preloadAll(getTracksImage(this.state.tracks))
@@ -280,21 +279,22 @@ class myStageClass {
             let stateTrack = this.state.tracks.find(i => i.id == currItem.trackid)
             let stateClip = stateTrack.clips.find(i => i.id == currItem.clipid)
 
+            
 
-            newCurrtimeKey.push({ ...currItem.key[0], data: { ...currItem.key[0].data, images: stateClip.images, categorize: stateClip.categorize } })
+            newCurrtimeKey.push({ ...currItem.key[0], data: { ...currItem.key[0].data,trackid:currItem.trackid, images: stateClip.images, categorize: stateClip.categorize } })
 
             if (inSertkey) {
                 inSertkey.key.forEach(k => {
                     if ((startTime + k.time) < endTime) {
                         newCurrtimeKey.push({
-                            ...k, data: { ...k.data, images: stateClip.images, categorize: stateClip.categorize },
+                            ...k, data: { ...k.data,trackid:currItem.trackid, images: stateClip.images, categorize: stateClip.categorize },
                             time: startTime + k.time,
                         })
                     }
                 })
             }
 
-            newCurrtimeKey.push({ ...currItem.key[1], data: { ...currItem.key[1].data, images: stateClip.images, categorize: stateClip.categorize } })
+            newCurrtimeKey.push({ ...currItem.key[1], data: { ...currItem.key[1].data,trackid:currItem.trackid, images: stateClip.images, categorize: stateClip.categorize } })
 
             for (let j = 0; j < newCurrtimeKey.length; j++) {
 
@@ -333,17 +333,17 @@ class myStageClass {
             let startTime = finalkeyframesItem.startTime
             let data = finalkeyframesItem.data
 
-            const { x, y, scaleX, scaleY, rotation, opacity, width, height } = data;
-
+            const { x, y, scaleX, scaleY, rotation, opacity, width, height,trackid } = data;
+            
             clip ? duration ? this.masterTimeline.to(clip, {
                 x, y, rotation, scaleX, scaleY, width, height,
                 duration: duration,
-                ease: "power1.inOut",
+                ease: "none",
                 onStart: () => {
 
                     console.log("onStart动画显示开始")
-                    clip.visible(true); // 确保动画开始时元素是可见的
-                    clip.opacity(1);    // 确保起始透明度正确（如果 curr.data 不包含 opacity 起始值）
+                    clip.visible(this.isShowClipByShowTrack(_this.state.currentTime ,trackid)); // 确保动画开始时元素是可见的
+                    // clip.opacity(1);    // 确保起始透明度正确（如果 curr.data 不包含 opacity 起始值）
                 },
                 onComplete: () => {
                     console.log("onComplete动画结束后隐藏")
@@ -351,7 +351,7 @@ class myStageClass {
                 },
                 onUpdate: () => {
                     // 展示图片全凭逻辑画
-
+                    clip.visible(this.isShowClipByShowTrack(_this.state.currentTime ,trackid)); 
                     //需要合成标识
                     if (data.categorize == "person") {
                         let fps = 24;
@@ -381,7 +381,7 @@ class myStageClass {
                 scaleX: s.scale,
                 scaleY: s.scale,
                 duration: s.duration,
-                ease: "power2.out",
+                ease: "none",
                 onUpdate: () => this.stage.batchDraw()
             }, s.start):
             this.masterTimeline.set(this.stage, {
@@ -389,7 +389,7 @@ class myStageClass {
                 y: s.y,
                 scaleX: s.scale,
                 scaleY: s.scale,
-                ease: "power2.out",
+               
                 onUpdate: () => this.stage.batchDraw()
             }, s.start)
         })
@@ -417,6 +417,17 @@ class myStageClass {
         state.currentTime = time
         this.masterTimeline.time(time);
     }
+
+    // 判断show图层是否选中次图层
+    isShowClipByShowTrack(currTime,showType){
+        let isShow =!this.state.show;
+       this.state.show&& this.state.show.clips.forEach(c=>{
+            if(c.start<=currTime && (c.start+c.duration) >currTime && c.name==showType.split("-")[0]){
+                isShow = true
+            }
+        })
+        return isShow
+    }
     contorlClipVisible(time) {
         if (time == null) {
             console.log("contorlClipVisible 传入时间")
@@ -432,9 +443,10 @@ class myStageClass {
             const endTime = last.time
             // 计算持续时间：如果是第一帧，无需duration；否则为当前帧与上一帧的时间差
 
-            if (startTime <= time && endTime > time) {
+            // 添加show轨道是否选中逻辑
+            if (startTime <= time && endTime > time&&this.isShowClipByShowTrack(time,currItem.trackid)) {
                 clip.visible(true); // 确保动画开始时元素是可见的
-                clip.opacity(1);    // 确保起始透明度正确（如果 curr.data 不包含 opacity 起始值）
+                // clip.opacity(1);    // 确保起始透明度正确（如果 curr.data 不包含 opacity 起始值）
             } else {
                 clip.visible(false);
             }

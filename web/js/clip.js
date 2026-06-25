@@ -398,17 +398,17 @@ function addImgtoClip({ src, name }) {
     }
     img.src = src
 }
-
-
 function addScaleClip() {
-    let track = state.selectedTrackId && state.tracks.find(i => i.id == state.selectedTrackId)
-    if (!track || !(track.type == "scale")) {
-        showToast("请选择缩放轨道")
+
+    let track = state.tracks.find(i => i.type == "scale")
+    if (!track) {
+        showToast("请添加显示图层")
         return
     }
-    const scale =  Number(myStage.stage.scaleX()).toFixed(2) ;
-    const x =Math.floor( myStage.stage.x()) 
-    const y = Math.floor( myStage.stage.y())   
+
+    const scale = Number(myStage.stage.scaleX()).toFixed(2);
+    const x = Math.floor(myStage.stage.x())
+    const y = Math.floor(myStage.stage.y())
     const newClip = {
         id: "scale" + "-" + new Date().getTime(),
         categorize: "scale",
@@ -420,6 +420,35 @@ function addScaleClip() {
     track.clips.push(newClip);
     updataAllUI()
     showToast('片段已添加，点击预览区加载视频');
-
-
 }
+
+function addShowClip() {
+    let track = state.selectedTrackId && state.tracks.find(i => i.id == state.selectedTrackId)
+    let showTrack = state.tracks.find(i => i.type == "show")
+
+
+    if (!track || !(track.type == "video")) {
+        showToast("请选择视频轨道")
+        return
+    }
+
+    if (!showTrack) {
+        showToast("请添加显示图层")
+        return
+    }
+    let scene = track.id.split("-")[0]
+    const newClip = {
+        id: scene + "-" + new Date().getTime(),
+        categorize: "show",
+        start: state.currentTime,
+        duration: 3,
+        name: `${scene}`
+    };
+
+    showTrack.clips.push(newClip);
+    updataAllUI()
+    showToast('片段已添加，点击预览区加载视频');
+}
+
+
+

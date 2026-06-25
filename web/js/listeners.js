@@ -153,6 +153,8 @@ function setupEventListeners() {
             changeSelectedClipOrTrack(e.code);
         }else if(e.shiftKey&&e.code === 'KeyI'){
             addScaleClip()
+        }else if(e.shiftKey&&e.code === 'KeyS'){
+            addShowClip()
         }
     });
     

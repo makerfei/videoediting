@@ -1,0 +1,737 @@
+
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>智能套索抠图画板</title>
+    <style>
+        :root {
+            --primary: #4f46e5;
+            --primary-hover: #4338ca;
+            --bg-color: #f3f4f6;
+            --panel-bg: #ffffff;
+            --text-main: #1f2937;
+            --text-sub: #6b7280;
+            --border: #e5e7eb;
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+        }
+
+        body {
+            background-color: var(--bg-color);
+            height: 100vh;
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+            color: var(--text-main);
+        }
+
+        /* Header */
+        header {
+            background: var(--panel-bg);
+            border-bottom: 1px solid var(--border);
+            padding: 0.75rem 1.5rem;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+            z-index: 10;
+        }
+
+        .brand {
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+            font-weight: 700;
+            font-size: 1.25rem;
+            color: var(--text-main);
+        }
+
+        .brand-icon {
+            width: 32px;
+            height: 32px;
+            background: var(--primary);
+            color: white;
+            border-radius: 8px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1rem;
+        }
+
+        .header-actions {
+            display: flex;
+            gap: 1rem;
+        }
+
+        button {
+            cursor: pointer;
+            border: none;
+            outline: none;
+            transition: all 0.2s;
+            font-size: 0.875rem;
+            font-weight: 500;
+            border-radius: 0.5rem;
+            padding: 0.5rem 1rem;
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .btn-primary {
+            background-color: var(--primary);
+            color: white;
+        }
+
+        .btn-primary:hover {
+            background-color: var(--primary-hover);
+        }
+
+        .btn-primary:disabled {
+            background-color: #a5a6f6;
+            cursor: not-allowed;
+        }
+
+        .btn-secondary {
+            background-color: white;
+            border: 1px solid var(--border);
+            color: var(--text-main);
+        }
+
+        .btn-secondary:hover {
+            background-color: #f9fafb;
+            border-color: #d1d5db;
+        }
+
+        /* Main Layout */
+        main {
+            flex: 1;
+            display: flex;
+            overflow: hidden;
+        }
+
+        /* Sidebar Left */
+        .sidebar-left {
+            width: 80px;
+            background: var(--panel-bg);
+            border-right: 1px solid var(--border);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            padding: 1rem 0;
+            gap: 1rem;
+            z-index: 5;
+        }
+
+        .tool-btn {
+            width: 48px;
+            height: 48px;
+            border-radius: 12px;
+            border: 1px solid var(--border);
+            background: white;
+            color: var(--text-sub);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            gap: 4px;
+            font-size: 0.75rem;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .tool-btn i {
+            font-size: 1.25rem;
+            font-style: normal;
+        }
+
+        .tool-btn.active {
+            background-color: #eef2ff;
+            border-color: var(--primary);
+            color: var(--primary);
+        }
+
+        .tool-btn:hover:not(.active) {
+            background-color: #f9fafb;
+        }
+
+        .divider {
+            width: 32px;
+            height: 1px;
+            background-color: var(--border);
+            margin: 0.5rem 0;
+        }
+
+        /* Canvas Area */
+        .canvas-wrapper {
+            flex: 1;
+            position: relative;
+            background-color: #e5e7eb;
+            background-image: 
+                linear-gradient(45deg, #d1d5db 25%, transparent 25%), 
+                linear-gradient(-45deg, #d1d5db 25%, transparent 25%), 
+                linear-gradient(45deg, transparent 75%, #d1d5db 75%), 
+                linear-gradient(-45deg, transparent 75%, #d1d5db 75%);
+            background-size: 20px 20px;
+            background-position: 0 0, 0 10px, 10px -10px, -10px 0px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            overflow: hidden;
+        }
+
+        canvas {
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+            background: transparent;
+            cursor: crosshair;
+        }
+
+        .empty-state {
+            position: absolute;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            color: var(--text-sub);
+            pointer-events: none;
+        }
+
+        .empty-state svg {
+            width: 64px;
+            height: 64px;
+            margin-bottom: 1rem;
+            opacity: 0.5;
+        }
+
+        /* Sidebar Right */
+        .sidebar-right {
+            width: 260px;
+            background: var(--panel-bg);
+            border-left: 1px solid var(--border);
+            padding: 1.5rem;
+            display: flex;
+            flex-direction: column;
+            gap: 1.5rem;
+            z-index: 5;
+            overflow-y: auto;
+        }
+
+        .panel-section h3 {
+            font-size: 0.75rem;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            color: #9ca3af;
+            margin-bottom: 0.75rem;
+            font-weight: 700;
+        }
+
+        .control-group {
+            margin-bottom: 1rem;
+        }
+
+        .control-label {
+            display: block;
+            font-size: 0.875rem;
+            font-weight: 500;
+            margin-bottom: 0.5rem;
+            color: var(--text-main);
+        }
+
+        input[type="range"] {
+            width: 100%;
+            height: 6px;
+            background: #e5e7eb;
+            border-radius: 3px;
+            appearance: none;
+            outline: none;
+        }
+
+        input[type="range"]::-webkit-slider-thumb {
+            appearance: none;
+            width: 16px;
+            height: 16px;
+            background: var(--primary);
+            border-radius: 50%;
+            cursor: pointer;
+            transition: background .15s ease-in-out;
+        }
+
+        input[type="range"]::-webkit-slider-thumb:hover {
+            background: var(--primary-hover);
+        }
+
+        .range-values {
+            display: flex;
+            justify-content: space-between;
+            font-size: 0.75rem;
+            color: var(--text-sub);
+            margin-top: 0.25rem;
+        }
+
+        .checkbox-wrapper {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            font-size: 0.875rem;
+            color: var(--text-main);
+            cursor: pointer;
+        }
+
+        .help-list {
+            list-style-type: disc;
+            padding-left: 1.25rem;
+            font-size: 0.875rem;
+            color: var(--text-sub);
+            line-height: 1.6;
+        }
+
+        .help-list li {
+            margin-bottom: 0.5rem;
+        }
+
+        .reset-link {
+            margin-top: auto;
+            text-align: center;
+            font-size: 0.875rem;
+            color: var(--text-sub);
+            text-decoration: underline;
+            cursor: pointer;
+            padding: 0.5rem;
+        }
+
+        .reset-link:hover {
+            color: var(--text-main);
+        }
+
+        /* Toast */
+        .toast {
+            position: fixed;
+            bottom: 2rem;
+            left: 50%;
+            transform: translateX(-50%) translateY(20px);
+            background-color: #1f2937;
+            color: white;
+            padding: 0.75rem 1.5rem;
+            border-radius: 9999px;
+            font-size: 0.875rem;
+            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
+            opacity: 0;
+            transition: opacity 0.3s, transform 0.3s;
+            pointer-events: none;
+            z-index: 50;
+        }
+
+        .toast.show {
+            opacity: 1;
+            transform: translateX(-50%) translateY(0);
+        }
+
+        /* Icons (Simple SVG replacements for FontAwesome to avoid external deps) */
+        .icon {
+            width: 1em;
+            height: 1em;
+            fill: currentColor;
+            display: inline-block;
+            vertical-align: middle;
+        }
+    </style>
+</head>
+<body>
+
+    <header>
+        <div class="brand">
+            <div class="brand-icon">
+                <svg class="icon" viewBox="0 0 24 24"><path d="M18.6 6.62c-1.44 0-2.8.56-3.77 1.53L10 13l-2-2 2.83-2.83c.97-.97 1.53-2.33 1.53-3.77C12.36 2.9 11.46 2 10.36 2S8.36 2.9 8.36 4c0 1.44.56 2.8 1.53 3.77L12 10l-6 6-2-2 6-6-2.12-2.12c-1.44-1.44-3.77-1.44-5.21 0-1.44 1.44-1.44 3.77 0 5.21L8 16.41l-1.41 1.41-2.12-2.12c-1.44-1.44-3.77-1.44-5.21 0-1.44 1.44-1.44 3.77 0 5.21l3.53 3.53c.72.72 1.67 1.08 2.62 1.08s1.9-.36 2.62-1.08l12-12c.97-.97 1.53-2.33 1.53-3.77 0-1.1-.9-2-2-2z"/></svg>
+            </div>
+            <span>智能套索抠图</span>
+        </div>
+        <div class="header-actions">
+            <label class="btn-secondary">
+                <svg class="icon" style="margin-right:4px" viewBox="0 0 24 24"><path d="M9 16h6v-6h4l-7-7-7 7h4zm-4 2h14v2H5z"/></svg>
+                上传图片
+                <input type="file" id="imageInput" accept="image/*" style="display: none;">
+            </label>
+            <button id="downloadBtn" class="btn-primary" disabled>
+                <svg class="icon" style="margin-right:4px" viewBox="0 0 24 24"><path d="M19 9h-4V3H9v6H5l7 7 7-7zM5 18v2h14v-2H5z"/></svg>
+                下载PNG
+            </button>
+        </div>
+    </header>
+
+    <main>
+        <aside class="sidebar-left">
+            <button class="tool-btn active" id="toolLasso" title="套索工具 (L)">
+                <svg class="icon" viewBox="0 0 24 24"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-1 17.93c-3.95-.49-7-3.85-7-7.93 0-.62.08-1.21.21-1.79L9 15v1c0 1.1.9 2 2 2v1.93zm6.9-2.54c-.26-.81-1-1.39-1.9-1.39h-1v-3c0-.55-.45-1-1-1H8v-2h2c.55 0 1-.45 1-1V7h2c1.1 0 2-.9 2-2v-.41c2.93 1.19 5 4.06 5 7.41 0 2.08-.8 3.97-2.1 5.39z"/></svg>
+                <span>套索</span>
+            </button>
+            <button class="tool-btn" id="toolMove" title="移动视图 (M)">
+                <svg class="icon" viewBox="0 0 24 24"><path d="M10 9h4V6h3l-5-5-5 5h3v3zm-1 1H6V7l-5 5 5 5v-3h3v-4zm14 2l-5-5v3h-3v4h3v3l5-5zm-9 3h-4v3H7l5 5 5-5h-3v-3z"/></svg>
+                <span>移动</span>
+            </button>
+            <div class="divider"></div>
+            <button class="tool-btn" id="btnClear" title="清除选区" style="color: #ef4444;">
+                <svg class="icon" viewBox="0 0 24 24"><path d="M16 9v10H8V9h8m-1.5-6h-5l-1 1H5v2h14V4h-3.5l-1-1zM18 7H6v12c0 1.1.9 2 2 2h8c1.1 0 2-.9 2-2V7z"/></svg>
+                <span>清除</span>
+            </button>
+        </aside>
+
+        <section class="canvas-wrapper" id="canvasWrapper">
+            <canvas id="mainCanvas"></canvas>
+            <div id="emptyState" class="empty-state">
+                <svg viewBox="0 0 24 24" fill="currentColor"><path d="M21 19V5c0-1.1-.9-2-2-2H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2zM8.5 13.5l2.5 3.01L14.5 12l4.5 6H5l3.5-4.5z"/></svg>
+                <p style="font-size: 1.125rem; font-weight: 500;">请上传一张图片开始</p>
+                <p style="font-size: 0.875rem; margin-top: 0.5rem;">支持 JPG, PNG, WebP</p>
+            </div>
+        </section>
+
+        <aside class="sidebar-right">
+            <div class="panel-section">
+                <h3>选区设置</h3>
+                <div class="control-group">
+                    <label class="control-label">边缘羽化 (px)</label>
+                    <input type="range" id="featherRange" min="0" max="20" value="2">
+                    <div class="range-values">
+                        <span>锐利</span>
+                        <span id="featherValue">2px</span>
+                        <span>柔和</span>
+                    </div>
+                </div>
+                <div class="control-group">
+                    <label class="checkbox-wrapper">
+                        <input type="checkbox" id="showOriginal">
+                        <span>显示参考线</span>
+                    </label>
+                </div>
+            </div>
+
+            <div class="panel-section">
+                <h3>操作指南</h3>
+                <ul class="help-list">
+                    <li>点击“上传图片”加载素材</li>
+                    <li>使用<span style="color:var(--primary); font-weight:600">套索</span>围绕目标绘制</li>
+                    <li>松开鼠标自动闭合并抠图</li>
+                    <li>可调整<span style="color:var(--primary); font-weight:600">羽化</span>使边缘自然</li>
+                    <li>支持多次连续裁剪</li>
+                </ul>
+            </div>
+
+            <div class="reset-link" id="resetBtn">重置所有</div>
+        </aside>
+    </main>
+
+    <div id="toast" class="toast">欢迎使用</div>
+
+    <script>
+        // 状态管理
+        const state = {
+            image: null,
+            canvas: null,
+            ctx: null,
+            isDrawing: false,
+            points: [],
+            mode: 'lasso', // 'lasso' or 'move'
+            feather: 2,
+            scale: 1,
+            offsetX: 0,
+            offsetY: 0,
+            isDragging: false,
+            lastPos: { x: 0, y: 0 }
+        };
+
+        // DOM 元素
+        const els = {
+            canvas: document.getElementById('mainCanvas'),
+            wrapper: document.getElementById('canvasWrapper'),
+            input: document.getElementById('imageInput'),
+            download: document.getElementById('downloadBtn'),
+            empty: document.getElementById('emptyState'),
+            lassoBtn: document.getElementById('toolLasso'),
+            moveBtn: document.getElementById('toolMove'),
+            clearBtn: document.getElementById('btnClear'),
+            feather: document.getElementById('featherRange'),
+            featherVal: document.getElementById('featherValue'),
+            reset: document.getElementById('resetBtn'),
+            toast: document.getElementById('toast')
+        };
+
+        // 初始化
+        function init() {
+            state.canvas = els.canvas;
+            state.ctx = state.canvas.getContext('2d', { willReadFrequently: true });
+            
+            resizeCanvas();
+            window.addEventListener('resize', resizeCanvas);
+            
+            setupEvents();
+            showToast("请上传图片开始创作");
+        }
+
+        function resizeCanvas() {
+            const rect = els.wrapper.getBoundingClientRect();
+            state.canvas.width = rect.width;
+            state.canvas.height = rect.height;
+            redraw();
+        }
+
+        function setupEvents() {
+            els.input.addEventListener('change', handleUpload);
+            els.lassoBtn.addEventListener('click', () => setMode('lasso'));
+            els.moveBtn.addEventListener('click', () => setMode('move'));
+            els.clearBtn.addEventListener('click', clearPoints);
+            els.reset.addEventListener('click', resetAll);
+            
+            els.feather.addEventListener('input', (e) => {
+                state.feather = parseInt(e.target.value);
+                els.featherVal.textContent = state.feather + 'px';
+                if (!state.isDrawing && state.points.length > 0) redraw();
+            });
+
+            // Canvas 交互
+            state.canvas.addEventListener('mousedown', onMouseDown);
+            state.canvas.addEventListener('mousemove', onMouseMove);
+            state.canvas.addEventListener('mouseup', onMouseUp);
+            state.canvas.addEventListener('mouseleave', onMouseUp);
+
+            // 键盘快捷键
+            document.addEventListener('keydown', (e) => {
+                if (e.key === 'l') setMode('lasso');
+                if (e.key === 'm') setMode('move');
+                if (e.key === 'Escape') clearPoints();
+            });
+        }
+
+        function setMode(mode) {
+            state.mode = mode;
+            if (mode === 'lasso') {
+                els.lassoBtn.classList.add('active');
+                els.moveBtn.classList.remove('active');
+                state.canvas.style.cursor = 'crosshair';
+            } else {
+                els.lassoBtn.classList.remove('active');
+                els.moveBtn.classList.add('active');
+                state.canvas.style.cursor = 'grab';
+            }
+        }
+
+        function handleUpload(e) {
+            const file = e.target.files[0];
+            if (!file) return;
+
+            const reader = new FileReader();
+            reader.onload = (evt) => {
+                const img = new Image();
+                img.onload = () => {
+                    state.image = img;
+                    state.points = [];
+                    fitImage();
+                    els.empty.style.display = 'none';
+                    els.download.disabled = false;
+                    showToast("图片加载成功，请绘制选区");
+                    redraw();
+                };
+                img.src = evt.target.result;
+            };
+            reader.readAsDataURL(file);
+        }
+
+        function fitImage() {
+            if (!state.image) return;
+            const pad = 40;
+            const w = state.canvas.width - pad * 2;
+            const h = state.canvas.height - pad * 2;
+            const scale = Math.min(w / state.image.width, h / state.image.height);
+            state.scale = scale;
+            state.offsetX = (state.canvas.width - state.image.width * scale) / 2;
+            state.offsetY = (state.canvas.height - state.image.height * scale) / 2;
+        }
+
+        function getPos(e) {
+            const rect = state.canvas.getBoundingClientRect();
+            return {
+                x: e.clientX - rect.left,
+                y: e.clientY - rect.top
+            };
+        }
+
+        function onMouseDown(e) {
+            if (!state.image) return;
+            const pos = getPos(e);
+
+            if (state.mode === 'lasso') {
+                state.isDrawing = true;
+                state.points = [{ x: pos.x, y: pos.y }];
+            } else {
+                state.isDragging = true;
+                state.lastPos = pos;
+                state.canvas.style.cursor = 'grabbing';
+            }
+        }
+
+        function onMouseMove(e) {
+            if (!state.image) return;
+            const pos = getPos(e);
+
+            if (state.mode === 'lasso' && state.isDrawing) {
+                const last = state.points[state.points.length - 1];
+                const dist = Math.hypot(pos.x - last.x, pos.y - last.y);
+                if (dist > 5) {
+                    state.points.push({ x: pos.x, y: pos.y });
+                    redraw();
+                }
+            } else if (state.mode === 'move' && state.isDragging) {
+                state.offsetX += pos.x - state.lastPos.x;
+                state.offsetY += pos.y - state.lastPos.y;
+                state.lastPos = pos;
+                redraw();
+            }
+        }
+
+        function onMouseUp() {
+            if (state.mode === 'lasso' && state.isDrawing) {
+                state.isDrawing = false;
+                if (state.points.length > 2) {
+                    processCutout();
+                } else {
+                    state.points = [];
+                    redraw();
+                }
+            } else if (state.mode === 'move') {
+                state.isDragging = false;
+                state.canvas.style.cursor = 'grab';
+            }
+        }
+
+        function clearPoints() {
+            state.points = [];
+            redraw();
+            showToast("已清除当前路径");
+        }
+
+        function resetAll() {
+            if (confirm("确定重置吗？")) {
+                state.image = null;
+                state.points = [];
+                state.ctx.clearRect(0, 0, state.canvas.width, state.canvas.height);
+                els.empty.style.display = 'flex';
+                els.download.disabled = true;
+                els.input.value = '';
+            }
+        }
+
+        function processCutout() {
+            // 1. 创建临时 Canvas 绘制蒙版
+            const tempCvs = document.createElement('canvas');
+            tempCvs.width = state.canvas.width;
+            tempCvs.height = state.canvas.height;
+            const tCtx = tempCvs.getContext('2d');
+
+            tCtx.beginPath();
+            tCtx.moveTo(state.points[0].x, state.points[0].y);
+            for (let i = 1; i < state.points.length; i++) {
+                tCtx.lineTo(state.points[i].x, state.points[i].y);
+            }
+            tCtx.closePath();
+
+            // 应用羽化
+            if (state.feather > 0) {
+                tCtx.filter = `blur(${state.feather}px)`;
+            }
+            tCtx.fillStyle = 'white';
+            tCtx.fill();
+            tCtx.filter = 'none'; // 重置
+
+            // 2. 创建结果 Canvas
+            const resCvs = document.createElement('canvas');
+            resCvs.width = state.canvas.width;
+            resCvs.height = state.canvas.height;
+            const rCtx = resCvs.getContext('2d');
+
+            // 绘制当前图像状态
+            rCtx.save();
+            rCtx.translate(state.offsetX, state.offsetY);
+            rCtx.scale(state.scale, state.scale);
+            rCtx.drawImage(state.image, 0, 0);
+            rCtx.restore();
+
+            // 应用蒙版
+            rCtx.globalCompositeOperation = 'destination-in';
+            rCtx.drawImage(tempCvs, 0, 0);
+            rCtx.globalCompositeOperation = 'source-over';
+
+            // 3. 更新主图像为裁剪结果
+            const newImg = new Image();
+            newImg.src = resCvs.toDataURL();
+            newImg.onload = () => {
+                state.image = newImg;
+                // 重置变换，因为新图片已经是画布大小了，但为了保持视觉位置不变，
+                // 我们需要调整 offset/scale 使得新图片（画布大小）显示在正确位置
+                // 简单处理：重置 offset 到 0,0，scale 到 1，因为 resCvs 已经是全屏尺寸
+                state.offsetX = 0;
+                state.offsetY = 0;
+                state.scale = 1;
+                state.points = [];
+                redraw();
+                showToast("抠图完成！可继续裁剪");
+            };
+        }
+
+        function redraw() {
+            if (!state.image) return;
+            const ctx = state.ctx;
+            const w = state.canvas.width;
+            const h = state.canvas.height;
+
+            ctx.clearRect(0, 0, w, h);
+
+            // 绘制图片
+            ctx.save();
+            ctx.translate(state.offsetX, state.offsetY);
+            ctx.scale(state.scale, state.scale);
+            ctx.drawImage(state.image, 0, 0);
+            ctx.restore();
+
+            // 绘制路径
+            if (state.isDrawing && state.points.length > 0) {
+                ctx.beginPath();
+                ctx.moveTo(state.points[0].x, state.points[0].y);
+                for (let i = 1; i < state.points.length; i++) {
+                    ctx.lineTo(state.points[i].x, state.points[i].y);
+                }
+                ctx.strokeStyle = '#4f46e5';
+                ctx.lineWidth = 2;
+                ctx.setLineDash([5, 5]);
+                ctx.stroke();
+                
+                // 起点
+                ctx.beginPath();
+                ctx.arc(state.points[0].x, state.points[0].y, 4, 0, Math.PI*2);
+                ctx.fillStyle = '#ef4444';
+                ctx.fill();
+            }
+        }
+
+        els.download.addEventListener('click', () => {
+            if (!state.image) return;
+            const link = document.createElement('a');
+            link.download = 'cutout.png';
+            link.href = state.canvas.toDataURL('image/png');
+            link.click();
+            showToast("下载已开始");
+        });
+
+        function showToast(msg) {
+            els.toast.textContent = msg;
+            els.toast.classList.add('show');
+            setTimeout(() => els.toast.classList.remove('show'), 3000);
+        }
+
+        init();
+    </script>
+</body>
+</html>

@@ -37,7 +37,8 @@ function getTextByTpye(type) {
         type == "audio" ? "🎵 音频" :
             type == "action" ? "🏃‍♂️ 动作" :
                 type == "scale" ? "🔎 缩放" :
-                    type == "face" ? "🫥  表情" : "未分类"
+                    type == "show" ? "📚 显示图层" :
+                        type == "face" ? "🫥  表情" : "未分类"
     return typeTxt
 }
 
@@ -80,6 +81,11 @@ function addTrack(type) {
         return
     }
 
+    if ((type == "scale" || type == "show") && state.tracks.find(t => t.type == type)) {
+        showToast(`已有${getTextByTpye(type)}`)
+        return
+
+    }
     state.tracks.push({
         id: value,
         type,
