@@ -30,20 +30,18 @@ function renderTracks() {
 }
 
 
-
-
 // ==================== 轨道与片段管理 ====================
 
 function getTextByTpye(type) {
     let typeTxt = type == "video" ? "📹 图像" :
         type == "audio" ? "🎵 音频" :
             type == "action" ? "🏃‍♂️ 动作" :
-                type == "face" ? "🫥  表情" : "未分类"
+                type == "scale" ? "🔎 缩放" :
+                    type == "face" ? "🫥  表情" : "未分类"
     return typeTxt
 }
 
-
-function trackHasTheSameId(id,type) {
+function trackHasTheSameId(id, type) {
     let hasThisId = false
     state.tracks.forEach(t => {
         if (id === t.id) {
@@ -56,7 +54,6 @@ function trackHasTheSameId(id,type) {
     return hasThisId
 }
 
-
 function changeTrackId() {
     if (state.selectedTrackId) {
         let value = document.getElementById("trackInputId").value
@@ -66,7 +63,7 @@ function changeTrackId() {
             return
         }
         selectedTrack.name = getTextByTpye(selectedTrack.type) + (value),
-        selectedTrack.id = value
+            selectedTrack.id = value
         state.selectedTrackId = value
         renderTracks();
     }

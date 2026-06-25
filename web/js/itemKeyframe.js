@@ -20,7 +20,7 @@ class itemKeyframe {
             let id = clipEl.dataset.id;   // 获取 data-id 属性
             let type = clipEl.dataset.type; // 获取 data-type 属性
             let index = clipEl.dataset.index; // 获取 data-type 属性
-            console.log("Clicked ID:", id, "Type:", type,"index:",index);
+            console.log("Clicked ID:", id, "Type:", type, "index:", index);
             if (type == "firstkey") {
                 myStage.setKeyframesPost(id, 0)
             } else if (type == "lastkey") {
@@ -33,10 +33,26 @@ class itemKeyframe {
         });
 
         let addkeyFrame = document.getElementById("addkeyFrame")
-
         addkeyFrame.addEventListener('click', (e) => {
             myStage.addkeyFrame(state.currentTime)
         })
+
+        // 设置首尾帧
+        let setkeyFrameStartAndEnd = document.getElementById("setkeyFrameStartAndEnd")
+        setkeyFrameStartAndEnd.addEventListener('click', (e) => {
+            myStage.selectedclipId
+            debugger
+            myStage.setKeyframesPost(  myStage.selectedclipId, 0)
+            myStage.setKeyframesPost( myStage.selectedclipId , 1)
+        })
+
+
+
+
+
+
+
+
     }
     setkeyframetxt(keyframe, insetkeyframesItem) {
         const keyframet = JSON.stringify(keyframe, null, 2);
@@ -49,7 +65,7 @@ class itemKeyframe {
         let lastkey = keyframes.key[1]
         let keyframelistEl = document.getElementById("keyframelist")
         let ellist = `<div class="keyset" data-id="${keyframe.clipid}" data-type="firstkey" ><span>${firstkey.time}</span><span>设置</span></div>`
-        
+
         if (insetkeyframesItem) {
             insetkeyframesItem.key.forEach((e, i) => {
                 ellist += `<div class="keyset". data-index="${i}" data-id="${keyframe.clipid}" data-type="keydel"  ><span>${e.time + firstkey.time}</span><span>删除</span></div>`

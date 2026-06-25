@@ -149,50 +149,13 @@ function setupEventListeners() {
         if (e.code === 'Space' && e.target === document.body) {
             e.preventDefault();
             togglePlay();
-        }
-        // if (e.code === 'Backspace' && state.selectedTrackId) {
-        //     deleteSelectedClipOrTrack();
-        // }
-        if ((e.code === 'ArrowUp' || e.code === 'ArrowDown' || e.code === 'KeyW' || e.code === 'KeyS') && state.selectedTrackId) {
+        }else  if ((e.code === 'ArrowUp' || e.code === 'ArrowDown') && state.selectedTrackId) {
             changeSelectedClipOrTrack(e.code);
+        }else if(e.shiftKey&&e.code === 'KeyI'){
+            addScaleClip()
         }
     });
-    // -----------------视频播放放反传代码设置
-    // 视频时间更新时同步播放头
-    // DOM.previewVideo.addEventListener('timeupdate', () => {
-    //   if (state.playheadDrag) return; // 拖拽播放头时不反向同步
-    //   if (!state.isPlaying) return;
-    //   const activeClip = getActiveClipAtTime(state.currentTime);
-    //   if (activeClip) {
-    //     const clipTime = DOM.previewVideo.currentTime;
-    //     const absTime = activeClip.start + clipTime;
-    //     if (Math.abs(state.currentTime - absTime) > 0.05) {
-    //       state.currentTime = absTime;
-    //       updatePlayheadPosition();
-    //       updateTimeDisplay();
-    //     }
-    //   }
-    // });
-
-    // 拖放视频文件到预览区
-    const previewSection = document.getElementById('preview-section');
-    previewSection.addEventListener('dragover', (e) => { e.preventDefault(); });
-    previewSection.addEventListener('drop', (e) => {
-        // e.preventDefault();
-        // const file = e.dataTransfer.files;
-        // if (file && file.type.startsWith('video/')) {
-        //   loadVideoFile(file);
-        // }
-    });
-    previewSection.addEventListener('click', (e) => {
-        if (e.target === previewSection || e.target === DOM.previewPlaceholder || e.target.closest('.preview-placeholder')) {
-            // const input = document.createElement('input');
-            // input.type = 'file';
-            // input.accept = 'video/*';
-            // input.onchange = () => { if (input.files) loadVideoFile(input.files); };
-            // input.click();
-        }
-    });
+    
 }
 
 

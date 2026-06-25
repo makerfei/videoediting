@@ -330,7 +330,7 @@ function addAudioClip({ src, name }) {
         showToast("请选择audio轨道")
         return
     }
-   
+
 
     let id = name.split(".")[0]
     const newClip = {
@@ -347,7 +347,7 @@ function addAudioClip({ src, name }) {
 
 }
 function addEmo_audio_prompt({ src, name }) {
-   
+
     let soundInputEl = document.getElementById("soundInput")
     soundInputEl.value += `emo_audio_prompt>${src}:`
 }
@@ -397,4 +397,29 @@ function addImgtoClip({ src, name }) {
         showToast('片段已添加，点击预览区加载视频');
     }
     img.src = src
+}
+
+
+function addScaleClip() {
+    let track = state.selectedTrackId && state.tracks.find(i => i.id == state.selectedTrackId)
+    if (!track || !(track.type == "scale")) {
+        showToast("请选择缩放轨道")
+        return
+    }
+    const scale =  Number(myStage.stage.scaleX()).toFixed(2) ;
+    const x =Math.floor( myStage.stage.x()) 
+    const y = Math.floor( myStage.stage.y())   
+    const newClip = {
+        id: "scale" + "-" + new Date().getTime(),
+        categorize: "scale",
+        start: state.currentTime,
+        duration: 3,
+        name: `(${x},${y})*${scale}`,
+        x, y, scale
+    };
+    track.clips.push(newClip);
+    updataAllUI()
+    showToast('片段已添加，点击预览区加载视频');
+
+
 }

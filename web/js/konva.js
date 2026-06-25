@@ -1,7 +1,7 @@
 // 1. 初始化舞台
 class myStageClass {
     constructor() {
-        
+
         this.stage = new Konva.Stage({ container: 'preview-placeholder', width: 1920, height: 1080 });
         this.masterTimeline = null
         let localkeyframes = localStorage.getItem("keyframes")
@@ -12,7 +12,100 @@ class myStageClass {
         this.stage.on('click', (e) => {
             this.stageClick(e)
         });
+
+        this.stage.on('wheel', (e) => {
+            e.evt.preventDefault();
+            this.wheel(e)
+        })
     }
+    wheel(e) {
+        const oldScale = this.stage.scaleX();
+        const pointer = this.stage.getPointerPosition();
+
+        // 1. 计算鼠标在“舞台内部坐标系”中的相对位置
+        const mousePointTo = {
+            x: (pointer.x - this.stage.x()) / oldScale,
+            y: (pointer.y - this.stage.y()) / oldScale,
+        };
+
+        // 2. 计算新缩放比例
+        const delta = e.evt.deltaY > 0 ? 1.1 : 0.9;
+        let newScale = oldScale * delta;
+
+        // 设置缩放范围
+        const MIN_SCALE = 1; // 建议允许缩小
+        const MAX_SCALE = 4;
+        newScale = Math.max(MIN_SCALE, Math.min(MAX_SCALE, newScale));
+
+        // 3. 应用新缩放
+        this.stage.scale({ x: newScale, y: newScale });
+
+        // 4. 计算新的舞台位置（以鼠标为中心）
+        let newPos = {
+            x: pointer.x - mousePointTo.x * newScale,
+            y: pointer.y - mousePointTo.y * newScale,
+        };
+
+        // 5. 【关键】边界限制逻辑
+        const stageWidth = this.stage.width();
+        const stageHeight = this.stage.height();
+
+        // 获取内容的实际尺寸和位置
+        // 假设你的主要内容在一个名为 mainLayer 的层或 group 中
+        // 如果没有特定层，可以使用 stage.getClientRect() 获取所有内容的包围盒
+        const contentRect = this.stage.getClientRect();
+        // 注意：getClientRect() 返回的是绝对坐标，需要转换为相对于 stage(0,0) 的尺寸
+        // 更简单的做法：如果你知道内容初始大小是 stageWidth x stageHeight，可以直接用：
+
+        // 方案 A：基于已知内容初始大小（假设内容初始填满舞台）
+        const initialContentWidth = stageWidth;
+        const initialContentHeight = stageHeight;
+
+        const currentContentWidth = initialContentWidth * newScale;
+        const currentContentHeight = initialContentHeight * newScale;
+
+        // 方案 B（更推荐）：基于实际 Layer/Group 的边界
+        // const layer = this.mainLayer; // 替换为你的主图层
+        // const currentContentWidth = layer.width() * newScale;
+        // const currentContentHeight = layer.height() * newScale;
+
+        // --- 开始限制边界 ---
+
+        // 1. 限制左上角：内容不能向右下偏移导致左上留白
+        if (newPos.x > 0) {
+            newPos.x = 0;
+        }
+        if (newPos.y > 0) {
+            newPos.y = 0;
+        }
+
+        // 2. 限制右下角：内容不能向左上偏移导致右下留白
+        // 公式：舞台位置 + 内容宽度 >= 舞台宽度
+        // 即：舞台位置 >= 舞台宽度 - 内容宽度
+        const minX = stageWidth - currentContentWidth;
+        const minY = stageHeight - currentContentHeight;
+
+        if (newPos.x < minX) {
+            newPos.x = minX;
+        }
+        if (newPos.y < minY) {
+            newPos.y = minY;
+        }
+
+        // 3. 特殊情况：如果内容比舞台小（缩放很小），强制居中
+        if (currentContentWidth < stageWidth) {
+            newPos.x = (stageWidth - currentContentWidth) / 2;
+        }
+        if (currentContentHeight < stageHeight) {
+            newPos.y = (stageHeight - currentContentHeight) / 2;
+        }
+
+        this.stage.position(newPos);
+        this.stage.batchDraw();
+
+    }
+
+
     reSetKeyframes(inData) {
         this.keyframes = inData.keyframes
         this.insetkeyframes = inData.insetkeyframes
@@ -25,7 +118,8 @@ class myStageClass {
         this.shape = {}// 存储所有形状引用 轨道和元素混用
         this.state = {
             ...instate,
-            tracks: instate.tracks.filter(f => f.type === "video")
+            tracks: instate.tracks.filter(f => f.type === "video"),
+            scale: instate.tracks.find(s => s.type == "scale")
         }
         // 获取
         await this.imagePool.preloadAll(getTracksImage(this.state.tracks))
@@ -177,33 +271,33 @@ class myStageClass {
             let clip = this.shape[currItem.clipid]
             // 获取其插入的关键帧
             let inSertkey = this.insetkeyframes.find(k => k.clipid == currItem.clipid)
-            
+
             let startTime = currItem.key[0].time
             let endTime = currItem.key[currItem.key.length - 1].time;
             let newCurrtimeKey = []
 
             // 找出当前的人物属性
-            let stateTrack =  this.state.tracks.find(i=>i.id == currItem.trackid)
-            let stateClip = stateTrack.clips.find(i=>i.id==currItem.clipid)
+            let stateTrack = this.state.tracks.find(i => i.id == currItem.trackid)
+            let stateClip = stateTrack.clips.find(i => i.id == currItem.clipid)
 
 
-            newCurrtimeKey.push({...currItem.key[0],data:{...currItem.key[0].data,images:stateClip.images,categorize:stateClip.categorize}})
-            
+            newCurrtimeKey.push({ ...currItem.key[0], data: { ...currItem.key[0].data, images: stateClip.images, categorize: stateClip.categorize } })
+
             if (inSertkey) {
                 inSertkey.key.forEach(k => {
                     if ((startTime + k.time) < endTime) {
                         newCurrtimeKey.push({
-                            ...k,data:{...k.data,images:stateClip.images,categorize:stateClip.categorize},
+                            ...k, data: { ...k.data, images: stateClip.images, categorize: stateClip.categorize },
                             time: startTime + k.time,
                         })
                     }
                 })
             }
 
-            newCurrtimeKey.push({...currItem.key[1],data:{...currItem.key[1].data,images:stateClip.images,categorize:stateClip.categorize}})
+            newCurrtimeKey.push({ ...currItem.key[1], data: { ...currItem.key[1].data, images: stateClip.images, categorize: stateClip.categorize } })
 
             for (let j = 0; j < newCurrtimeKey.length; j++) {
-                
+
                 const curr = newCurrtimeKey[j];
                 const prev = j > 0 ? newCurrtimeKey[j - 1] : null;
                 // 计算开始时间：如果是第一帧，时间为0；否则为上一帧的时间
@@ -229,6 +323,9 @@ class myStageClass {
         }
         finalkeyframes.sort((a, b) => b.startTime - b.startTime)
         console.log(finalkeyframes)
+
+        // 页面元素动画
+
         for (let k = 0; k < finalkeyframes.length; k++) {
             let finalkeyframesItem = finalkeyframes[k]
             let clip = finalkeyframesItem.clip
@@ -236,14 +333,14 @@ class myStageClass {
             let startTime = finalkeyframesItem.startTime
             let data = finalkeyframesItem.data
 
-            const { x, y, scaleX,scaleY, rotation, opacity ,width,height} = data;
-            
+            const { x, y, scaleX, scaleY, rotation, opacity, width, height } = data;
+
             clip ? duration ? this.masterTimeline.to(clip, {
-                x, y, rotation,scaleX,scaleY,width,height,
+                x, y, rotation, scaleX, scaleY, width, height,
                 duration: duration,
                 ease: "power1.inOut",
                 onStart: () => {
-                   
+
                     console.log("onStart动画显示开始")
                     clip.visible(true); // 确保动画开始时元素是可见的
                     clip.opacity(1);    // 确保起始透明度正确（如果 curr.data 不包含 opacity 起始值）
@@ -254,15 +351,15 @@ class myStageClass {
                 },
                 onUpdate: () => {
                     // 展示图片全凭逻辑画
-                    
+
                     //需要合成标识
                     if (data.categorize == "person") {
                         let fps = 24;
                         if (Math.floor((_this.state.currentTime * fps) % 1) == 0) {
                             // 图片人物的逻辑
-                            clip.image(getimage(width, height,data.images))
+                            clip.image(getimage(width, height, data.images))
                         }
-                    }else if (data.src.toLowerCase().endsWith('.gif') && _this.state.currentTime > startTime) {
+                    } else if (data.src.toLowerCase().endsWith('.gif') && _this.state.currentTime > startTime) {
                         let fps = _this.imagePool.gifFpt(data.src)
                         if (Math.floor((_this.state.currentTime * fps) % 1) == 0) {
                             // 此处判断
@@ -271,26 +368,33 @@ class myStageClass {
                             clip.getLayer().batchDraw();
                         }
                     }
-                    // // 判断有他的音频 if()
-                    // if( Math.floor(state.currentTime *2%2)){
-                    //     clip.image(_this.imagelist[0])
-                    //     clip.getLayer().batchDraw();
-                    // }else{
-                    //     clip.image(_this.imagelist[1])
-                    //     clip.getLayer().batchDraw();
-                    // }
-                    // console.log(state.currentTime,"--------")
-
-                    // 在 startTime 时刻执行 myCallback 函数
-                    // this.masterTimeline.call(myCallback, [param1, param2], startTime);
-
-                    // function myCallback(param1, param2) {
-                    //     console.log("时间轴到达指定时间点", param1, param2);
-                    //     // 在这里执行你需要的逻辑，比如手动更新 Konva 图片
-                    // }
                 }
-            }, startTime) : this.masterTimeline.set(clip, {  x, y, rotation,scaleX,scaleY,width,height }, startTime) : null;
+            }, startTime) : this.masterTimeline.set(clip, { x, y, rotation, scaleX, scaleY, width, height }, startTime) : null;
         }
+
+        // 主窗口动画
+        
+        this.state.scale.clips.forEach(s => {
+           s.duration>0.4?  this.masterTimeline.to(this.stage, {
+                x: s.x,
+                y: s.y,
+                scaleX: s.scale,
+                scaleY: s.scale,
+                duration: s.duration,
+                ease: "power2.out",
+                onUpdate: () => this.stage.batchDraw()
+            }, s.start):
+            this.masterTimeline.set(this.stage, {
+                x: s.x,
+                y: s.y,
+                scaleX: s.scale,
+                scaleY: s.scale,
+                ease: "power2.out",
+                onUpdate: () => this.stage.batchDraw()
+            }, s.start)
+        })
+
+
         this.savelocaKeyframes()
         this.syncToTime(state.currentTime)
     }

@@ -6,7 +6,7 @@ import time
 import numpy as np
 import soundfile as sf
 
-def trim_silence(audio_data, threshold_ratio=0.02):
+def trim_silence(audio_data, threshold_ratio=0.001):
     """
     鲁棒性更强的静音裁剪函数
     """
