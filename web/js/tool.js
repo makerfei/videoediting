@@ -95,3 +95,22 @@ function bindClickEvents(el, onSingle, onDouble, delay = 250) {
     }
   });
 }
+
+
+function openCustomWindow(url) {
+  const width = 800;
+  const height = 600;
+  // 计算居中位置
+  const left = (screen.width - width) / 2;
+  const top = (screen.height - height) / 2;
+
+  const features = `width=${width},height=${height},top=${top},left=${left},resizable=yes,scrollbars=yes`;
+  
+  // 打开新窗口
+  const newWin = window.open(url, 'customWindow', features);
+
+  // 检查是否被拦截
+  if (!newWin || newWin.closed || typeof newWin.closed === 'undefined') {
+    alert('弹窗被浏览器拦截，请允许本站弹出窗口！');
+  }
+}
