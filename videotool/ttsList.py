@@ -5,6 +5,9 @@ import json
 import time
 import numpy as np
 import soundfile as sf
+import contextlib
+import io
+import re
 
 def trim_silence(audio_data, threshold_ratio=0.001):
     """
@@ -55,16 +58,26 @@ def getTTSdata(text,emo_text,spk_audio_prompt,track,emo_audio_prompt,tts):
         emo_audio_prompt = None
     
      # 生成语音
-    tts.infer(
-        text=text,
-        spk_audio_prompt=spk_audio_prompt,  # 音色参考音频
-        emo_audio_prompt=emo_audio_prompt,
-        output_path=output_path,
-        emo_text=emo_text,       # 传入情感描述文本
-        use_emo_text=use_emo_text,      # 【关键】必须显式启用文本情感分析
-        emo_alpha=0.8,           # 情感描述对最终结果的影响权重 (0.0-1.0)
-        verbose=True
-    )
+    f = io.StringIO()
+    with contextlib.redirect_stdout(f):
+        tts.infer(
+            text=text,
+            spk_audio_prompt=spk_audio_prompt,  # 音色参考音频
+            emo_audio_prompt=emo_audio_prompt,
+            output_path=output_path,
+            emo_text=emo_text,       # 传入情感描述文本
+            use_emo_text=use_emo_text,      # 【关键】必须显式启用文本情感分析
+            emo_alpha=0.8,           # 情感描述对最终结果的影响权重 (0.0-1.0)
+            verbose=True
+        )
+    output = f.getvalue()
+
+    match = re.search(r"detected emotion vectors from text:\s*(\{.*?\})", output)
+    if match:
+        emo_str = match.group(1).replace("'", '"') # 替换单引号为双引号以符合JSON格式
+        emo_dict = json.loads(emo_str)
+
+
     audio_data, sr = sf.read(output_path)
     trimmed_audio, (start, end) = trim_silence(audio_data, threshold_ratio=0.02)
     sf.write(output_path, trimmed_audio, sr)
@@ -78,7 +91,8 @@ def getTTSdata(text,emo_text,spk_audio_prompt,track,emo_audio_prompt,tts):
                 "track":track,
                 "duration":  duration,
                 "output_path":  output_path,
-                "emo_audio_prompt":emo_audio_prompt
+                "emo_audio_prompt":emo_audio_prompt,
+                "emo_dict":emo_dict
             }
 
 

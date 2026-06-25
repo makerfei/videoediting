@@ -1,0 +1,465 @@
+
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>2D 侧视表情驱动实验室</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        body { margin: 0; overflow: hidden; background-color: #f3f4f6; font-family: 'Inter', sans-serif; }
+        canvas { display: block; }
+        .glass-panel {
+            background: rgba(255, 255, 255, 0.85);
+            backdrop-filter: blur(12px);
+            border: 1px solid rgba(255, 255, 255, 0.5);
+            box-shadow: 0 8px 32px 0 rgba(31, 38, 135, 0.15);
+        }
+        input[type=range] {
+            -webkit-appearance: none;
+            width: 100%;
+            height: 6px;
+            background: #e5e7eb;
+            border-radius: 5px;
+            outline: none;
+        }
+        input[type=range]::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            appearance: none;
+            width: 18px;
+            height: 18px;
+            border-radius: 50%;
+            background: #3b82f6;
+            cursor: pointer;
+            transition: background .15s ease-in-out;
+        }
+        input[type=range]::-webkit-slider-thumb:hover { background: #2563eb; }
+    </style>
+</head>
+<body>
+
+    <div class="absolute top-0 left-0 w-full h-full flex items-center justify-center bg-gradient-to-br from-gray-100 to-gray-200">
+        <canvas id="faceCanvas"></canvas>
+    </div>
+
+    <div class="absolute top-6 right-6 w-80 glass-panel rounded-2xl p-6 z-10 max-h-[90vh] overflow-y-auto">
+        <div class="flex justify-between items-center mb-6">
+            <h2 class="text-xl font-bold text-gray-800"><i class="fa-solid fa-face-viewfinder mr-2 text-blue-600"></i> 2D 侧视控制器</h2>
+        </div>
+
+        <div class="space-y-5">
+            <!-- 视角控制 -->
+            <div class="p-3 bg-blue-50 rounded-lg border border-blue-100">
+                <div class="flex justify-between mb-1">
+                    <label class="text-sm font-medium text-blue-800"><i class="fa-solid fa-rotate mr-1"></i> 侧视角度 (Yaw)</label>
+                    <span class="text-xs text-blue-600" id="val-angle">0°</span>
+                </div>
+                <input type="range" min="-90" max="90" step="1" value="0" id="angle-slider">
+                <p class="text-xs text-blue-500 mt-1">拖动滑块模拟头部左右转动</p>
+            </div>
+
+            <hr class="border-gray-200">
+
+            <!-- 情感控制 -->
+            <div>
+                <div class="flex justify-between mb-1">
+                    <label class="text-sm font-medium text-gray-700">快乐 (Happy)</label>
+                    <span class="text-xs text-gray-500" id="val-happy">0.0</span>
+                </div>
+                <input type="range" min="0" max="1" step="0.01" value="0" data-emo="happy">
+            </div>
+
+            <div>
+                <div class="flex justify-between mb-1">
+                    <label class="text-sm font-medium text-gray-700">愤怒 (Angry)</label>
+                    <span class="text-xs text-gray-500" id="val-angry">0.0</span>
+                </div>
+                <input type="range" min="0" max="1" step="0.01" value="0" data-emo="angry">
+            </div>
+
+            <div>
+                <div class="flex justify-between mb-1">
+                    <label class="text-sm font-medium text-gray-700">悲伤 (Sad)</label>
+                    <span class="text-xs text-gray-500" id="val-sad">0.0</span>
+                </div>
+                <input type="range" min="0" max="1" step="0.01" value="0" data-emo="sad">
+            </div>
+
+            <div>
+                <div class="flex justify-between mb-1">
+                    <label class="text-sm font-medium text-gray-700">惊讶 (Surprised)</label>
+                    <span class="text-xs text-gray-500" id="val-surprised">0.0</span>
+                </div>
+                <input type="range" min="0" max="1" step="0.01" value="0" data-emo="surprised">
+            </div>
+            
+            <div class="pt-4 border-t border-gray-200">
+                <button id="btn-reset" class="w-full py-2 bg-gray-800 hover:bg-gray-900 text-white rounded-lg text-sm font-medium transition shadow-lg">
+                    重置所有
+                </button>
+            </div>
+        </div>
+        
+        <div class="mt-4 text-xs text-gray-400 text-center">
+            基于 Canvas 2D 伪3D投影引擎
+        </div>
+    </div>
+
+    <script>
+        const canvas = document.getElementById('faceCanvas');
+        const ctx = canvas.getContext('2d');
+        
+        // 状态管理
+        let emotions = { happy: 0, angry: 0, sad: 0, surprised: 0 };
+        let targetEmotions = { ...emotions };
+        let viewAngle = 0; // 视角角度 (-90 到 90)
+        let targetViewAngle = 0;
+
+        // 面部基础参数
+        const faceConfig = {
+            centerX: 0,
+            centerY: 0,
+            scale: 1,
+            skinColor: '#f5d0b5',
+            shadowColor: 'rgba(0,0,0,0.1)'
+        };
+
+        // 初始化 Canvas 尺寸
+        function resize() {
+            canvas.width = window.innerWidth;
+            canvas.height = window.innerHeight;
+            faceConfig.centerX = canvas.width / 2;
+            faceConfig.centerY = canvas.height / 2;
+            faceConfig.scale = Math.min(canvas.width, canvas.height) / 600;
+        }
+        window.addEventListener('resize', resize);
+        resize();
+
+        // 交互逻辑
+        document.querySelectorAll('input[data-emo]').forEach(input => {
+            input.addEventListener('input', (e) => {
+                const emo = e.target.dataset.emo;
+                const val = parseFloat(e.target.value);
+                targetEmotions[emo] = val;
+                document.getElementById(`val-${emo}`).textContent = val.toFixed(2);
+                
+                if (val > 0.5) {
+                    Object.keys(targetEmotions).forEach(k => {
+                        if (k !== emo) targetEmotions[k] *= 0.5;
+                    });
+                }
+            });
+        });
+
+        const angleSlider = document.getElementById('angle-slider');
+        const angleDisplay = document.getElementById('val-angle');
+        
+        angleSlider.addEventListener('input', (e) => {
+            targetViewAngle = parseInt(e.target.value);
+            angleDisplay.textContent = targetViewAngle + "°";
+        });
+
+        document.getElementById('btn-reset').addEventListener('click', () => {
+            Object.keys(targetEmotions).forEach(k => {
+                targetEmotions[k] = 0;
+                document.querySelector(`input[data-emo="${k}"]`).value = 0;
+                document.getElementById(`val-${k}`).textContent = "0.00";
+            });
+            targetViewAngle = 0;
+            angleSlider.value = 0;
+            angleDisplay.textContent = "0°";
+        });
+
+        // --- 核心绘制函数 ---
+
+        function lerp(start, end, t) {
+            return start * (1 - t) + end * t;
+        }
+
+        // 伪3D投影辅助函数：根据角度计算X坐标偏移和缩放
+        function projectX(x, z, angleRad) {
+            // 简单的弱透视投影模拟
+            // x: 原始2D平面上的x坐标
+            // z: 深度系数 (正数表示凸出，负数表示凹陷)
+            // angleRad: 旋转角度
+            
+            const cos = Math.cos(angleRad);
+            const sin = Math.sin(angleRad);
+            
+            // 旋转后的X坐标
+            const rotatedX = x * cos - z * sin;
+            // 简单的透视缩放因子 (假设相机在Z轴远处)
+            const perspectiveScale = 1 / (1 - (z * sin) * 0.002); 
+            
+            return rotatedX * perspectiveScale;
+        }
+
+        function drawFace() {
+            // 平滑过渡
+            for (let key in emotions) {
+                emotions[key] += (targetEmotions[key] - emotions[key]) * 0.1;
+            }
+            viewAngle += (targetViewAngle - viewAngle) * 0.1;
+            
+            const rad = viewAngle * Math.PI / 180;
+            const isLeftProfile = viewAngle > 10;
+            const isRightProfile = viewAngle < -10;
+            const isFrontal = !isLeftProfile && !isRightProfile;
+
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            ctx.save();
+            ctx.translate(faceConfig.centerX, faceConfig.centerY);
+            ctx.scale(faceConfig.scale, faceConfig.scale);
+
+            // 1. 绘制脸型 (根据角度变形)
+            ctx.beginPath();
+            // 脸部宽度随角度变化
+            const faceWidth = 140 * Math.cos(rad * 0.5); 
+            // 鼻子侧面的轮廓线
+            if (isLeftProfile) {
+                 ctx.moveTo(-faceWidth, 20);
+                 ctx.bezierCurveTo(-faceWidth - 20, 20, -faceWidth - 20, 100, -faceWidth, 180); // 后脑勺/脸颊后部
+                 ctx.bezierCurveTo(-faceWidth + 40, 200, faceWidth + 20, 200, faceWidth + 40, 180); // 下巴
+                 ctx.lineTo(faceWidth + 40, 100); // 鼻子尖端区域
+                 ctx.lineTo(-faceWidth, 20); // 回到起点附近简化
+            } else if (isRightProfile) {
+                 ctx.moveTo(faceWidth, 20);
+                 ctx.bezierCurveTo(faceWidth + 20, 20, faceWidth + 20, 100, faceWidth, 180);
+                 ctx.bezierCurveTo(faceWidth - 40, 200, -faceWidth - 20, 200, -faceWidth - 40, 180);
+                 ctx.lineTo(-faceWidth - 40, 100);
+                 ctx.lineTo(faceWidth, 20);
+            } else {
+                // 正面或微侧
+                ctx.ellipse(0, 20, faceWidth, 180, 0, 0, Math.PI * 2);
+            }
+            
+            ctx.fillStyle = faceConfig.skinColor;
+            ctx.fill();
+            
+            // 侧面阴影增强立体感
+            if (viewAngle > 0) {
+                // 光从左边来，右边暗
+                const grad = ctx.createLinearGradient(-100, 0, 100, 0);
+                grad.addColorStop(0, 'rgba(0,0,0,0)');
+                grad.addColorStop(1, 'rgba(0,0,0,0.1)');
+                ctx.fillStyle = grad;
+                ctx.fill();
+            } else {
+                const grad = ctx.createLinearGradient(100, 0, -100, 0);
+                grad.addColorStop(0, 'rgba(0,0,0,0)');
+                grad.addColorStop(1, 'rgba(0,0,0,0.1)');
+                ctx.fillStyle = grad;
+                ctx.fill();
+            }
+
+            // 计算综合情感系数
+            const h = emotions.happy;
+            const a = emotions.angry;
+            const s = emotions.sad;
+            const u = emotions.surprised;
+
+            // 2. 绘制眉毛 (根据角度偏移)
+            // 左眉基准 (-60, -60), 右眉基准 (60, -60)
+            // 深度 z: 眉毛略微凸出 z=10
+            const browZ = 10;
+            const leftBrowX = projectX(-60, browZ, rad);
+            const rightBrowX = projectX(60, browZ, rad);
+            
+            // 只有当眉毛在视野内才绘制 (简单裁剪)
+            if (viewAngle < 60) drawEyebrow(leftBrowX, -60, a, s, u, true, rad);
+            if (viewAngle > -60) drawEyebrow(rightBrowX, -60, a, s, u, false, rad);
+
+            // 3. 绘制眼睛
+            const eyeZ = 15;
+            const leftEyeX = projectX(-60, eyeZ, rad);
+            const rightEyeX = projectX(60, eyeZ, rad);
+            
+            if (viewAngle < 70) drawEye(leftEyeX, -10, a, s, u, h, true, rad);
+            if (viewAngle > -70) drawEye(rightEyeX, -10, a, s, u, h, false, rad);
+
+            // 4. 绘制鼻子 (关键侧视部件)
+            drawNose(rad, a, u);
+
+            // 5. 绘制嘴巴
+            const mouthZ = 20;
+            const mouthCenterX = projectX(0, mouthZ, rad);
+            drawMouth(mouthCenterX, h, a, s, u, rad);
+
+            // 6. 绘制耳朵 (仅在侧视时明显)
+            if (Math.abs(viewAngle) > 30) {
+                drawEar(rad);
+            }
+
+            ctx.restore();
+            requestAnimationFrame(drawFace);
+        }
+
+        function drawEyebrow(x, y, anger, sadness, surprise, isLeft, rad) {
+            ctx.beginPath();
+            ctx.lineWidth = 8;
+            ctx.lineCap = 'round';
+            ctx.strokeStyle = '#4a3b32';
+
+            let rotate = 0;
+            let offsetY = 0;
+
+            if (isLeft) {
+                rotate += anger * 0.4;
+                rotate -= sadness * 0.3;
+                offsetY -= surprise * 30;
+            } else {
+                rotate -= anger * 0.4;
+                rotate += sadness * 0.3;
+                offsetY -= surprise * 30;
+            }
+
+            // 侧视时眉毛长度视觉压缩
+            const widthScale = Math.cos(rad * 0.3); 
+
+            ctx.save();
+            ctx.translate(x, y + offsetY);
+            ctx.rotate(rotate);
+            
+            ctx.moveTo(-25 * widthScale, 0);
+            ctx.quadraticCurveTo(0, -5, 25 * widthScale, 0);
+            ctx.stroke();
+            ctx.restore();
+        }
+
+        function drawEye(x, y, anger, sadness, surprise, happiness, isLeft, rad) {
+            let eyeHeight = 20;
+            eyeHeight += surprise * 15;
+            eyeHeight -= happiness * 10;
+            eyeHeight -= anger * 5;
+
+            let upperLidDrop = sadness * 8;
+            
+            // 侧视时眼睛变窄
+            const widthScale = Math.max(0.2, Math.cos(rad * 0.5));
+            const w = 25 * widthScale;
+
+            ctx.fillStyle = '#fff';
+            ctx.beginPath();
+            ctx.moveTo(x - w, y);
+            ctx.bezierCurveTo(x - w/2, y - eyeHeight - upperLidDrop, x + w/2, y - eyeHeight - upperLidDrop, x + w, y);
+            ctx.bezierCurveTo(x + w/2, y + eyeHeight * 0.8, x - w/2, y + eyeHeight * 0.8, x - w, y);
+            ctx.fill();
+
+            // 瞳孔位置随视角移动
+            const pupilOffset = rad * 5; 
+            
+            ctx.fillStyle = '#3b2f2f';
+            ctx.beginPath();
+            ctx.arc(x + pupilOffset, y + (surprise * 2), 8 * widthScale, 0, Math.PI * 2);
+            ctx.fill();
+            
+            ctx.fillStyle = '#fff';
+            ctx.beginPath();
+            ctx.arc(x + pupilOffset + 3, y - 3 + (surprise * 2), 3 * widthScale, 0, Math.PI * 2);
+            ctx.fill();
+        }
+
+        function drawNose(rad, anger, surprise) {
+            ctx.beginPath();
+            ctx.lineWidth = 3;
+            ctx.strokeStyle = 'rgba(100, 80, 70, 0.3)';
+            ctx.lineCap = 'round';
+
+            // 鼻梁顶点
+            const bridgeTopX = projectX(0, 10, rad);
+            const bridgeTopY = -10;
+            
+            // 鼻尖 (最凸出部分 z=40)
+            const tipX = projectX(0, 40, rad);
+            const tipY = 45;
+            
+            // 鼻底
+            const baseX = projectX(0, 30, rad);
+            const baseY = 55;
+
+            // 绘制鼻梁侧面轮廓
+            ctx.moveTo(bridgeTopX, bridgeTopY);
+            ctx.quadraticCurveTo(tipX - (rad * 10), tipY - 10, tipX, tipY);
+            
+            // 绘制鼻底
+            ctx.quadraticCurveTo(tipX + (rad * 5), baseY, baseX, baseY);
+            
+            // 如果是侧视，绘制鼻孔侧面
+            if (Math.abs(rad) > 0.2) {
+                ctx.moveTo(tipX, tipY);
+                ctx.quadraticCurveTo(tipX + (rad * 15), tipY + 5, baseX, baseY);
+            }
+            
+            ctx.stroke();
+            
+            // 鼻影
+            if (rad > 0) {
+                ctx.fillStyle = 'rgba(0,0,0,0.05)';
+                ctx.beginPath();
+                ctx.moveTo(bridgeTopX, bridgeTopY);
+                ctx.lineTo(tipX, tipY);
+                ctx.lineTo(baseX, baseY);
+                ctx.fill();
+            }
+        }
+
+        function drawMouth(centerX, happy, angry, sad, surprised, rad) {
+            ctx.beginPath();
+            ctx.lineWidth = 6;
+            ctx.lineCap = 'round';
+            ctx.strokeStyle = '#c48b78';
+
+            const width = 50 * Math.cos(rad * 0.4); // 嘴宽随角度变化
+            const baseY = 80;
+            
+            let cornerY = baseY;
+            cornerY -= happy * 25;
+            cornerY += sad * 15;
+            cornerY += angry * 10;
+
+            let openAmount = surprised * 30 + angry * 5;
+            
+            // 嘴角X坐标随视角偏移
+            const leftCornerX = centerX - width;
+            const rightCornerX = centerX + width;
+
+            // 上唇
+            ctx.moveTo(leftCornerX, cornerY);
+            const cupidsBowY = cornerY - (happy * 5) + (angry * 5);
+            // 唇峰也随视角轻微偏移
+            ctx.quadraticCurveTo(centerX, cupidsBowY, rightCornerX, cornerY);
+            
+            if (openAmount > 2) {
+                ctx.stroke();
+                ctx.beginPath();
+                ctx.fillStyle = '#6a3a3a';
+                ctx.moveTo(leftCornerX, cornerY);
+                ctx.quadraticCurveTo(centerX, cornerY + openAmount, rightCornerX, cornerY);
+                ctx.quadraticCurveTo(centerX, cornerY + openAmount * 0.5, leftCornerX, cornerY);
+                ctx.fill();
+            } else {
+                ctx.quadraticCurveTo(centerX, cornerY + 10, leftCornerX, cornerY);
+                ctx.stroke();
+            }
+        }
+        
+        function drawEar(rad) {
+            ctx.fillStyle = '#eecfb0';
+            ctx.strokeStyle = '#dcb89a';
+            ctx.lineWidth = 2;
+            
+            // 耳朵位置在侧面
+            const earX = rad > 0 ? projectX(-130, 0, rad) : projectX(130, 0, rad);
+            const earY = 10;
+            
+            ctx.beginPath();
+            ctx.ellipse(earX, earY, 15, 25, rad * 0.2, 0, Math.PI * 2);
+            ctx.fill();
+            ctx.stroke();
+        }
+
+        drawFace();
+    </script>
+</body>
+</html>
