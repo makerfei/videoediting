@@ -177,17 +177,18 @@
       updateTimeDisplay();
     }
     // 导入文件，重新开始
-    function AllNewStart(inStateData) {
-      myState.reStart(inStateData.state)
+   async function  AllNewStart(inStateData) {
+      await myState.reStart(inStateData.state)
       state = myState.get()
       myStage.reSetKeyframes(inStateData)
       upDataAllUI()
     }
 
-    function init() {
+   async function init() {
       //后端上传接口地址
       UPLOAD_API_URL = '/api/upload/frame';
       myState = new myStateClass()
+      await myState.reStart()
       state = myState.get()
 
       myStage = new myStageClass(state)

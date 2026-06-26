@@ -9,3 +9,4 @@ web/source/*
 index-tts/*
 web/AiSound/*
 **/__pycache__/
+web/localStorage/*

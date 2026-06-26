@@ -278,29 +278,28 @@ class myStageClass {
             // 找出当前的人物属性
             let stateTrack = this.state.tracks.find(i => i.id == currItem.trackid)
             let stateClip = stateTrack.clips.find(i => i.id == currItem.clipid)
-            let images = null
+            
             let categorize = null
 
             if (stateClip && Object.hasOwn(stateClip, "images")) {
-                images = stateClip.images
                 categorize = stateClip.categorize
             }
 
 
-            newCurrtimeKey.push({ ...currItem.key[0], data: { ...currItem.key[0].data, trackid: currItem.trackid, images, categorize } })
+            newCurrtimeKey.push({ ...currItem.key[0], data: { ...currItem.key[0].data, trackid: currItem.trackid, categorize } })
 
             if (inSertkey) {
                 inSertkey.key.forEach(k => {
                     if ((startTime + k.time) < endTime) {
                         newCurrtimeKey.push({
-                            ...k, data: { ...k.data, trackid: currItem.trackid, images, categorize },
+                            ...k, data: { ...k.data, trackid: currItem.trackid, categorize },
                             time: startTime + k.time,
                         })
                     }
                 })
             }
 
-            newCurrtimeKey.push({ ...currItem.key[1], data: { ...currItem.key[1].data, trackid: currItem.trackid, images, categorize } })
+            newCurrtimeKey.push({ ...currItem.key[1], data: { ...currItem.key[1].data, trackid: currItem.trackid, categorize } })
 
             for (let j = 0; j < newCurrtimeKey.length; j++) {
 
@@ -356,6 +355,7 @@ class myStageClass {
                     clip.visible(false); // 动画结束后隐藏
                 },
                 onUpdate: () => {
+                    
                     // 展示图片全凭逻辑画
                     clip.visible(this.isShowClipByShowTrack(_this.state.currentTime, trackid));
                     //需要合成标识
@@ -363,7 +363,7 @@ class myStageClass {
                         let fps = 24;
                         if (Math.floor((_this.state.currentTime * fps) % 1) == 0) {
                             // 图片人物的逻辑
-                            clip.image(getimage(width, height, data.images))
+                            // clip.image(getimage(width, height, data.images))
                         }
                     } else if (data.src.toLowerCase().endsWith('.gif') && _this.state.currentTime > startTime) {
                         let fps = _this.imagePool.gifFpt(data.src)

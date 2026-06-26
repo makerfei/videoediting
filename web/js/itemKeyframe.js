@@ -40,7 +40,7 @@ class itemKeyframe {
         // 设置首尾帧
         let setkeyFrameStartAndEnd = document.getElementById("setkeyFrameStartAndEnd")
         setkeyFrameStartAndEnd.addEventListener('click', (e) => {
-            myStage.setKeyframesPost(  myStage.selectedclipId,0 [0,1])
+            myStage.setKeyframesPost(myStage.selectedclipId,[0,1])
            
         })
 

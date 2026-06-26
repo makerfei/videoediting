@@ -80,6 +80,11 @@ function addTrack(type) {
     if (trackHasTheSameId(value, type)) {
         return
     }
+    
+    if(!(/[a-zA-Z]/.test(value))){
+        showToast("轨道以字母开头")
+        return
+    }
 
     if ((type == "scale" || type == "show") && state.tracks.find(t => t.type == type)) {
         showToast(`已有${getTextByTpye(type)}`)

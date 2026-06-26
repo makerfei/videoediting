@@ -3,20 +3,16 @@
 class myStateClass {
     constructor() {
         this.updataKonvaTimer = null
-        this.reStart()
+        this.personList = {}
     }
-    reStart(indata) {
+  async  reStart(indata) {
         if (indata) {
             this.state = indata;
         } else {
             // 先获取本地的数据
-
-            let StorageState = localStorage.getItem("state")
-            StorageState = StorageState ? JSON.parse(StorageState) : null
+            let StorageState = await this.getlocalStorage("state")
             this.state = StorageState || this.defData()
         }
-
-
         document.getElementById("fillName").value = this.state.name
     }
 
@@ -27,11 +23,11 @@ class myStateClass {
         });
     }
     async dataToKonva(callback) {
-        
+
         await this.autoAllLoadPersonImageData()
         this.updataStateTracks();
-        this.saveStorage();
-       
+        this.saveLocalStorage();
+
         if (this.updataKonvaTimer) {
             clearTimeout(this.updataKonvaTimer);
         }
@@ -39,8 +35,15 @@ class myStateClass {
             callback(this.state)
         }, 1000);
     }
-    saveStorage() {
-        localStorage.setItem("state", JSON.stringify(this.state))
+
+
+    
+    getlocalStorage(name){
+      
+      return getStorage(name)
+    }
+    saveLocalStorage() {
+        saveStorage(this.state,"state")
     }
     defData() {
         return {
@@ -84,7 +87,6 @@ class myStateClass {
     // 自动加载人物图片的imagepool
     autoAllLoadPersonImageData() {
         return new Promise(async (resolvemain, reject) => {
-            
             let loadList = []
             // 获取所有需要加载的列表
             this.state.tracks.forEach((track) => {
@@ -94,22 +96,25 @@ class myStateClass {
                     }
                 })
             })
+            //加载所有人
             let awaitFile = []
             for (let i = 0; i < loadList.length; i++) {
                 let clip = loadList[i]
                 let file = new Promise((resolve, reject) => {
                     axios(clip.jsonSrc).then(res => {
-                        clip.images = res.data.images
+                        let pathLis = clip.jsonSrc.split("/")
+                        this.personList[`${pathLis[2]}${pathLis[3].split(3)[0]}`] = res.data.images
                         resolve()
                     })
                 })
                 awaitFile.push(file)
             }
             await Promise.all(awaitFile)
+
             let awaitImg = []
-            for (let i = 0; i < loadList.length; i++) {
-                let clip = loadList[i]
-                clip.images.forEach(item => {
+            for(let key in this.personList){
+                let person = this.personList[key]
+                 person.forEach(item => {
                     let p = new Promise((resolve, reject) => {
                         item.img = new Image()
                         item.img.onload = () => {
@@ -131,11 +136,11 @@ class myStateClass {
 // ==================== 视频预览 =================
 // 视频内容更新
 function updateVideoPreview() {
-  myState.dataToKonva((instate) => {
-    console.log("画布重新画 ----reStart---- 画布重新画")
-    stopPlayback()
-    myStage.reStart(instate)
-    myAudio.reStart(instate)
-  })
+    myState.dataToKonva((instate) => {
+        console.log("画布重新画 ----reStart---- 画布重新画")
+        stopPlayback()
+        myStage.reStart(instate)
+        myAudio.reStart(instate)
+    })
 
 }

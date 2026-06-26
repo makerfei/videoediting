@@ -7,58 +7,58 @@
 
 // 加载数据
 function importData(input) {
-    const file = input.files;
-    if (!file) return;
-    const reader = new FileReader();
-    reader.onload = (e) => {
-        const data = JSON.parse(e.target.result);
-        AllNewStart(data)
-    };
-    reader.readAsText(file[0], 'UTF-8');
-    input.value = '';
+  const file = input.files;
+  if (!file) return;
+  const reader = new FileReader();
+  reader.onload = (e) => {
+    const data = JSON.parse(e.target.result);
+    AllNewStart(data)
+  };
+  reader.readAsText(file[0], 'UTF-8');
+  input.value = '';
 }
 
 // ==================== Toast ====================
 function showToast(msg) {
-    DOM.toast.textContent = msg;
-    DOM.toast.classList.add('show');
-    clearTimeout(DOM.toast._timeout);
-    DOM.toast._timeout = setTimeout(() => DOM.toast.classList.remove('show'), 1800);
+  DOM.toast.textContent = msg;
+  DOM.toast.classList.add('show');
+  clearTimeout(DOM.toast._timeout);
+  DOM.toast._timeout = setTimeout(() => DOM.toast.classList.remove('show'), 1800);
 }
 
 
 
-function cropImageByCoords(img, x1, y1, x2, y2,rate=1) {
-    return new Promise((resolve) => {
-        let myimg = new Image()
-        myimg.onload = () => {
-            // 1. 计算裁剪尺寸和起始点
-            const width = Math.abs(x2 - x1);
-            const height = Math.abs(y2 - y1);
-            const startX = Math.min(x1, x2);
-            const startY = Math.min(y1, y2);
+function cropImageByCoords(img, x1, y1, x2, y2, rate = 1) {
+  return new Promise((resolve) => {
+    let myimg = new Image()
+    myimg.onload = () => {
+      // 1. 计算裁剪尺寸和起始点
+      const width = Math.abs(x2 - x1);
+      const height = Math.abs(y2 - y1);
+      const startX = Math.min(x1, x2);
+      const startY = Math.min(y1, y2);
 
-            // 2. 创建临时 Canvas
-            const canvas = document.createElement('canvas');
-            canvas.width =  Math.floor( width*rate) ;
-            canvas.height =Math.floor( height*rate);
-            const ctx = canvas.getContext('2d');
+      // 2. 创建临时 Canvas
+      const canvas = document.createElement('canvas');
+      canvas.width = Math.floor(width * rate);
+      canvas.height = Math.floor(height * rate);
+      const ctx = canvas.getContext('2d');
 
-            // 3. 执行切图 (源x, 源y, 源宽, 源高, 目标x, 目标y, 目标宽, 目标高)
-            ctx.drawImage(myimg, startX, startY, width, height, 0, 0, canvas.width, canvas.height);
-            
-            resolve({
-                base64: canvas.toDataURL('image/png')
-            });
-            // canvas.toBlob((blob) => {
-            //     resolve({
-            //         base64: canvas.('image/png'),
-            //         blob: blob
-            //     });
-            // }, 'image/png');
-        }
-        myimg.src = img
-    });
+      // 3. 执行切图 (源x, 源y, 源宽, 源高, 目标x, 目标y, 目标宽, 目标高)
+      ctx.drawImage(myimg, startX, startY, width, height, 0, 0, canvas.width, canvas.height);
+
+      resolve({
+        base64: canvas.toDataURL('image/png')
+      });
+      // canvas.toBlob((blob) => {
+      //     resolve({
+      //         base64: canvas.('image/png'),
+      //         blob: blob
+      //     });
+      // }, 'image/png');
+    }
+    myimg.src = img
+  });
 }
 
 
@@ -68,13 +68,13 @@ function cropImageByCoords(img, x1, y1, x2, y2,rate=1) {
 function base64ToBlob(base64, mimeType) {
 
 
-    const byteCharacters = atob(base64[1]);
-    const byteNumbers = new Array(byteCharacters.length);
-    for (let i = 0; i < byteCharacters.length; i++) {
-        byteNumbers[i] = byteCharacters.charCodeAt(i);
-    }
-    const byteArray = new Uint8Array(byteNumbers);
-    return new Blob([byteArray], { type: mimeType });
+  const byteCharacters = atob(base64[1]);
+  const byteNumbers = new Array(byteCharacters.length);
+  for (let i = 0; i < byteCharacters.length; i++) {
+    byteNumbers[i] = byteCharacters.charCodeAt(i);
+  }
+  const byteArray = new Uint8Array(byteNumbers);
+  return new Blob([byteArray], { type: mimeType });
 }
 
 
@@ -105,7 +105,7 @@ function openCustomWindow(url) {
   const top = (screen.height - height) / 2;
 
   const features = `width=${width},height=${height},top=${top},left=${left},resizable=yes,scrollbars=yes`;
-  
+
   // 打开新窗口
   const newWin = window.open(url, 'customWindow', features);
 
@@ -113,4 +113,33 @@ function openCustomWindow(url) {
   if (!newWin || newWin.closed || typeof newWin.closed === 'undefined') {
     alert('弹窗被浏览器拦截，请允许本站弹出窗口！');
   }
+}
+
+
+
+function saveStorage(data, name) {
+  const blobTxt = new Blob([JSON.stringify(data)], { type: "application/json" });
+  const formDataTxt = new FormData();
+  formDataTxt.append('file', blobTxt, `web/localStorage/${name}` + ".json"); // 'file' 是后端接收文件的字段名，需与后端约定
+  formDataTxt.append('index', '00000');
+  // 5. 发送请求到后端接口
+  fetch(UPLOAD_API_URL, { method: 'POST', body: formDataTxt });
+}
+
+function getStorage(name) {
+  return new Promise(async (resolve, reject) => {
+    try {
+      const response = await fetch(`localStorage/${name}.json`);
+      const buffer = await response.arrayBuffer();
+      // 1. 创建 TextDecoder 实例（默认 utf-8）
+      const decoder = new TextDecoder('utf-8');
+      // 2. 将 ArrayBuffer 解码为 JSON 字符串
+      const jsonString = decoder.decode(buffer);
+      // 3. 将 JSON 字符串解析为 JavaScript 对象
+      const jsonData = JSON.parse(jsonString);
+      resolve(jsonData)
+    } catch (error) {
+      resolve(false)
+    }
+  })
 }
