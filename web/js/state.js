@@ -113,7 +113,6 @@ class myStateClass {
                     let p = new Promise((resolve, reject) => {
                         item.img = new Image()
                         item.img.onload = () => {
-                         
                             resolve()
                         }
                         item.img.src = item.src
@@ -122,8 +121,6 @@ class myStateClass {
                 })
             }
             await Promise.all(awaitImg)
-
-           
             resolvemain()
         })
     }

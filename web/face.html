@@ -401,9 +401,7 @@
             scale: 1,
             skinColor: '#f5d0b5',
             shadowColor: 'rgba(0,0,0,0.1)',
-            emotions: { happy: 0, angry: 0, sad: 0, surprised: 0 },
-
-
+          
             happy: 0, angry: 0, sad: 0, surprised: 0,
 
             viewAngle: 0,
@@ -660,8 +658,7 @@
 
         document.getElementById('btn-export').addEventListener('click', () => {
             const exportData = {
-                ...currentConfig,
-                emotions: { happy: 0, angry: 0, sad: 0, surprised: 0 } // Ensure structure matches original
+                ...currentConfig
             };
             jsonOutput.value = JSON.stringify(exportData, null, 4);
             modal.classList.add('active');

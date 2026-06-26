@@ -12,8 +12,12 @@ class Bone {
         this.origin = { x: 0, y: 0 }
         this.isUp = isUp
         if (imageData) {
-            this.img = imageData.img
 
+            if (imageData.note && JSON.parse(imageData.note).scale) {
+                this.img = new Face({ ...JSON.parse(imageData.note), width: imageData.width, height: imageData.height }).getCanvas()
+            } else {
+                this.img = imageData.img
+            }
             if (isUp) {
                 this.origin = { x: Math.floor(this.img.width / 2), y: this.img.height }
             } else {
@@ -22,19 +26,20 @@ class Bone {
 
             if (imageData.note) {
                 let { X, Y } = JSON.parse(imageData.note)
-                this.origin = { x: X , y: Y  }
+                if (X && Y) {
+                    this.origin = { x: X, y: Y }
+                }
             }
-
             // 设置偏移量
             let offsetX = Number(imageData && imageData.offsetX || 0)
             let offsetY = Number(imageData && imageData.offsetY || 0)
-            this.origin.x+=offsetX
-            this.origin.y+=offsetY
+            this.origin.x += offsetX
+            this.origin.y += offsetY
 
             if (isUp) {
-                this.len =  Math.hypot((this.origin.y), (this.origin.x-this.img.width / 2))
-                let r = Math.atan((this.origin.x-this.img.width / 2)/(this.origin.y))
-                this.restAngle = this.angle -r;
+                this.len = Math.hypot((this.origin.y), (this.origin.x - this.img.width / 2))
+                let r = Math.atan((this.origin.x - this.img.width / 2) / (this.origin.y))
+                this.restAngle = this.angle - r;
             } else { //算 偏移量
                 this.len = Math.hypot((this.img.height - this.origin.y), (this.img.width / 2 - this.origin.x))
                 let r = Math.atan((this.img.width / 2 - this.origin.x) / (this.img.height - this.origin.y))
@@ -62,7 +67,7 @@ class Bone {
 class Person {
     constructor(ctx, width, height, images) {
         this.ctx = ctx
-       
+
         // this.timeDifference = this.c - this.s
 
         // this.ctx.strokeStyle = '#0f0';
@@ -74,8 +79,8 @@ class Person {
         const root = new Bone(null, 0);          // 头
         const body = new Bone(root, -Math.PI / 2, images.find(i => i.name == "身体"), true);
         const head = new Bone(body, 0, images.find(i => i.name == "头"), true);
-        const face = new Bone(head,  -Math.PI, images.find(i => i.name == "表情"), false);
-        const hair = new Bone(head,  -Math.PI, images.find(i => i.name == "头发"), false);
+
+        const hair = new Bone(head, -Math.PI, images.find(i => i.name == "头发"), false);
 
         const lua = new Bone(body, -Math.PI / 2 * 1.5, images.find(i => i.name == "左上臂"), false);                  // 右上臂
         const lfa = new Bone(lua, 0, images.find(i => i.name == "左下臂"), false);
@@ -99,7 +104,7 @@ class Person {
             rhand, rfa, rua,
             lth, lsh, lf,
             rth, rsh, rf,
-            body, head, face, hair,
+            body, head, hair,
         ];
     }
     drawBone(bone, ox, oy) {
@@ -148,7 +153,7 @@ class Person {
 }
 
 // 基本绘画内容 canvas
-function getimage(width, height,  images,returnTpe="canvas") {
+function getimage(width, height, images, returnTpe = "canvas") {
 
     const canvas = document.createElement('canvas');
     canvas.width = width;
@@ -156,7 +161,7 @@ function getimage(width, height,  images,returnTpe="canvas") {
     const ctx = canvas.getContext('2d'); // 假设画布大小 200x200
     // 填充白色背景（PNG 默认透明，如需白色需手动填充）
     new Person(ctx, width, height, images).drawAll(width / 2, height / 2)
-    return returnTpe=="canvas" ?canvas:canvas.toDataURL("image/png")
+    return returnTpe == "canvas" ? canvas : canvas.toDataURL("image/png")
 
 }
 

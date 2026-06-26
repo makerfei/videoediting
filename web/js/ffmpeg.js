@@ -19,7 +19,7 @@ async function exportAllFramesAsUpload(inmyStage) {
         // 使用 Math.min 防止超出总时长
         tl.time(Math.min(time, tl.totalDuration()));
        
-        stage.batchDraw();
+        // stage.batchDraw();
         // 2. 获取图像数据 (Base64)
         // pixelRatio: 2 可以提高清晰度，但会增加数据量，请根据带宽调整
         const dataURL = stage.toDataURL({ pixelRatio: 1 });

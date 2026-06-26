@@ -4,6 +4,20 @@ class Face {
         this.canvas.width = 512;
         this.canvas.height = 512;
         this.ctx = this.canvas.getContext('2d')
+        if (faceConfig.width && faceConfig.height) {
+
+            faceConfig.centerX = faceConfig.width / 2
+            faceConfig.centerY = faceConfig.height / 2
+            faceConfig.scale =Math.min(faceConfig.width / this.canvas.width , faceConfig.height / this.canvas.height );
+
+            this.canvas.width = faceConfig.width;
+            this.canvas.height = faceConfig.height;
+
+        }
+
+
+
+
         const faceConfigMy = {
             centerX: 512 / 2,
             centerY: 512 / 2,
@@ -61,8 +75,10 @@ class Face {
     }
     getCanvas() {
         this.drawFace(this.faceConfig)
-        return this.canvas.toDataURL()
+        return this.canvas
     }
+
+
     drawFace() {
         let {
             centerX,
