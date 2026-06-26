@@ -17,7 +17,12 @@ function personLinkTrack(data) {
         let { currClipSound, preClipSound } = currTimeClip(currentTime, soundTrack)
         if (currClipSound) {
             const SpeakValue = (Math.sin((currentTime - currClipSound.start) * 15) + 1) / 2;
-            note = { ...note, ...currClipSound.emo_dict, isSpeak: true, SpeakValue }
+            note = { ...note, ...currClipSound.emo_dict, isSpeak: true, SpeakValue,
+                
+                // "X":(note.X+Math.sin((currentTime - currClipSound.start) * 15)*3),
+                "Y":(note.Y+Math.sin((currentTime - currClipSound.start) * 15)*3),
+            
+            }
         } else if (preClipSound) {
             note = { ...note, ...preClipSound.emo_dict }
         }
