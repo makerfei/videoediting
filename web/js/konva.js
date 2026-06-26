@@ -380,7 +380,7 @@ class myStageClass {
 
         // 主窗口动画
 
-        this.state.scale&&this.state.scale.clips.forEach(s => {
+        this.state.scale && this.state.scale.clips.forEach(s => {
             s.duration > 0.4 ? this.masterTimeline.to(this.stage, {
                 x: s.x,
                 y: s.y,
@@ -482,23 +482,23 @@ class myStageClass {
 
         return { keyframes }
     }
-    setKeyframesPost(clipid, index) {
+    setKeyframesPost(clipid, list) {
         let keyframes = this.keyframes.find(k => k.clipid == clipid)
         let rect = this.shape[clipid]
         // ✅ 正确：获取相对于舞台的绝对坐标
-
-        keyframes.key[index].data = {
-            ...keyframes.key[index].data,
-            x: rect.x(),
-            y: rect.y(),
-            width: rect.width(),
-            height: rect.height(),
-            rotation: rect.rotation(),
-            scaleX: rect.scaleX(),
-            scaleY: rect.scaleY(),
-        }
+        list.forEach(index => {
+            keyframes.key[index].data = {
+                ...keyframes.key[index].data,
+                x: rect.x(),
+                y: rect.y(),
+                width: rect.width(),
+                height: rect.height(),
+                rotation: rect.rotation(),
+                scaleX: rect.scaleX(),
+                scaleY: rect.scaleY(),
+            }
+        })
         this.rebuildTimeline()
-
         let insetkeyframesItem = this.insetkeyframes.find(k => k.clipid == clipid)
         myitemKeyframe.show(keyframes, insetkeyframesItem)
     }

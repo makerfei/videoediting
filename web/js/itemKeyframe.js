@@ -22,9 +22,9 @@ class itemKeyframe {
             let index = clipEl.dataset.index; // 获取 data-type 属性
             console.log("Clicked ID:", id, "Type:", type, "index:", index);
             if (type == "firstkey") {
-                myStage.setKeyframesPost(id, 0)
+                myStage.setKeyframesPost(id, [0])
             } else if (type == "lastkey") {
-                myStage.setKeyframesPost(id, 1)
+                myStage.setKeyframesPost(id, [1])
             } else if (type == "keydel") {
                 myStage.delKeyframes(id, index)
             }
@@ -40,10 +40,8 @@ class itemKeyframe {
         // 设置首尾帧
         let setkeyFrameStartAndEnd = document.getElementById("setkeyFrameStartAndEnd")
         setkeyFrameStartAndEnd.addEventListener('click', (e) => {
-            myStage.selectedclipId
-            debugger
-            myStage.setKeyframesPost(  myStage.selectedclipId, 0)
-            myStage.setKeyframesPost( myStage.selectedclipId , 1)
+            myStage.setKeyframesPost(  myStage.selectedclipId,0 [0,1])
+           
         })
 
 
