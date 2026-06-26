@@ -354,7 +354,7 @@ function addEmo_audio_prompt({ src, name }) {
 
 
 // ai返回声音显示
-function addSoundClip({ src, text, trackId, start, duration, spk }) {
+function addSoundClip({ src, text, trackId, start, duration, spk,emo_dict }) {
     let track = state.tracks.find(i => i.id == trackId)
     const newClip = {
         id: src.split(".")[0].replace("/", "_"),
@@ -363,6 +363,7 @@ function addSoundClip({ src, text, trackId, start, duration, spk }) {
         duration: duration,
         name: text,
         src: src,
+        emo_dict
     };
     track.clips.push(newClip);
     updataAllUI()

@@ -279,11 +279,11 @@ class myStageClass {
             let stateTrack = this.state.tracks.find(i => i.id == currItem.trackid)
             let stateClip = stateTrack.clips.find(i => i.id == currItem.clipid)
             
-            let categorize = null
+            let categorize =  stateClip.categorize
 
-            if (stateClip && Object.hasOwn(stateClip, "images")) {
-                categorize = stateClip.categorize
-            }
+            
+               
+           
 
 
             newCurrtimeKey.push({ ...currItem.key[0], data: { ...currItem.key[0].data, trackid: currItem.trackid, categorize } })
@@ -355,15 +355,18 @@ class myStageClass {
                     clip.visible(false); // 动画结束后隐藏
                 },
                 onUpdate: () => {
-                    
+                        
                     // 展示图片全凭逻辑画
                     clip.visible(this.isShowClipByShowTrack(_this.state.currentTime, trackid));
                     //需要合成标识
                     if (data.categorize == "person") {
                         let fps = 24;
+                        
                         if (Math.floor((_this.state.currentTime * fps) % 1) == 0) {
                             // 图片人物的逻辑
-                            // clip.image(getimage(width, height, data.images))
+                            clip.image( personLinkTrack({...data,currentTime:_this.state.currentTime}))
+
+                           
                         }
                     } else if (data.src.toLowerCase().endsWith('.gif') && _this.state.currentTime > startTime) {
                         let fps = _this.imagePool.gifFpt(data.src)

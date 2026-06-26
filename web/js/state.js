@@ -102,8 +102,8 @@ class myStateClass {
                 let clip = loadList[i]
                 let file = new Promise((resolve, reject) => {
                     axios(clip.jsonSrc).then(res => {
-                        let pathLis = clip.jsonSrc.split("/")
-                        this.personList[`${pathLis[2]}${pathLis[3].split(3)[0]}`] = res.data.images
+                        let pathList = clip.jsonSrc.split("/")
+                        this.personList[`${pathList[2]}${pathList[3].split(".")[0]}`] = res.data.images
                         resolve()
                     })
                 })

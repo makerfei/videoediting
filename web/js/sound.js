@@ -71,14 +71,17 @@ class Sound {
             }).then(res => {
                 let list = JSON.parse(res.data)
                 list.forEach(item => {
-                    let { text, emo_text, spk_audio_prompt, track, duration, output_path } = item
+                    let { text, emo_text, spk_audio_prompt, track, duration, output_path,emo_dict } = item
+
+                    
                     addSoundClip({
                         src: output_path,
                         duration,
                         spk: spk_audio_prompt,
                         text: text,
                         start: currTime,
-                        trackId: track
+                        trackId: track,
+                        emo_dict:emo_dict
                     })
                     currTime += duration
                 })
