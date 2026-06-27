@@ -10,8 +10,8 @@ class myPageOperationClass {
         this.categorizationList = []
         this.fillList = []
 
-        this.action = []
-        this.keyMoveList = []
+        this.action = {}
+        this.keyMoveList = {}
 
         this.getTypeListData().then(async () => {
             await this.getCategorizationListData();
@@ -179,9 +179,9 @@ class myPageOperationClass {
             addPersonToClip({ imgSrc, jsonSrc })
         } else if (type == "动作") {
             if (actionName) {
-                addActionToClip({ categorization, name, actionName })
+                addActionToClip({ categorization, name, actionName,actionlist:this.action[categorization] })
             } else if (moveName) {
-                addMoveToClip({ categorization, name, moveName })
+                addMoveToClip({ categorization, name, moveName , actionlist:this.action[categorization],keyMoveList:this.keyMoveList[categorization]})
             }
         } else if (type == "表情") {
             let imgSrc = `${this.sourcePath}/${this.typeSelect}/${this.categorizationSelect}/${name}`

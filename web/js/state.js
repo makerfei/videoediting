@@ -36,10 +36,7 @@ class myStateClass {
         }, 1000);
     }
 
-
-    
     getlocalStorage(name){
-      
       return getStorage(name)
     }
     saveLocalStorage() {
@@ -129,6 +126,7 @@ class myStateClass {
             resolvemain()
         })
     }
+   
 
 }
 
@@ -144,3 +142,5 @@ function updateVideoPreview() {
     })
 
 }
+
+

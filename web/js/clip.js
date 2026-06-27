@@ -255,7 +255,8 @@ function addPersonToClip({ imgSrc, jsonSrc }) {
     showToast('片段已添加，点击预览区加载视频');
 }
 
-function addActionToClip({ categorization, name, actionName }) {
+function addActionToClip({ categorization, name, actionName, actionlist }) {
+
     let track = state.selectedTrackId && state.tracks.find(i => i.id == state.selectedTrackId)
 
     if (!track || !(track.type == "action")) {
@@ -270,28 +271,32 @@ function addActionToClip({ categorization, name, actionName }) {
         duration: 3,
         name: "姿态-" + actionName + "-" + categorization,
         categorization,
-        actionName
+        actionList: [actionlist.find(i => i.name == actionName)]
     };
     track.clips.push(newClip);
     updataAllUI()
     showToast('片段已添加，点击预览区加载视频');
 }
 
-function addMoveToClip({ categorization, name, moveName }) {
+function addMoveToClip({ categorization, name, moveName, actionlist, keyMoveList }) {
     let track = state.selectedTrackId && state.tracks.find(i => i.id == state.selectedTrackId)
     if (!track || !(track.type == "action")) {
         showToast("请选择视频轨道")
         return
     }
     let id = name.split(".")[0]
+    let actionList = []
+    let keyMove = keyMoveList.find(i => i.name == moveName)
+    keyMove.list.forEach(k=>{
+        actionList.push(actionlist.find(i=>i.name==k))
+    })
     const newClip = {
         id: id + "-" + new Date().getTime(),
         categorize: "action",
         start: state.currentTime,
         duration: 3,
         name: "动画-" + moveName + "-" + categorization,
-        categorization,
-        moveName
+        actionList
     };
     track.clips.push(newClip);
     updataAllUI()
@@ -354,7 +359,7 @@ function addEmo_audio_prompt({ src, name }) {
 
 
 // ai返回声音显示
-function addSoundClip({ src, text, trackId, start, duration, spk,emo_dict }) {
+function addSoundClip({ src, text, trackId, start, duration, spk, emo_dict }) {
     let track = state.tracks.find(i => i.id == trackId)
     const newClip = {
         id: src.split(".")[0].replace("/", "_"),
