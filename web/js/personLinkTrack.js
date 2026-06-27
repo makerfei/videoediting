@@ -2,13 +2,19 @@
 function personLinkTrack(data) {
     let { width, height, src, trackid, currentTime } = data
     let pathList = src.split("/")
-    let person = myState.personList[`${pathList[2]}${pathList[3].split(".")[0]}`]
-
+    let person = myState.personList[`${pathList[2]}${pathList[3].split(".")[0]}`].images
+    let canvasScale = myState.personList[`${pathList[2]}${pathList[3].split(".")[0]}`].canvasScale ||1
     let face = person.find(i => i.name == "头")
-    let note = JSON.parse(face.note)
+     let soundTrack  =null
+    let note  = null
+    
+    if (face && ("note" in face)&&face.note) {
+        note = JSON.parse(face.note)
+        //  // 有他的声音轨道 脸跟着声音走
+        soundTrack = state.tracks.find(i => i.type == "audio" && i.id.split("-")[1] == trackid.split("-")[1])
+    }
 
-    //  // 有他的声音轨道 脸跟着声音走
-    let soundTrack = state.tracks.find(i => i.type == "audio" && i.id.split("-")[1] == trackid.split("-")[1])
+
     if (soundTrack) {
         let { currClip: currClipSound, preClip: preClipSound } = currTimeClip(currentTime, soundTrack)
         if (currClipSound.length > 0) {
@@ -31,7 +37,7 @@ function personLinkTrack(data) {
     if (actionTrack) {
         let { currClip: currClipAction, preClip: preClipAction } = currTimeClip(currentTime, actionTrack)
         // 当前动画
-        if (currClipAction.length>0) {
+        if (currClipAction.length > 0) {
             let BonesList = []
             // 把所有动画定格到一瞬
             currClipAction.forEach(c => {
@@ -50,7 +56,7 @@ function personLinkTrack(data) {
                 }
             })
         } else if (preClipAction) {
-            
+
             Bones = getMoveToAction({ start: preClipAction.start, duration: preClipAction.duration, actionList: preClipAction.actionList, currentTime })
         }
     }
@@ -58,20 +64,20 @@ function personLinkTrack(data) {
     let personAndBones = []
 
     person.forEach(e => {
-        let BonesItem = {rotation:0,offsetX:0,offsetY:0}
+        let BonesItem = { rotation: 0, offsetX: 0, offsetY: 0 }
         if (e.name in Bones) {
-            BonesItem = {rotation: Bones[e.name].rotation,offsetX: Bones[e.name].x,offsetY: Bones[e.name].y}   
+            BonesItem = { rotation: Bones[e.name].rotation, offsetX: Bones[e.name].x, offsetY: Bones[e.name].y }
         }
         personAndBones.push({ ...e, ...BonesItem })
 
     })
 
 
-    return getimage(width, height, [
+    return getimage(width*canvasScale, height*canvasScale, [
         ...personAndBones.filter(i => i.name !== "头"),
         {
             ...face,
-            note: JSON.stringify(note)
+            note: note&&  JSON.stringify(note)||null
 
         }
     ])

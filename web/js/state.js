@@ -100,7 +100,13 @@ class myStateClass {
                 let file = new Promise((resolve, reject) => {
                     axios(clip.jsonSrc).then(res => {
                         let pathList = clip.jsonSrc.split("/")
-                        this.personList[`${pathList[2]}${pathList[3].split(".")[0]}`] = res.data.images
+                        this.personList[`${pathList[2]}${pathList[3].split(".")[0]}`]
+                        ={
+                            "images":res.data.images,
+                            "canvasScale":res.data.canvasScale||1
+                        }
+                       
+                        
                         resolve()
                     })
                 })
@@ -110,7 +116,7 @@ class myStateClass {
 
             let awaitImg = []
             for(let key in this.personList){
-                let person = this.personList[key]
+                let person = this.personList[key].images
                  person.forEach(item => {
                     let p = new Promise((resolve, reject) => {
                         item.img = new Image()

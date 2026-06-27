@@ -35,7 +35,6 @@ class Bone {
             let offsetY = Number(imageData && imageData.offsetY || 0)
             this.origin.x += offsetX
             this.origin.y += offsetY
-
             if (isUp) {
                 this.len = Math.hypot((this.origin.y), (this.origin.x - this.img.width / 2))
                 let r = Math.atan((this.origin.x - this.img.width / 2) / (this.origin.y))
@@ -53,12 +52,17 @@ class Bone {
         if (!this.parent) return { x: 0, y: 0, angle: this.angle, r: this.restAngle, img: this.img, origin: this.origin, isUp: this.isUp };
         const p = this.parent.getAbs();
         return {
+            // 此处针对画线
             x: p.x + Math.cos(p.r) * this.parent.len,
             y: p.y + Math.sin(p.r) * this.parent.len,
             r: p.angle + this.restAngle,
+
+
+            // 此处针对画图
             angle: p.angle + this.angle,
             img: this.img,
             origin: this.origin,
+
             isUp: this.isUp
         };
     }
@@ -81,25 +85,31 @@ class Person {
         const head = new Bone(body, 0, images.find(i => i.name == "头"), true);
 
         const hair = new Bone(head, -Math.PI, images.find(i => i.name == "头发"), false);
+        const hairb = new Bone(head, -Math.PI, images.find(i => i.name == "后发"), false);
 
-        const lua = new Bone(body, -Math.PI / 2 * 1.5, images.find(i => i.name == "左上臂"), false);                  // 右上臂
+
+        const luaP = new Bone(body, -Math.PI / 2 * 1.5, images.find(i => i.name == "左臂距"), false);
+        const lua = new Bone(luaP, 0, images.find(i => i.name == "左上臂"), false);                  // 右上臂
         const lfa = new Bone(lua, 0, images.find(i => i.name == "左下臂"), false);
         const lhand = new Bone(lfa, 0, images.find(i => i.name == "左手"), false);                   // 右前臂
 
-        const rua = new Bone(body, Math.PI / 2 * 1.5, images.find(i => i.name == "右上臂"), false);                  // 右上臂
+        const ruaP = new Bone(body, Math.PI / 2 * 1.5, images.find(i => i.name == "右臂距"), false);
+        const rua = new Bone(ruaP, 0, images.find(i => i.name == "右上臂"), false);                  // 右上臂
         const rfa = new Bone(rua, 0, images.find(i => i.name == "右下臂"), false);
         const rhand = new Bone(rfa, 0, images.find(i => i.name == "右手"), false);
 
-        const lth = new Bone(root, Math.PI / 2 * 1, images.find(i => i.name == "左大腿"), false);                   // 右大腿
+        const lthP = new Bone(root, Math.PI / 2 * 1, images.find(i => i.name == "左腿距"), false);  
+        const lth = new Bone(lthP, Math.PI / 2 * 0, images.find(i => i.name == "左大腿"), false);                   // 右大腿
         const lsh = new Bone(lth, Math.PI / 2 * 0, images.find(i => i.name == "左小腿"), false);
         const lf = new Bone(lsh, Math.PI / 2 * 0, images.find(i => i.name == "左脚"), false);                // 右小腿
 
-        const rth = new Bone(root, Math.PI / 2 * 1, images.find(i => i.name == "右大腿"), false);                   // 右大腿
+        const rthP = new Bone(root, Math.PI / 2 * 1, images.find(i => i.name == "右腿距"), false);  
+        const rth = new Bone(rthP, Math.PI / 2 * 0, images.find(i => i.name == "右大腿"), false);                   // 右大腿
         const rsh = new Bone(rth, Math.PI / 2 * 0, images.find(i => i.name == "右小腿"), false);
         const rf = new Bone(rsh, Math.PI / 2 * 0, images.find(i => i.name == "右脚"), false);                // 右小腿
 
         // / -------- 收集所有骨骼 --------
-        this.allBones = [root,
+        this.allBones = [root,hairb ,
             lhand, lfa, lua,
             rhand, rfa, rua,
             lth, lsh, lf,

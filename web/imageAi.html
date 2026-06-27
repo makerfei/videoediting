@@ -815,7 +815,9 @@
             padding: 30px;
         }
 
-        #erase {}
+        #showMove {
+            width: 870px;
+        }
     </style>
 </head>
 
@@ -887,6 +889,8 @@
                     <button onclick="app.drawType(3)" title="画人物图">
                         骨骼模式
                     </button>
+                    <input id="canvasScale" />
+                    <button id="setScale" onclick="app.setScale()"> 确定</button>
                 </div>
                 <div></div>
 
@@ -1015,6 +1019,9 @@
         UPLOAD_API_URL = '/api/upload/frame';
         const app = {
             images: [], // 存储图片数据 { id, src, name, width, height, rects: [] }
+            canvasScale: 1,
+
+
             currentImageId: null,
             cropper: null,
             isRotating: false,
@@ -1073,6 +1080,11 @@
                     minCropBoxHeight: 1   // 关键：设为 0
                 });
 
+            },
+            setScale() {
+                this.canvasScale = document.getElementById("canvasScale").value
+                this.reloadMove()
+                this.saveToLocalStorage()
             },
 
             changeFillName() {
@@ -1212,7 +1224,7 @@
                 })
                 await Promise.all(PromiseList)
 
-                this.dom.showMove.setAttribute("src", getimage(600, 600,  this.images,returnTpe="base64"))
+                this.dom.showMove.setAttribute("src", getimage(600 * this.canvasScale, 600 * this.canvasScale, this.images, returnTpe = "base64"))
             },
 
             handleUpload(input) {
@@ -1560,7 +1572,8 @@
                 // 上传json
                 let data = {
                     filename: this.filename,
-                    images: this.images
+                    images: this.images,
+                    canvasScale: this.canvasScale
                 }
 
 
@@ -1590,6 +1603,7 @@
                 const responseImg = await fetch(UPLOAD_API_URL, { method: 'POST', body: formDataImg });
 
                 this.showStatus('数据已导出');
+                alert("数据已导出")
             },
             importData(inputElement) {
                 const files = inputElement.files;
@@ -1607,8 +1621,14 @@
                             const jsonData = JSON.parse(e.target.result);
                             console.log('解析成功:', jsonData);
 
+
+                            document.getElementById("canvasScale").value = jsonData.canvasScale||1
+
+
+
                             this.images = jsonData.images
                             this.filename = jsonData.filename
+                            this.canvasScale = jsonData.canvasScale||1
                             this.renderList();
                             if (this.images.length > 0) {
                                 this.selectImage(this.images[0].id);
@@ -1633,7 +1653,8 @@
                 try {
                     let data = {
                         filename: this.filename,
-                        images: this.images
+                        images: this.images,
+                        canvasScale: this.canvasScale
                     }
                     localStorage.setItem('annotatePro_data_v2', JSON.stringify(data));
                 } catch (e) {
@@ -1644,10 +1665,11 @@
             loadFromLocalStorage() {
                 const data = localStorage.getItem('annotatePro_data_v2');
                 if (data) {
-                    let { filename, images } = JSON.parse(data);
+                    let { filename, images, canvasScale } = JSON.parse(data);
+                    document.getElementById("canvasScale").value = canvasScale||1
                     this.images = images;
                     this.filename = filename;
-
+                    this.canvasScale = canvasScale||1
 
                     this.renderList();
                     if (this.images.length > 0) {
