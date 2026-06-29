@@ -65,7 +65,7 @@ try:
     data = json.loads(input_data)
     print(data)
     # 使用示例
-    images_to_video_ffmpeg('../uploaded_frames','../audio.wav', '../../output.mp4', fps=24, img_pattern='frame_%05d.png')
+    images_to_video_ffmpeg('../uploaded_frames','../audio.wav', '../../output.mp4', fps=48, img_pattern='frame_%05d.png')
     print("--完成--")
     print('{"state": "视频生成完成"}')
     sys.stdout.flush()

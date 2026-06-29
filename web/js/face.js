@@ -5,18 +5,12 @@ class Face {
         this.canvas.height = 512;
         this.ctx = this.canvas.getContext('2d')
         if (faceConfig.width && faceConfig.height) {
-
             faceConfig.centerX = faceConfig.width / 2
             faceConfig.centerY = faceConfig.height / 2
-            faceConfig.scale =Math.min(faceConfig.width / this.canvas.width , faceConfig.height / this.canvas.height );
-
+            faceConfig.scale = Math.min(faceConfig.width / this.canvas.width, faceConfig.height / this.canvas.height);
             this.canvas.width = faceConfig.width;
             this.canvas.height = faceConfig.height;
-
         }
-
-
-
 
         const faceConfigMy = {
             centerX: 512 / 2,
@@ -135,43 +129,27 @@ class Face {
         const isFrontal = !isLeftProfile && !isRightProfile;
 
         ctx.clearRect(0, 0, canvas.width, canvas.height);
+        // 脸部宽度随角度变化
+        ctx.drawImage(this.faceConfig.img, 0, 0, this.faceConfig.width, this.faceConfig.height)
+
+
+
+
+
+
+
+
+
         ctx.save();
+
         ctx.translate(centerX, centerY);
         ctx.scale(scale, scale);
 
         // 1. 绘制脸型 (根据角度变形)
         ctx.beginPath();
-        // 脸部宽度随角度变化
-        const faceWidth = (220 + faceWidthAdd) * Math.cos(rad * 0.5);
-        const Mass = 1.2 + MassAdd
-        {
-            // 正面或微侧 - 尖脸改进版
-            const topY = -180 + topYAdd; // 头顶位置（假设原点在脸部中心附近，需根据实际坐标系调整）
-            const chinY = 230 + chinYAdd; // 下巴尖端位置
-            const faceHalfWidth = faceWidth;
-            ctx.moveTo(0, chinY); // 从下巴尖端开始
-            // 左脸颊：从下巴尖向左上方延伸至耳朵/太阳穴区域
-            // control point 1: 控制下颌角的内收程度
-            // control point 2: 控制脸颊的弧度
-            ctx.bezierCurveTo(
-                -faceHalfWidth * Mass, chinY - 40, // 左下颌角控制点（内收）
-                -faceHalfWidth, topY + 40,        // 左脸颊中部控制点
-                -faceHalfWidth, topY              // 左侧太阳穴/发际线终点
-            );
-            // 顶部额头：画一个平缓的弧线连接左右
-            ctx.bezierCurveTo(
-                -faceHalfWidth / 2, +topY * 1.5,
-                faceHalfWidth / 2, topY * 1.5,
-                faceHalfWidth, topY
-            );
-            // 右脸颊：从右侧太阳穴向右下方延伸至下巴尖
-            ctx.bezierCurveTo(
-                faceHalfWidth, topY + 40,         // 右脸颊中部控制点
-                faceHalfWidth * Mass, chinY - 40,  // 右下颌角控制点（内收）
-                0, chinY                          // 回到下巴尖端
-            );
-            ctx.closePath(); // 闭合路径
-        }
+
+
+
         ctx.fillStyle = skinColor;
         ctx.fill();
         // // 侧面阴影增强立体感
@@ -200,24 +178,24 @@ class Face {
         // 左眉基准 (-60, -60), 右眉基准 (60, -60)
         // 深度 z: 眉毛略微凸出 z=10
         const browZ = 10;
-        const leftBrowX = this.projectX(-(90 + browXAdd), browZ, rad);
-        const rightBrowX = this.projectX((90 + browXAdd), browZ, rad);
+        const leftBrowX = this.projectX(-(150 + browXAdd), browZ, rad);
+        const rightBrowX = this.projectX((1 + browXAdd), browZ, rad);
 
         // 只有当眉毛在视野内才绘制 (简单裁剪)
-        if (viewAngle < 60) this.drawEyebrow(leftBrowX, -50 + browYAdd, a, s, u, true, rad, browlongAdd, browWidthAdd, browColor);
-        if (viewAngle > -60) this.drawEyebrow(rightBrowX, -50 + browYAdd, a, s, u, false, rad, browlongAdd, browWidthAdd, browColor);
+        if (viewAngle < 60) this.drawEyebrow(leftBrowX, 50 + browYAdd, a, s, u, true, rad, browlongAdd, browWidthAdd, browColor);
+        if (viewAngle > -60) this.drawEyebrow(rightBrowX, 50 + browYAdd, a, s, u, false, rad, browlongAdd, browWidthAdd, browColor);
 
         // 3. 绘制眼睛
         const eyeZ = 25;
-        const leftEyeX = this.projectX(-90 - eyeXadd, eyeZ, rad);
-        const rightEyeX = this.projectX(90 + eyeXadd, eyeZ, rad);
+        const leftEyeX = this.projectX(-150 - eyeXadd, eyeZ, rad);
+        const rightEyeX = this.projectX(0 + eyeXadd, eyeZ, rad);
 
-        if (viewAngle < 70) this.drawEye(leftEyeX, 10 + eyeYadd, a, s, u, h, true, rad, eyeHeightAdd,
+        if (viewAngle < 70) this.drawEye(leftEyeX, 100 + eyeYadd, a, s, u, h, true, rad, eyeHeightAdd,
             eyeWidthAdd,
             eyeColor1,
             eyeColor2,
             eyeColor3, eyeSizeAdd);
-        if (viewAngle > -70) this.drawEye(rightEyeX, 10 + eyeYadd, a, s, u, h, false, rad, eyeHeightAdd,
+        if (viewAngle > -70) this.drawEye(rightEyeX, 100 + eyeYadd, a, s, u, h, false, rad, eyeHeightAdd,
             eyeWidthAdd,
             eyeColor1,
             eyeColor2,
@@ -228,14 +206,12 @@ class Face {
 
         // 5. 绘制嘴巴
         const mouthZ = 20;
-        const mouthCenterX = this.projectX(0, mouthZ, rad);
+        const mouthCenterX = this.projectX(-100, mouthZ, rad);
         this.drawMouth(mouthCenterX, h, a, s, u, rad, mouthColor1, mouthlineWidthAdd, mouthWidthAdd, mouthYAdd, mouthColor2, isSpeak,
             SpeakValue);
         ctx.restore();
 
     }
-
-
 
 
     drawEyebrow(x, y, anger, sadness, surprise, isLeft, rad, longAdd = 0, widthAdd = 0, color = "#4a3b32") {
@@ -298,14 +274,53 @@ class Face {
         // 瞳孔位置随视角移动
         const pupilOffset = rad * 5;
 
-        ctx.fillStyle = eyeColor2;
+
+        // 3. 绘制虹膜 (Iris) - 核心精致部分
+        const irisR = 8 * eyeSizeAdd * widthScale*2;
+        // 创建复杂径向渐变：模拟光线穿透
+        let cx = x + pupilOffset;
+        let cy = y + (surprise * 2)
+        const grad = ctx.createRadialGradient(cx, cy, 5, cx, cy, irisR);
+        // grad.addColorStop(0, '#0f172a');      // 瞳孔边缘深色
+        // grad.addColorStop(0.3, '#3b82f6');    // 中间亮蓝
+        // grad.addColorStop(0.8, '#93c5fd');    // 外层浅蓝
+        // grad.addColorStop(1, 'rgba(147, 197, 253, 0.1)'); // 
+        
+         grad.addColorStop(0, '#0f172a');      // 瞳孔边缘深色
+        grad.addColorStop(0.3, '#3b82f6');    // 中间亮蓝
+        grad.addColorStop(0.8, '#93c5fd');    // 外层浅蓝
+        grad.addColorStop(1, 'rgba(147, 197, 253, 0.1)'); // 边缘融合
+
+
         ctx.beginPath();
-        ctx.arc(x + pupilOffset, y + (surprise * 2), 8 * eyeSizeAdd * widthScale, 0, Math.PI * 2);
+        ctx.arc(cx, cy, irisR, 0, Math.PI * 2);
+        ctx.fillStyle = grad;
         ctx.fill();
+
+
+        // 4. 绘制虹膜纹理 (放射状线条，增加细节)
+        ctx.save();
+        ctx.clip(); // 限制在虹膜范围内
+        ctx.beginPath();
+        for (let i = 0; i < 360; i += 15) {
+            const rad = i * Math.PI / 180;
+            ctx.moveTo(cx + Math.cos(rad) * 8, cy + Math.sin(rad) * 8);
+            ctx.lineTo(cx + Math.cos(rad) * irisR, cy + Math.sin(rad) * irisR);
+        }
+        ctx.strokeStyle = 'rgba(255, 255, 255, 0.15)';
+        ctx.lineWidth = 1;
+        ctx.stroke();
+        ctx.restore();
+
+
+        // ctx.fillStyle = eyeColor2;
+        // ctx.beginPath();
+        // ctx.arc(x + pupilOffset, y + (surprise * 2), 8 * eyeSizeAdd * widthScale, 0, Math.PI * 2);
+        // ctx.fill();
 
         ctx.fillStyle = eyeColor3;
         ctx.beginPath();
-        ctx.arc(x + pupilOffset + 3, y - 3 + (surprise * 2), 3 * widthScale, 0, Math.PI * 2);
+        ctx.arc(x + pupilOffset -13, y -13 + (surprise * 2), 4 * widthScale, 0, Math.PI * 2);
         ctx.fill();
     }
 
@@ -313,32 +328,30 @@ class Face {
         noseWidthAdd = 0, noseColor = 'rgba(100, 80, 70, 0.3)', noseYAdd = 0, noseLongAdd = 0, noseColor2 = 'rgba(0,0,0,0.05)') {
         let ctx = this.ctx
         ctx.beginPath();
-        ctx.lineWidth = 3 + noseWidthAdd;
+        ctx.lineWidth = 10 + noseWidthAdd;
         ctx.strokeStyle = noseColor;
         ctx.lineCap = 'round';
 
         // 鼻梁顶点
-        const bridgeTopX = this.projectX(0, 10, rad);
+        const bridgeTopX = this.projectX(-100, 80, rad);
 
         const addY = noseYAdd;
 
-        const bridgeTopY = -10 + addY;
+        const bridgeTopY = 100 + addY;
 
         // 鼻尖 (最凸出部分 z=40)
-        const tipX = this.projectX(0, 40, rad);
-        const tipY = 45 + addY;
+        const tipX = this.projectX(-140, 80, rad);
+        const tipY = 145 + addY;
 
         // 鼻底
-        const baseX = this.projectX(0, 30, rad);
-        const baseY = 55 + addY + noseLongAdd;
+        const baseX = this.projectX(-100, 80, rad);
+        const baseY = 155 + addY + noseLongAdd;
 
         // 绘制鼻梁侧面轮廓
         ctx.moveTo(bridgeTopX, bridgeTopY);
         ctx.quadraticCurveTo(tipX - (rad * 10), tipY - 10, tipX, tipY);
-
         // 绘制鼻底
         ctx.quadraticCurveTo(tipX + (rad * 5), baseY, baseX, baseY);
-
         // 如果是侧视，绘制鼻孔侧面
         if (Math.abs(rad) > 0.2) {
             ctx.moveTo(tipX, tipY);
@@ -374,7 +387,7 @@ class Face {
         ctx.strokeStyle = mouthColor1;
 
         const width = (50 + mouthWidthAdd) * Math.cos(rad * 0.4); // 嘴宽随角度变化
-        const baseY = 150 + mouthYAdd;
+        const baseY = 200 + mouthYAdd;
 
         let cornerY = baseY;
         cornerY -= happy * 25;

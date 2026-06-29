@@ -14,7 +14,7 @@ class Bone {
         if (imageData) {
 
             if (imageData.note && JSON.parse(imageData.note).scale) {
-                this.img = new Face({ ...JSON.parse(imageData.note), width: imageData.width, height: imageData.height }).getCanvas()
+                this.img = new Face({ ...JSON.parse(imageData.note), img: imageData.img, width: imageData.width, height: imageData.height }).getCanvas()
             } else {
                 this.img = imageData.img
             }
@@ -82,6 +82,9 @@ class Person {
 
         const root = new Bone(null, 0);          // 头
         const body = new Bone(root, -Math.PI / 2, images.find(i => i.name == "身体"), true);
+
+        const bbody = new Bone(root, -Math.PI / 2, images.find(i => i.name == "后身体"), true);
+
         const head = new Bone(body, 0, images.find(i => i.name == "头"), true);
 
         const hair = new Bone(head, -Math.PI, images.find(i => i.name == "头发"), false);
@@ -98,23 +101,25 @@ class Person {
         const rfa = new Bone(rua, 0, images.find(i => i.name == "右下臂"), false);
         const rhand = new Bone(rfa, 0, images.find(i => i.name == "右手"), false);
 
-        const lthP = new Bone(root, Math.PI / 2 * 1, images.find(i => i.name == "左腿距"), false);  
+        const lthP = new Bone(root, Math.PI / 2 * 1, images.find(i => i.name == "左腿距"), false);
         const lth = new Bone(lthP, Math.PI / 2 * 0, images.find(i => i.name == "左大腿"), false);                   // 右大腿
         const lsh = new Bone(lth, Math.PI / 2 * 0, images.find(i => i.name == "左小腿"), false);
         const lf = new Bone(lsh, Math.PI / 2 * 0, images.find(i => i.name == "左脚"), false);                // 右小腿
 
-        const rthP = new Bone(root, Math.PI / 2 * 1, images.find(i => i.name == "右腿距"), false);  
+        const rthP = new Bone(root, Math.PI / 2 * 1, images.find(i => i.name == "右腿距"), false);
         const rth = new Bone(rthP, Math.PI / 2 * 0, images.find(i => i.name == "右大腿"), false);                   // 右大腿
         const rsh = new Bone(rth, Math.PI / 2 * 0, images.find(i => i.name == "右小腿"), false);
         const rf = new Bone(rsh, Math.PI / 2 * 0, images.find(i => i.name == "右脚"), false);                // 右小腿
 
         // / -------- 收集所有骨骼 --------
-        this.allBones = [root,hairb ,
+        this.allBones = [root, hairb,
             lhand, lfa, lua,
-            rhand, rfa, rua,
-            lth, lsh, lf,
-            rth, rsh, rf,
+            bbody,
+            rua,
+            lsh, lth, lf,
+            rsh, rth, rf,
             body, head, hair,
+            rhand,rfa, 
         ];
     }
     drawBone(bone, ox, oy) {
@@ -141,24 +146,35 @@ class Person {
             this.ctx.restore();
         }
 
-        // if (bone.len > 0) {
-        //     this.ctx.beginPath();
-        //     this.ctx.moveTo(x1, y1);
-        //     this.ctx.lineTo(x2, y2);
-        //     this.ctx.strokeStyle = '#00d2ff';
-        //     this.ctx.lineWidth = 5;
-        //     this.ctx.lineCap = 'round';
-        //     this.ctx.stroke();
-        // }
-        // // 关节圆点
-        // this.ctx.beginPath();
-        // this.ctx.arc(x1, y1, 3, 0, Math.PI * 2);
-        // this.ctx.fillStyle = '#f00';
-        // this.ctx.fill();
 
+
+    }
+
+    drawBonePoint(bone, ox, oy) {
+        const BoneCon = bone.getAbs();
+        const x1 = BoneCon.x + ox, y1 = BoneCon.y + oy;
+        const x2 = x1 + Math.cos(BoneCon.r) * bone.len;
+        const y2 = y1 + Math.sin(BoneCon.r) * bone.len;
+        const isUp = BoneCon.isUp
+        if (bone.len > 0) {
+            this.ctx.beginPath();
+            this.ctx.moveTo(x1, y1);
+            this.ctx.lineTo(x2, y2);
+            this.ctx.strokeStyle = '#00d2ff';
+            this.ctx.lineWidth = 5;
+            this.ctx.lineCap = 'round';
+            this.ctx.stroke();
+        }
+        // 关节圆点
+        this.ctx.beginPath();
+        this.ctx.arc(x1, y1, 3, 0, Math.PI * 2);
+        this.ctx.fillStyle = '#f00';
+        this.ctx.fill();
     }
     drawAll(ox, oy) {
         for (const b of this.allBones) this.drawBone(b, ox, oy);
+
+        // for (const b of this.allBones) this.drawBonePoint(b, ox, oy);
     }
 }
 

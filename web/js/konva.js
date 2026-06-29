@@ -362,11 +362,10 @@ class myStageClass {
                     if (data.categorize == "person") {
                         let fps = 24;
                         
-                        if (Math.floor((_this.state.currentTime * fps) % 1) == 0) {
+                        if (Math.floor((_this.state.currentTime * fps) % 1) == 0||1) {
                             // 图片人物的逻辑
                             clip.image( personLinkTrack({...data,currentTime:_this.state.currentTime}))
 
-                           
                         }
                     } else if (data.src.toLowerCase().endsWith('.gif') && _this.state.currentTime > startTime) {
                         let fps = _this.imagePool.gifFpt(data.src)

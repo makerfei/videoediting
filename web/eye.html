@@ -1,0 +1,215 @@
+<!DOCTYPE html>
+<html>
+<head>
+   
+</head>
+<body>
+   
+    <button onclick="setGradientBrush()">切换渐变画笔</button>
+    <button onclick="setSolidBrush()">切换普通画笔</button>
+
+    <canvas id="eyeCanvas" width="400" height="300"></canvas>
+
+<script>
+const canvas = document.getElementById('eyeCanvas');
+const ctx = canvas.getContext('2d');
+const cx = 200, cy = 150;
+
+function drawExquisiteEye() {
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+    // 1. 绘制眼睑阴影 (增加深邃感)
+    ctx.save();
+    ctx.beginPath();
+    ctx.moveTo(cx - 60, cy);
+    ctx.bezierCurveTo(cx - 30, cy - 45, cx + 30, cy - 45, cx + 60, cy); // 上眼睑
+    ctx.bezierCurveTo(cx + 30, cy + 45, cx - 30, cy + 45, cx - 60, cy); // 下眼睑
+    ctx.closePath();
+    ctx.fillStyle = 'rgba(200, 200, 200, 0.2)'; // 浅灰阴影
+    ctx.fill();
+    ctx.restore();
+
+    // 2. 绘制眼白 (Sclera)
+    ctx.beginPath();
+    ctx.moveTo(cx - 55, cy);
+    ctx.bezierCurveTo(cx - 28, cy - 38, cx + 28, cy - 38, cx + 55, cy);
+    ctx.bezierCurveTo(cx + 28, cy + 38, cx - 28, cy + 38, cx - 55, cy);
+    ctx.closePath();
+    ctx.fillStyle = '#fdfdfd'; // 极淡的灰白，比纯白更自然
+    ctx.fill();
+    ctx.lineWidth = 1.5;
+    ctx.strokeStyle = '#333';
+    ctx.stroke();
+
+    // 3. 绘制虹膜 (Iris) - 核心精致部分
+    const irisR = 28;
+    // 创建复杂径向渐变：模拟光线穿透
+    const grad = ctx.createRadialGradient(cx, cy, 5, cx, cy, irisR);
+    grad.addColorStop(0, '#0f172a');      // 瞳孔边缘深色
+    grad.addColorStop(0.3, '#3b82f6');    // 中间亮蓝
+    grad.addColorStop(0.8, '#93c5fd');    // 外层浅蓝
+    grad.addColorStop(1, 'rgba(147, 197, 253, 0.1)'); // 边缘融合
+
+    ctx.beginPath();
+    ctx.arc(cx, cy, irisR, 0, Math.PI * 2);
+    ctx.fillStyle = grad;
+    ctx.fill();
+
+    // 4. 绘制虹膜纹理 (放射状线条，增加细节)
+    ctx.save();
+    ctx.clip(); // 限制在虹膜范围内
+    ctx.beginPath();
+    for (let i = 0; i < 360; i += 15) {
+        const rad = i * Math.PI / 180;
+        ctx.moveTo(cx + Math.cos(rad) * 8, cy + Math.sin(rad) * 8);
+        ctx.lineTo(cx + Math.cos(rad) * irisR, cy + Math.sin(rad) * irisR);
+    }
+    ctx.strokeStyle = 'rgba(255, 255, 255, 0.15)';
+    ctx.lineWidth = 1;
+    ctx.stroke();
+    ctx.restore();
+
+    // 5. 绘制瞳孔 (Pupil)
+    ctx.beginPath();
+    ctx.arc(cx, cy, 10, 0, Math.PI * 2);
+    ctx.fillStyle = '#000';
+    ctx.fill();
+
+    // 6. 绘制精致高光 (Highlight)
+    // 主高光：锐利小白点
+    ctx.beginPath();
+    ctx.ellipse(cx - 12, cy - 12, 5, 3, Math.PI / 4, 0, Math.PI * 2);
+    ctx.fillStyle = 'rgba(255, 255, 255, 0.95)';
+    ctx.fill();
+    
+    // 次高光：柔和反光
+    ctx.beginPath();
+    ctx.arc(cx + 8, cy + 8, 3, 0, Math.PI * 2);
+    ctx.fillStyle = 'rgba(255, 255, 255, 0.4)';
+    ctx.fill();
+}
+
+
+
+const eyeW = 110, eyeH = 70; // 眼睛宽高
+
+// 1. 绘制基础眼形与虹膜 (复用之前的逻辑，此处省略细节，仅保留结构)
+function drawBaseEye() {
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+    // 眼白
+    ctx.beginPath();
+    ctx.moveTo(cx - eyeW/2, cy);
+    ctx.bezierCurveTo(cx - eyeW/4, cy - eyeH/2, cx + eyeW/4, cy - eyeH/2, cx + eyeW/2, cy);
+    ctx.bezierCurveTo(cx + eyeW/4, cy + eyeH/2, cx - eyeW/4, cy + eyeH/2, cx - eyeW/2, cy);
+    ctx.fillStyle = '#fff';
+    ctx.fill();
+    ctx.strokeStyle = '#000';
+    ctx.lineWidth = 2;
+    ctx.stroke();
+    
+    // 虹膜与瞳孔 (简化版)
+    ctx.beginPath();
+    ctx.arc(cx, cy + 5, 25, 0, Math.PI*2);
+    ctx.fillStyle = '#3b82f6';
+    ctx.fill();
+    ctx.beginPath();
+    ctx.arc(cx, cy + 5, 10, 0, Math.PI*2);
+    ctx.fillStyle = '#000';
+    ctx.fill();
+}
+
+// 2. 绘制动漫风睫毛核心函数
+function drawAnimeLashes() {
+    ctx.save();
+    ctx.lineCap = 'round';
+    ctx.lineJoin = 'round';
+    ctx.strokeStyle = '#000';
+
+    // --- A. 上睫毛 (Upper Lashes) ---
+    // 特征：粗、长、成簇、末端尖锐
+    const upperLashCount = 6; // 簇数
+    ctx.lineWidth = 3.5; // 根部较粗
+
+    for (let i = 0; i < upperLashCount; i++) {
+        // t: 0(左眼角) -> 1(右眼角)
+        // 分布集中在中间偏外，避开内眼角
+        let t = 0.15 + (i / (upperLashCount - 1)) * 0.8; 
+        
+        // 获取眼睑上的基点 (简化计算，直接用贝塞尔插值)
+        let bx = bezierPoint(t, cx - eyeW/2, cx - eyeW/4, cx + eyeW/4, cx + eyeW/2);
+        let by = bezierPoint(t, cy, cy - eyeH/2, cy - eyeH/2, cy);
+
+        // 每簇睫毛由 2-3 根组成
+        let strands = 3;
+        if (i === 0 || i === upperLashCount - 1) strands = 2; // 眼角处少一点
+
+        for (let j = 0; j < strands; j++) {
+            // 随机偏移角度和长度
+            let offset = (j - 1) * 0.15; // 散开角度
+            let len = (30 + Math.random() * 10) * (Math.sin(t * Math.PI)); // 中间长两边短
+            
+            // 角度：垂直向上 (-PI/2) 加上随位置的倾斜
+            let baseAngle = -Math.PI / 2;
+            if (t < 0.5) baseAngle -= 0.3; // 左侧向左倾
+            else baseAngle += 0.3;         // 右侧向右倾
+            
+            let angle = baseAngle + offset + (Math.random() - 0.5) * 0.1;
+
+            ctx.beginPath();
+            ctx.moveTo(bx, by);
+            // 使用二次贝塞尔画出弯曲且尖端变细的效果
+            // 控制点稍微向后弯
+            let cpx = bx + Math.cos(angle - 0.2) * (len * 0.6);
+            let cpy = by + Math.sin(angle - 0.2) * (len * 0.6);
+            let ex = bx + Math.cos(angle) * len;
+            let ey = by + Math.sin(angle) * len;
+            
+            ctx.quadraticCurveTo(cpx, cpy, ex, ey);
+            ctx.stroke();
+        }
+    }
+
+    // --- B. 下睫毛 (Lower Lashes) ---
+    // 特征：细、短、稀疏、通常只有几根
+    ctx.lineWidth = 1.2; 
+    const lowerLashCount = 5;
+    
+    for (let i = 0; i < lowerLashCount; i++) {
+        // 分布在下眼睑后半段或中间，避开内眼角
+        let t = 0.2 + (i / (lowerLashCount - 1)) * 0.6; 
+        
+        let bx = bezierPoint(t, cx - eyeW/2, cx - eyeW/4, cx + eyeW/4, cx + eyeW/2);
+        let by = bezierPoint(t, cy, cy + eyeH/2, cy + eyeH/2, cy);
+
+        let len = 8 + Math.random() * 5; // 很短
+        let angle = Math.PI / 2; // 垂直向下
+        if (t > 0.5) angle += 0.2; // 外侧向右下
+        
+        ctx.beginPath();
+        ctx.moveTo(bx, by);
+        // 下睫毛通常较直，微弯即可
+        let ex = bx + Math.cos(angle) * len;
+        let ey = by + Math.sin(angle) * len;
+        ctx.lineTo(ex, ey);
+        ctx.stroke();
+    }
+    
+    ctx.restore();
+}
+
+// 辅助：三次贝塞尔插值
+function bezierPoint(t, p0, p1, p2, p3) {
+    return Math.pow(1-t, 3)*p0 + 3*Math.pow(1-t, 2)*t*p1 + 3*(1-t)*Math.pow(t, 2)*p2 + Math.pow(t, 3)*p3;
+}
+
+// 执行绘制
+drawExquisiteEye();
+drawAnimeLashes();
+
+
+
+
+</script>
+
+</body>
+</html>

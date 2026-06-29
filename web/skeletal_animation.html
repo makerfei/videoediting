@@ -7,8 +7,8 @@
     <title>Pro Motion - 骨骼动作调节器</title>
     <script src="js/imagecompositing.js"></script>
     <link rel="icon" href="icon.gif">
-     <script src="js/tool.js"></script>
-       <script src="js/face.js"></script>
+    <script src="js/tool.js"></script>
+    <script src="js/face.js"></script>
     <style>
         :root {
             --bg-dark: #0f172a;
@@ -604,7 +604,7 @@
             selectedaction: '',
 
             animationFrame: null,
-            allBones: ["身体", "头", "表情", "头发", "左上臂", "左下臂", "左手", "右上臂", "右下臂", "右手", "左大腿", "左小腿", "左脚", "右大腿", "右小腿", "右脚","左臂距","右臂距","左腿距","右腿距"],
+            allBones: ["身体", "头", "表情", "头发", "左上臂", "左下臂", "左手", "右上臂", "右下臂", "右手", "左大腿", "左小腿", "左脚", "右大腿", "右小腿", "右脚", "左臂距", "右臂距", "左腿距", "右腿距", "后发", "后身体"],
 
             // 展示的事实数据
             allBonesList: {}, //身体:{rotation:12,x:10,y:10}
@@ -622,6 +622,10 @@
             selectkeyMoveList: null,
             timeTime: 0,
             isplay: false,
+
+            canvasScale: 1,
+
+
 
             // 初始化
             async init() {
@@ -644,9 +648,10 @@
             loadFromLocalStorage() {
                 const data = localStorage.getItem('annotatePro_data_v2');
                 if (data) {
-                    let { filename, images } = JSON.parse(data);
+                    let { filename, images, canvasScale } = JSON.parse(data);
                     this.images = images;
                     this.filename = filename;
+                    this.canvasScale = canvasScale;
                 }
 
 
@@ -707,7 +712,7 @@
                         })
                     }
                 })
-                this.canvas.setAttribute("src", getimage(this.width, this.height, images, returnTpe = "base64"))
+                this.canvas.setAttribute("src", getimage(this.width * this.canvasScale, this.height * this.canvasScale, images, returnTpe = "base64"))
             },
 
             resize() {
@@ -724,6 +729,13 @@
                 this.allBonesList = {}
                 this.allBones.forEach(BoneName => {
                     this.allBonesList[BoneName] = { rotation: 0, x: 0, y: 0 }
+                })
+                this.action.forEach(a => {
+                    this.allBones.forEach(BoneName => {
+                        if (!(BoneName in a.Bones)) {
+                            a.Bones[BoneName] =  { rotation: 0, x: 0, y: 0 }
+                        }
+                    })
                 })
             },
 
@@ -801,6 +813,7 @@
                         Bones: structuredClone(this.allBonesList)
                     })
                 }
+
                 this.selectedaction = filename
                 this.renderAction()
                 this.saveToLocalStorage()
@@ -903,7 +916,7 @@
 
             },
             loop() {
-                let time = (new Date().getTime() - this.timeTime) * 2;
+                let time = (new Date().getTime() - this.timeTime) * 1.5;
                 document.getElementById("playtime").innerText = Number(time / 1000).toFixed(3)
                 document.getElementById("playhead").style = `left: ${time / 100}%;`
 
@@ -982,7 +995,7 @@
                 }
 
 
-                  // 上传第一张图
+                // 上传第一张图
                 const dataURL = document.getElementById("motionCanvas").src
                 const base64Data = dataURL.split(',');
                 const blobImg = base64ToBlob(base64Data, 'image/png');

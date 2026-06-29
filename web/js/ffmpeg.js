@@ -5,7 +5,7 @@ async function exportAllFramesAsUpload(inmyStage) {
     const timestamp = Date.now();
     console.log(timestamp); // 例如: 1715668800123
 
-    const fps = 24;
+    const fps = 48;
     // 确保总帧数计算正确，避免浮点数误差
     let totalFrames = Math.ceil(inmyStage.masterTimeline.totalDuration() * fps);
     let tl = inmyStage.masterTimeline;

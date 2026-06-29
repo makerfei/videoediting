@@ -91,7 +91,7 @@ function getMoveToAction({ start, duration, actionList, currentTime }) {
     if (actionList.length == 1) {
         return actionList[0].Bones
     } else {
-        let ratio = 3
+        let ratio = 1.5
         let indexProgress = ((time - start) * ratio) % (actionList.length - 1)
         let index = Math.floor(indexProgress)
         let progress = indexProgress - index;
